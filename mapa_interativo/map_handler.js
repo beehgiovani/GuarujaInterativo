@@ -74,30 +74,16 @@ window.initRuler = function() {
 window.init3DToggle = function() {
     if (!window.map) return;
     
-    // Container para controles de Tilt e Modo
+    // Container para controles de Tilt
     const controlsContainer = document.createElement('div');
     controlsContainer.className = 'landscape-control-v2';
     controlsContainer.style.cssText = `
         position: absolute; right: 10px; top: 180px; display: flex; flex-direction: column; gap: 8px; z-index: 1000;
     `;
     
-    // Botão 3D Fotorealista (Nova API)
-    const btn3D = document.createElement('div');
-    btn3D.title = 'Vivar Experiência 3D Fotorealista';
-    btn3D.style.cssText = `
-        background: #2563eb; color: white; border-radius: 12px; width: 48px; height: 48px;
-        box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3); cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        border: 2px solid white; font-size: 14px; font-weight: 900;
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    `;
-    btn3D.innerHTML = '3D+';
-    btn3D.onmouseover = () => btn3D.style.transform = 'scale(1.1)';
-    btn3D.onmouseout = () => btn3D.style.transform = 'scale(1)';
-    
     // Controles de Ângulo (Tilt)
     const angleUp = document.createElement('div');
-    angleUp.title = 'Aumentar Ângulo (Mais Vertical)';
+    angleUp.title = 'Inclinar Mapa (Perspectiva)';
     angleUp.innerHTML = '<i class="fas fa-chevron-up"></i>';
     angleUp.style.cssText = `
         background: white; border-radius: 8px; width: 44px; height: 44px;
@@ -107,165 +93,29 @@ window.init3DToggle = function() {
     `;
     
     const angleDown = angleUp.cloneNode(true);
-    angleDown.title = 'Diminuir Ângulo (Mais Inclinado)';
+    angleDown.title = 'Visão de Topo (2D)';
     angleDown.innerHTML = '<i class="fas fa-chevron-down"></i>';
     
-    controlsContainer.appendChild(btn3D);
     controlsContainer.appendChild(angleUp);
     controlsContainer.appendChild(angleDown);
     
     document.body.appendChild(controlsContainer);
 
-    // Lógica 3D Standard (Tilt 45)
-    btn3D.onclick = async () => {
-        if (window.isHyper3DActive) {
-            window.exitHyper3D();
-            return;
-        }
-        
-        const currentTilt = window.map.getTilt();
-        if (currentTilt === 0) {
-            window.map.setTilt(45);
-            btn3D.style.background = '#10b981';
-            window.Toast.info("Perspectiva 3D Ativada.");
-        } else {
-            // Se já está em 45, tenta o modo Hyper 3D solicitado
-            window.enterHyper3D();
-        }
-    };
-
     angleUp.onclick = () => {
-        if (window.isHyper3DActive && window.map3D) {
-            const current = parseFloat(window.map3D.getAttribute('tilt') || window.map3D.tilt || 45);
-            const newValue = Math.min(90, current + 10);
-            window.map3D.setAttribute('tilt', newValue);
-            window.map3D.tilt = newValue;
-            window.Toast.info(`Inclinação: ${Math.round(newValue)}°`);
-        } else {
-            const current = window.map.getTilt();
-            if (current < 45) {
-                window.map.setTilt(45);
-                window.Toast.info("Inclinação 45° (Máximo Standard)");
-            } else {
-                window.Toast.warning("Limite de inclinação standard atingido (45°).");
-            }
-        }
+        window.map.setTilt(45);
+        window.Toast.info("Perspectiva 45° Ativada.");
     };
 
     angleDown.onclick = () => {
-        if (window.isHyper3DActive && window.map3D) {
-            const current = parseFloat(window.map3D.getAttribute('tilt') || window.map3D.tilt || 45);
-            const newValue = Math.max(0, current - 10);
-            window.map3D.setAttribute('tilt', newValue);
-            window.map3D.tilt = newValue;
-            window.Toast.info(`Inclinação: ${Math.round(newValue)}°`);
-        } else {
-            window.map.setTilt(0);
-            window.Toast.info("Visão de Topo (0°)");
-        }
+        window.map.setTilt(0);
+        window.Toast.info("Visão de Topo (2D)");
     };
 };
 
-// --- HYPER 3D MODE (Photorealistic Maps API) ---
+// Hyper 3D Mode Desativado
 window.isHyper3DActive = false;
-window.map3D = null;
-
-window.enterHyper3D = async function() {
-    window.Loading.show("Ativando Visão Imersiva 3D...", "Carregando novos tiles fotorrealistas");
-    try {
-        const { Map3DElement } = await google.maps.importLibrary("maps3d");
-        
-        if (!Map3DElement) {
-            throw new Error("Map3DElement não encontrado na biblioteca maps3d.");
-        }
-
-        const center = window.map.getCenter();
-        const zoom = window.map.getZoom();
-        
-        // Esconde o mapa antigo (levando para fora da tela)
-        document.getElementById('map').style.transform = 'translateY(-10000px)';
-        // Cria container com fundo condizente com o app
-        const container3d = document.createElement('div');
-        container3d.id = 'hyper-map-3d';
-        container3d.style.cssText = `
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 10000; background: #0f172a;
-        `;
-        document.body.appendChild(container3d);
-        
-        // Instancia o Mapa 3D usando o custom element para evitar erros de inicialização
-        const map3dElement = document.createElement('gmp-map-3d');
-        
-        // Aguarda a definição do elemento antes de configurar
-        await customElements.whenDefined('gmp-map-3d');
-        
-        map3dElement.center = { lat: center.lat(), lng: center.lng(), altitude: 350 };
-        map3dElement.tilt = 55;
-        map3dElement.range = 1000;
-        map3dElement.heading = 0;
-        map3dElement.defaultUi = true;
-        map3dElement.mapId = window.GoogleMapsConfig.MAP_ID || '';
-        
-        map3dElement.style.width = '100%';
-        map3dElement.style.height = '100%';
-        map3dElement.id = 'active-hyper-map';
-        
-        container3d.appendChild(map3dElement);
-        window.map3D = map3dElement;
-        window.isHyper3DActive = true;
-        
-        // Esconde a UI principal gradualmente
-        const app = document.getElementById('app-container');
-        app.style.transition = 'opacity 0.8s ease';
-        app.style.opacity = '0';
-        app.style.pointerEvents = 'none';
-
-        if(document.getElementById('sidebar')) document.getElementById('sidebar').style.visibility = 'hidden';
-        if(document.getElementById('weather-widget')) document.getElementById('weather-widget').style.opacity = '0';
-        
-        const exitBtn = document.createElement('button');
-        exitBtn.id = 'exit-3d-btn';
-        exitBtn.innerHTML = '<i class="fas fa-times"></i> Sair do Modo Imersivo';
-        exitBtn.style.cssText = `
-            position: fixed; top: 120px; left: 50%; transform: translateX(-50%);
-            z-index: 20000; background: #ef4444; color: white; padding: 14px 28px;
-            border: none; border-radius: 40px; font-weight: 800; cursor: pointer;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); font-size: 14px;
-            display: flex; align-items: center; gap: 8px;
-        `;
-        exitBtn.onclick = window.exitHyper3D;
-        document.body.appendChild(exitBtn);
-
-        window.Toast.success("Bem-vindo ao Modo Hyper-3D!");
-    } catch(e) {
-        console.error("Hyper-3D Error:", e);
-        window.Toast.error("Sua GPU ou chave de API não suportam Mapas 3D Fotorrealistas.");
-        window.exitHyper3D();
-    } finally {
-        window.Loading.hide();
-    }
-};
-
-window.exitHyper3D = function() {
-    window.isHyper3DActive = false;
-    const cont = document.getElementById('hyper-map-3d');
-    if (cont) cont.remove();
-    document.getElementById('app-container').style.opacity = '1';
-    document.getElementById('app-container').style.pointerEvents = 'all';
-    if(document.getElementById('sidebar')) document.getElementById('sidebar').style.visibility = 'visible';
-    if(document.getElementById('weather-widget')) document.getElementById('weather-widget').style.opacity = '1';
-    
-    document.getElementById('map').style.transform = 'none';
-    document.getElementById('map').style.visibility = 'visible';
-    
-    // Pequeno delay para o GMaps redesenhar
-    setTimeout(() => {
-        window.map.setTilt(45);
-        google.maps.event.trigger(window.map, 'resize');
-    }, 100);
-    
-    window.Toast.info("Retornando ao Painel 2D.");
-};
+window.enterHyper3D = () => console.warn("Hyper 3D Desativado");
+window.exitHyper3D = () => console.warn("Hyper 3D Desativado");
 
 // ========================================
 // MOBILE: GPS & DRAWER LOGIC
@@ -366,7 +216,7 @@ window.initMap = async function () {
     const mapBackBtn = document.getElementById('mapBackBtn');
 
     // Show loading overlay
-    Loading.show('Inicializando Google Maps 3D...', 'Ativando visão fotorealista');
+    Loading.show('Inicializando Guarugeo...', 'Carregando inteligência imobiliária');
     Loading.setProgress(10);
 
     try {
@@ -387,8 +237,8 @@ window.initMap = async function () {
             center: { lat: -23.9934, lng: -46.2567 },
             zoom: 13,
             minZoom: 12,
-            mapTypeId: 'satellite', // Satélite limpo por padrão (sem marcadores)
-            tilt: 45,            // Ativar perspectiva 3D
+            mapTypeId: 'satellite', 
+            tilt: 0,            // Começar em 2D por padrão
             heading: 0,
             mapId: window.GoogleMapsConfig.MAP_ID || 'DEMO_MAP_ID', // Requerido para 3D e marcadores avançados
             disableDefaultUI: false,

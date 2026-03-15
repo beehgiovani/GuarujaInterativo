@@ -6,8 +6,8 @@
 window.GoogleMapsConfig = {
     // ⚠️ SUBSTITUA PELA SUA CHAVE DE API COM BILLING ATIVO
     API_KEY: 'AIzaSyBgZ2tcavsvESRqWJjZjSa3GGpTVxR9BVM',
-    MAP_ID: '4649a5775b8724ec670c1fcc44ce14e721984dc1', // Map ID configurado para visual 3D
-    VERSION: 'beta' // Canal Beta: Estável e com suporte a Web Components 3D
+    MAP_ID: null, // Desativado fotorrealismo 3D temporariamente
+    VERSION: 'weekly' // Canal semanal estável
 };
 
 window.loadGoogleMaps = (function() {
