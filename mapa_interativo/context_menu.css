@@ -1,0 +1,37 @@
+/* ============================================================
+   CONTEXT MENU STYLES
+   ============================================================ */
+#context-menu {
+    display: none;
+    position: absolute;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e2e8f0;
+    min-width: 180px;
+    z-index: 10000;
+    overflow: hidden;
+    padding: 5px 0;
+    animation: fadeIn 0.1s ease-out;
+}
+
+.context-menu-item {
+    padding: 10px 15px;
+    font-size: 13px;
+    color: #1e293b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.1s;
+}
+
+.context-menu-item:hover {
+    background: #f1f5f9;
+}
+
+.context-menu-divider {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 4px 0;
+}

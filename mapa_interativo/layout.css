@@ -1,0 +1,360 @@
+/* ============================================================
+   GUARUGEO - LAYOUT & CORE (MODULAR)
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --primary-color: #2563eb;
+    --primary-dark: #1e40af;
+    --accent-color: #0d9488;
+    --background-dark: #0f172a;
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --text-primary: #1e293b;
+    --text-main: #1e293b; /* Unified Var */
+    --text-secondary: #64748b;
+    --border-color: #e2e8f0;
+    --sidebar-bg: rgba(255, 255, 255, 0.95);
+    --shadow-premium: 0 20px 50px rgba(0, 0, 0, 0.15);
+    --sidebar-width: 420px;
+    --radius-lg: 24px;
+    --radius-md: 16px;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Fix for Google Maps Native Checkboxes */
+.gm-style input[type="checkbox"] {
+    margin: 2px 5px 2px 0 !important;
+    vertical-align: middle !important;
+}
+.gm-style label {
+    display: inline-flex !important;
+    align-items: center !important;
+    font-weight: 500 !important;
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #0f172a !important; /* Forces dark background to see if screen remains white */
+    color: var(--text-main);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+#app-container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    position: relative;
+    visibility: visible !important;
+    background: #0f172a; /* Dark background while map loads */
+}
+
+#map {
+    flex: 1;
+    height: 100%;
+    width: 100%;
+    position: relative;
+    background-color: #e5e7eb;
+}
+
+/* ============================================================
+   ADAPTIVE CURSORS & INTERACTIVE ELEMENTS
+   ============================================================ */
+
+/* Global Clickables */
+button,
+.tab-btn,
+.filter-chip,
+.search-item,
+.context-menu-item,
+.legend-item,
+.custom-modal-close,
+[onclick] {
+    cursor: pointer !important;
+}
+
+/* Map Cursors (Google Maps handling) */
+#map {
+    cursor: default;
+}
+
+/* Form Controls */
+input[type="text"],
+input[type="password"],
+input[type="number"],
+textarea {
+    cursor: text;
+}
+
+.hidden {
+    display: none !important;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ============================================================
+   UNIFIED DASHBOARD (PREMIUM & COLLAPSIBLE)
+   ============================================================ */
+.stats-panel {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-premium);
+    width: 280px;
+    z-index: 1000;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+    padding: 24px;
+    animation: slideUp 0.6s ease-out;
+}
+
+.stats-panel.collapsed {
+    width: 50px !important;
+    height: 50px !important;
+    padding: 0 !important;
+    border-radius: 25px !important;
+    bottom: 30px;
+    left: 20px;
+}
+
+.stats-toggle-btn {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50px;
+    height: 50px;
+    border: none;
+    background: none;
+    color: var(--primary-color);
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    transition: transform 0.3s ease;
+}
+
+.stats-panel.collapsed .stats-toggle-btn {
+    width: 100%;
+    height: 100%;
+}
+
+.stats-panel:not(.collapsed) .stats-toggle-btn {
+    top: 10px;
+    left: auto;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #64748b;
+}
+
+.stats-collapsible-content {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.stats-panel.collapsed .stats-collapsible-content {
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+}
+
+.stat-item {
+    margin-bottom: 20px;
+}
+
+.stat-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: #94a3b8;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-size: 18px;
+    font-weight: 900;
+    color: #1e293b;
+}
+
+.zone-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+    max-height: 250px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.dashboard-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.dashboard-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dashboard-btn.primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.dashboard-btn.secondary {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+#loginOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0f172a;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s ease;
+}
+
+.login-box {
+    background: white;
+    padding: 48px;
+    border-radius: var(--radius-lg);
+    width: 420px;
+    text-align: center;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.login-box h2 {
+    color: #1e293b;
+    margin-bottom: 5px;
+    font-size: 24px;
+    font-weight: 800;
+}
+
+.login-box p {
+    color: #64748b;
+    margin-bottom: 25px;
+    font-size: 14px;
+}
+
+.login-box input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.login-box input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.login-box button {
+    width: 100%;
+    padding: 12px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.login-box button:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+#loginOverlay.hidden {
+    display: none !important;
+    pointer-events: none;
+}
+
+/* Scrollbar Style for legend */
+.zone-legend::-webkit-scrollbar {
+    width: 4px;
+}
+
+.zone-legend::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+}
+
+/* Search-box moved to sidebar_styles.css */

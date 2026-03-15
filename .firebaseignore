@@ -1,0 +1,13 @@
+node_modules/
+.git/
+*.log
+*.pyc
+__pycache__/
+.venv/
+venv/
+.env
+.DS_Store
+Thumbs.db
+run_map_app.py
+merge_lotes.py
+*.md

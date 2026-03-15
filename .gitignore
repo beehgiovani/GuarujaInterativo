@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Tooling/IDE
+.vscode/
+.idea/
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# Project Specific - Large/Legacy/Garbage
+_legacy/
+_trash/
+backups/
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*
+service-account.json
+credentials.json
+*.pem
+*.key
+
+# Large data files
+mapa_interativo/lotes_merged.json
+
+# Logs
+*.log

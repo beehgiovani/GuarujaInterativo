@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_86532525445e76c045291409b59f7870 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.fullscreen@3.0.0/Control.FullScreen.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.fullscreen@3.0.0/Control.FullScreen.css"/>
+    <script src="https://cdn.jsdelivr.net/gh/ljagis/leaflet-measure@2.1.7/dist/leaflet-measure.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ljagis/leaflet-measure@2.1.7/dist/leaflet-measure.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.css"/>
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_86532525445e76c045291409b59f7870" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_86532525445e76c045291409b59f7870 = L.map(
+                "map_86532525445e76c045291409b59f7870",
+                {
+                    center: [-23.9934, -46.2567],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 14,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_4b212d460072cb8c076cf3c19f548feb = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_4b212d460072cb8c076cf3c19f548feb.addTo(map_86532525445e76c045291409b59f7870);
+        
+    
+            var tile_layer_d297eb9b4150cb32e40e746fa8e848d7 = L.tileLayer(
+                "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 20,
+  "maxNativeZoom": 20,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"https://carto.com/attributions\"\u003eCARTO\u003c/a\u003e",
+  "subdomains": "abcd",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_d297eb9b4150cb32e40e746fa8e848d7.addTo(map_86532525445e76c045291409b59f7870);
+        
+    
+            var tile_layer_823e18db3be0a0b577adec09ed57e59b = L.tileLayer(
+                "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 20,
+  "maxNativeZoom": 20,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"https://carto.com/attributions\"\u003eCARTO\u003c/a\u003e",
+  "subdomains": "abcd",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_823e18db3be0a0b577adec09ed57e59b.addTo(map_86532525445e76c045291409b59f7870);
+        
+    
+            var tile_layer_b9257bc3b610445d072759e7081deb55 = L.tileLayer(
+                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+                {
+  "minZoom": 0,
+  "maxZoom": 18,
+  "maxNativeZoom": 18,
+  "noWrap": false,
+  "attribution": "Esri",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_b9257bc3b610445d072759e7081deb55.addTo(map_86532525445e76c045291409b59f7870);
+        
+    
+            var feature_group_d0b083f2dc454ed84cef4aa684997be2 = L.featureGroup(
+                {
+}
+            );
+        
+    
+            var polygon_577aee3b18966b1a99b9bb4aecfb3ec0 = L.polygon(
+                [[-23.968660127850335, -46.24603617419916], [-23.968660127850335, -46.24587692177638], [-23.968551556992356, -46.24587692177638], [-23.968551556992356, -46.24603617419916], [-23.968660127850335, -46.24603617419916]],
+                {"bubblingMouseEvents": true, "color": "#1abc9c", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1abc9c", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_d0b083f2dc454ed84cef4aa684997be2);
+        
+    
+        var popup_cc2bd86829aa8224ae2d27a24d7a256b = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_fb7245a4145de8b22c4b0624dd265dd5 = $(`<div id="html_fb7245a4145de8b22c4b0624dd265dd5" style="width: 100.0%; height: 100.0%;">                 <div style="font-family: Arial; font-size: 12px; width: 250px;">                     <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Lote 61145010</h4>                     <table style="width: 100%; border-collapse: collapse;">                         <tr><td><b>Zona:</b></td><td>6</td></tr>                         <tr><td><b>Setor:</b></td><td>1145</td></tr>                         <tr><td><b>Lote:</b></td><td>010</td></tr>                         <tr><td><b>Quadra:</b></td><td>24</td></tr>                         <tr><td><b>Loteamento:</b></td><td>131 - RESIDENCIAL VICTORIA PARK</td></tr>                         <tr><td><b>Bairro:</b></td><td></td></tr>                         <tr><td><b>Cód. Logr.:</b></td><td></td></tr>                         <tr><td><b>Valor M²:</b></td><td>R$ 87,88</td></tr>                         <tr><td colspan="2"><hr></td></tr>                         <tr><td><b>X (Local):</b></td><td>373249.40</td></tr>                         <tr><td><b>Y (Local):</b></td><td>7348803.53</td></tr>                     </table>                 </div>                 </div>`)[0];
+                popup_cc2bd86829aa8224ae2d27a24d7a256b.setContent(html_fb7245a4145de8b22c4b0624dd265dd5);
+            
+        
+
+        polygon_577aee3b18966b1a99b9bb4aecfb3ec0.bindPopup(popup_cc2bd86829aa8224ae2d27a24d7a256b)
+        ;
+
+        
+    
+    
+            polygon_577aee3b18966b1a99b9bb4aecfb3ec0.bindTooltip(
+                `<div>
+                     Lote 61145010 - Zona 6
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var polygon_6bcba88cd52d3284d279813bf96e4b2e = L.polygon(
+                [[-23.96829010472797, -46.24596540092842], [-23.96829010472797, -46.245806273339625], [-23.9681815768351, -46.245806273339625], [-23.9681815768351, -46.24596540092842], [-23.96829010472797, -46.24596540092842]],
+                {"bubblingMouseEvents": true, "color": "#1abc9c", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1abc9c", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_d0b083f2dc454ed84cef4aa684997be2);
+        
+    
+        var popup_92c07c9ce61b6db8b16f748bbb359717 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_95a899184597daeee09dfa619996bace = $(`<div id="html_95a899184597daeee09dfa619996bace" style="width: 100.0%; height: 100.0%;">                 <div style="font-family: Arial; font-size: 12px; width: 250px;">                     <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Lote 61144016</h4>                     <table style="width: 100%; border-collapse: collapse;">                         <tr><td><b>Zona:</b></td><td>6</td></tr>                         <tr><td><b>Setor:</b></td><td>1144</td></tr>                         <tr><td><b>Lote:</b></td><td>016</td></tr>                         <tr><td><b>Quadra:</b></td><td>23</td></tr>                         <tr><td><b>Loteamento:</b></td><td>131 - RESIDENCIAL VICTORIA PARK</td></tr>                         <tr><td><b>Bairro:</b></td><td></td></tr>                         <tr><td><b>Cód. Logr.:</b></td><td></td></tr>                         <tr><td><b>Valor M²:</b></td><td>R$ 87,88</td></tr>                         <tr><td colspan="2"><hr></td></tr>                         <tr><td><b>X (Local):</b></td><td>373256.23</td></tr>                         <tr><td><b>Y (Local):</b></td><td>7348844.57</td></tr>                     </table>                 </div>                 </div>`)[0];
+                popup_92c07c9ce61b6db8b16f748bbb359717.setContent(html_95a899184597daeee09dfa619996bace);
+            
+        
+
+        polygon_6bcba88cd52d3284d279813bf96e4b2e.bindPopup(popup_92c07c9ce61b6db8b16f748bbb359717)
+        ;
+
+        
+    
+    
+            polygon_6bcba88cd52d3284d279813bf96e4b2e.bindTooltip(
+                `<div>
+                     Lote 61144016 - Zona 6
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var polygon_a4253f60472c83db8fc24b4830bf659b = L.polygon(
+                [[-23.968115245490885, -46.24604528077732], [-23.968115245490885, -46.24588615526461], [-23.968006718411846, -46.24588615526461], [-23.968006718411846, -46.24604528077732], [-23.968115245490885, -46.24604528077732]],
+                {"bubblingMouseEvents": true, "color": "#1abc9c", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1abc9c", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_d0b083f2dc454ed84cef4aa684997be2);
+        
+    
+        var popup_a8c5eae028a1888e3ca6181bcd7abf2a = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_e0a2b5abede6bf4370a110efee46a8d8 = $(`<div id="html_e0a2b5abede6bf4370a110efee46a8d8" style="width: 100.0%; height: 100.0%;">                 <div style="font-family: Arial; font-size: 12px; width: 250px;">                     <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Lote 61144013</h4>                     <table style="width: 100%; border-collapse: collapse;">                         <tr><td><b>Zona:</b></td><td>6</td></tr>                         <tr><td><b>Setor:</b></td><td>1144</td></tr>                         <tr><td><b>Lote:</b></td><td>013</td></tr>                         <tr><td><b>Quadra:</b></td><td>23</td></tr>                         <tr><td><b>Loteamento:</b></td><td>131 - RESIDENCIAL VICTORIA PARK</td></tr>                         <tr><td><b>Bairro:</b></td><td></td></tr>                         <tr><td><b>Cód. Logr.:</b></td><td></td></tr>                         <tr><td><b>Valor M²:</b></td><td>R$ 87,88</td></tr>                         <tr><td colspan="2"><hr></td></tr>                         <tr><td><b>X (Local):</b></td><td>373247.94</td></tr>                         <tr><td><b>Y (Local):</b></td><td>7348863.86</td></tr>                     </table>                 </div>                 </div>`)[0];
+                popup_a8c5eae028a1888e3ca6181bcd7abf2a.setContent(html_e0a2b5abede6bf4370a110efee46a8d8);
+            
+        
+
+        polygon_a4253f60472c83db8fc24b4830bf659b.bindPopup(popup_a8c5eae028a1888e3ca6181bcd7abf2a)
+        ;
+
+        
+    
+    
+            polygon_a4253f60472c83db8fc24b4830bf659b.bindTooltip(
+                `<div>
+                     Lote 61144013 - Zona 6
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var polygon_a56c957ac4d9a488e113e6a36282b9b5 = L.polygon(
+                [[-23.967911989408364, -46.24615071994853], [-23.967911989408364, -46.24551813324096], [-23.96757980372398, -46.24551813324096], [-23.96757980372398, -46.24615071994853], [-23.967911989408364, -46.24615071994853]],
+                {"bubblingMouseEvents": true, "color": "#1abc9c", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1abc9c", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_d0b083f2dc454ed84cef4aa684997be2);
+        
+    
+        var popup_e98e7ff9e4b5fa1fb5b5c25d23652df8 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_64812dbc733f72612cc82ced600d8ff4 = $(`<div id="html_64812dbc733f72612cc82ced600d8ff4" style="width: 100.0%; height: 100.0%;">                 <div style="font-family: Arial; font-size: 12px; width: 250px;">                     <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Lote 61134001</h4>                     <table style="width: 100%; border-collapse: collapse;">                         <tr><td><b>Zona:</b></td><td>6</td></tr>                         <tr><td><b>Setor:</b></td><td>1134</td></tr>                         <tr><td><b>Lote:</b></td><td>001</td></tr>                         <tr><td><b>Quadra:</b></td><td></td></tr>                         <tr><td><b>Loteamento:</b></td><td>131 - RESIDENCIAL VICTORIA PARK</td></tr>                         <tr><td><b>Bairro:</b></td><td>AV    RAFHAEL BABUNOVICH</td></tr>                         <tr><td><b>Cód. Logr.:</b></td><td></td></tr>                         <tr><td><b>Valor M²:</b></td><td>R$ 87,88</td></tr>                         <tr><td colspan="2"><hr></td></tr>                         <tr><td><b>X (Local):</b></td><td>373237.01</td></tr>                         <tr><td><b>Y (Local):</b></td><td>7348886.27</td></tr>                     </table>                 </div>                 </div>`)[0];
+                popup_e98e7ff9e4b5fa1fb5b5c25d23652df8.setContent(html_64812dbc733f72612cc82ced600d8ff4);
+            
+        
+
+        polygon_a56c957ac4d9a488e113e6a36282b9b5.bindPopup(popup_e98e7ff9e4b5fa1fb5b5c25d23652df8)
+        ;
+
+        
+    
+    
+            polygon_a56c957ac4d9a488e113e6a36282b9b5.bindTooltip(
+                `<div>
+                     Lote 61134001 - Zona 6
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var polygon_7473429f9a6687f8d2b34c975626b3aa = L.polygon(
+                [[-23.968589112514895, -46.24567425218301], [-23.968589112514895, -46.245514988565176], [-23.968480562639865, -46.245514988565176], [-23.968480562639865, -46.24567425218301], [-23.968589112514895, -46.24567425218301]],
+                {"bubblingMouseEvents": true, "color": "#1abc9c", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1abc9c", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_d0b083f2dc454ed84cef4aa684997be2);
+        
+    
+        var popup_51fedf06a6687ea4d9934ff805ac3b6b = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_85a01ed6bf79bafd4dd8f21995e98f37 = $(`<div id="html_85a01ed6bf79bafd4dd8f21995e98f37" style="width: 100.0%; height: 100.0%;">                 <div style="font-family: Arial; font-size: 12px; width: 250px;">                     <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Lote 61144011</h4>                     <table style="width: 100%; border-collapse: collapse;">                         <tr><td><b>Zona:</b></td><td>6</td></tr>                         <tr><td><b>Setor:</b></td><td>1144</td></tr>                         <tr><td><b>Lote:</b></td><td>011</td></tr>                         <tr><td><b>Quadra:</b></td><td>23</td></tr>                         <tr><td><b>Loteamento:</b></td><td>131 - RESIDENCIAL VICTORIA PARK</td></tr>                         <tr><td><b>Bairro:</b></td><td></td></tr>                         <tr><td><b>Cód. Logr.:</b></td><td></td></tr>                         <tr><td><b>Valor M²:</b></td><td>R$ 87,88</td></tr>                         <tr><td colspan="2"><hr></td></tr>                         <tr><td><b>X (Local):</b></td><td>373286.15</td></tr>                         <tr><td><b>Y (Local):</b></td><td>7348811.72</td></tr>                     </table>                 </div>                 </div>`)[0];
+                popup_51fedf06a6687ea4d9934ff805ac3b6b.setContent(html_85a01ed6bf79bafd4dd8f21995e98f37);
+            
+        
+
+        polygon_7473429f9a6687f8d2b34c975626b3aa.bindPopup(popup_51fedf06a6687ea4d9934ff805ac3b6b)
+        ;
+
+        
+    
+    
+            polygon_7473429f9a6687f8d2b34c975626b3aa.bindTooltip(
+                `<div>
+                     Lote 61144011 - Zona 6
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var polygon_665ae4bee72cc821a0e68e1ca198e780 = L.polygon(
+                [[-23.96835597252829, -46.24578076195501], [-23.96835597252829, -46.24562154578372], [-23.96824743648471, -46.24562154578372], [-23.96824743648471, -46.24578076195501], [-23.96835597252829, -46.24578076195501]],
+                {"bubblingMouseEvents": true, "color": "#1abc9c", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1abc9c", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_d0b083f2dc454ed84cef4aa684997be2);
+        
+    
+        var popup_379e493de4df60b6ca2cc24ad18d060f = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_f7e2b1b83f529bf31b0f5d8196b933e2 = $(`<div id="html_f7e2b1b83f529bf31b0f5d8196b933e2" style="width: 100.0%; height: 100.0%;">                 <div style="font-family: Arial; font-size: 12px; width: 250px;">                     <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Lote 61144007</h4>                     <table style="width: 100%; border-collapse: collapse;">                         <tr><td><b>Zona:</b></td><td>6</td></tr>                         <tr><td><b>Setor:</b></td><td>1144</td></tr>                         <tr><td><b>Lote:</b></td><td>007</td></tr>                         <tr><td><b>Quadra:</b></td><td>23</td></tr>                         <tr><td><b>Loteamento:</b></td><td>131 - RESIDENCIAL VICTORIA PARK</td></tr>                         <tr><td><b>Bairro:</b></td><td></td></tr>                         <tr><td><b>Cód. Logr.:</b></td><td></td></tr>                         <tr><td><b>Valor M²:</b></td><td>R$ 87,88</td></tr>                         <tr><td colspan="2"><hr></td></tr>                         <tr><td><b>X (Local):</b></td><td>373275.09</td></tr>                         <tr><td><b>Y (Local):</b></td><td>7348837.44</td></tr>                     </table>                 </div>                 </div>`)[0];
+                popup_379e493de4df60b6ca2cc24ad18d060f.setContent(html_f7e2b1b83f529bf31b0f5d8196b933e2);
+            
+        
+
+        polygon_665ae4bee72cc821a0e68e1ca198e780.bindPopup(popup_379e493de4df60b6ca2cc24ad18d060f)
+        ;
+
+        
+    
+    
+            polygon_665ae4bee72cc821a0e68e1ca198e780.bindTooltip(
+                `<div>
+                     Lote 61144007 - Zona 6
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var polygon_4e24e265fcadff523c723519c68d08a4 = L.polygon(
+                [[-23.968102525386936, -46.245656702354296], [-23.968102525386936, -46.24549760121317], [-23.96799401205661, -46.24549760121317], [-23.96799401205661, -46.245656702354296], [-23.968102525386936, -46.245656702354296]],
+                {"bubblingMouseEvents": true, "color": "#1abc9c", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1abc9c", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_d0b083f2dc454ed84cef4aa684997be2);
+        
+    
+        var popup_c15f36d96bd9bcc607dd890453e358ac = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_608d8d7ad9ed025ee29e9cbfee7cd258 = $(`<div id="html_608d8d7ad9ed025ee29e9cbfee7cd258" style="width: 100.0%; height: 100.0%;">                 <div style="font-family: Arial; font-size: 12px; width: 250px;">                     <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Lote 61143015</h4>                     <table style="width: 100%; border-collapse: collapse;">                         <tr><td><b>Zona:</b></td><td>6</td></tr>                         <tr><td><b>Setor:</b></td><td>1143</td></tr>                         <tr><td><b>Lote:</b></td><td>015</td></tr>                         <tr><td><b>Quadra:</b></td><td>22</td></tr>                         <tr><td><b>Loteamento:</b></td><td>131 - RESIDENCIAL VICTORIA PARK</td></tr>                         <tr><td><b>Bairro:</b></td><td></td></tr>                         <tr><td><b>Cód. Logr.:</b></td><td></td></tr>                         <tr><td><b>Valor M²:</b></td><td>R$ 87,88</td></tr>                         <tr><td colspan="2"><hr></td></tr>                         <tr><td><b>X (Local):</b></td><td>373287.46</td></tr>                         <tr><td><b>Y (Local):</b></td><td>7348865.62</td></tr>                     </table>                 </div>                 </div>`)[0];
+                popup_c15f36d96bd9bcc607dd890453e358ac.setContent(html_608d8d7ad9ed025ee29e9cbfee7cd258);
+            
+        
+
+        polygon_4e24e265fcadff523c723519c68d08a4.bindPopup(popup_c15f36d96bd9bcc607dd890453e358ac)
+        ;
+
+        
+    
+    
+            polygon_4e24e265fcadff523c723519c68d08a4.bindTooltip(
+                `<div>
+                     Lote 61143015 - Zona 6
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var polygon_8b2e069f507ef91024a2405f7c80b859 = L.polygon(
+                [[-23.9675519606608, -46.24575677031327], [-23.9675519606608, -46.24560600703605], [-23.967435064743306, -46.24560600703605], [-23.967435064743306, -46.24575677031327], [-23.9675519606608, -46.24575677031327]],
+                {"bubblingMouseEvents": true, "color": "#1abc9c", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1abc9c", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_d0b083f2dc454ed84cef4aa684997be2);
+        
+    
+        var popup_79e4f07db4bfefa3a64e74d38a5c8ffb = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_95dee53f87e712a9d3e64503aec10b2e = $(`<div id="html_95dee53f87e712a9d3e64503aec10b2e" style="width: 100.0%; height: 100.0%;">                 <div style="font-family: Arial; font-size: 12px; width: 250px;">                     <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Lote 61120020</h4>                     <table style="width: 100%; border-collapse: collapse;">                         <tr><td><b>Zona:</b></td><td>6</td></tr>                         <tr><td><b>Setor:</b></td><td>1120</td></tr>                         <tr><td><b>Lote:</b></td><td>020</td></tr>                         <tr><td><b>Quadra:</b></td><td>09</td></tr>                         <tr><td><b>Loteamento:</b></td><td>131 - RESIDENCIAL VICTORIA PARK</td></tr>                         <tr><td><b>Bairro:</b></td><td></td></tr>                         <tr><td><b>Cód. Logr.:</b></td><td></td></tr>                         <tr><td><b>Valor M²:</b></td><td>R$ 87,88</td></tr>                         <tr><td colspan="2"><hr></td></tr>                         <tr><td><b>X (Local):</b></td><td>373276.74</td></tr>                         <tr><td><b>Y (Local):</b></td><td>7348926.49</td></tr>                     </table>                 </div>                 </div>`)[0];
+                popup_79e4f07db4bfefa3a64e74d38a5c8ffb.setContent(html_95dee53f87e712a9d3e64503aec10b2e);
+            
+        
+
+        polygon_8b2e069f507ef91024a2405f7c80b859.bindPopup(popup_79e4f07db4bfefa3a64e74d38a5c8ffb)
+        ;
+
+        
+    
+    
+            polygon_8b2e069f507ef91024a2405f7c80b859.bindTooltip(
+                `<div>
+                     Lote 61120020 - Zona 6
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var polygon_5c4524bb9e517887a21e44839831ea12 = L.polygon(
+                [[-23.96859359604314, -46.24543219692593], [-23.96859359604314, -46.24527317069751], [-23.968485127588842, -46.24527317069751], [-23.968485127588842, -46.24543219692593], [-23.96859359604314, -46.24543219692593]],
+                {"bubblingMouseEvents": true, "color": "#1abc9c", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1abc9c", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_d0b083f2dc454ed84cef4aa684997be2);
+        
+    
+        var popup_e432c1b44db9d88fd2675cb59b32893c = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_d86175e19ad6177a3dc6fe684c365ec7 = $(`<div id="html_d86175e19ad6177a3dc6fe684c365ec7" style="width: 100.0%; height: 100.0%;">                 <div style="font-family: Arial; font-size: 12px; width: 250px;">                     <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Lote 61164012</h4>                     <table style="width: 100%; border-collapse: collapse;">                         <tr><td><b>Zona:</b></td><td>6</td></tr>                         <tr><td><b>Setor:</b></td><td>1164</td></tr>                         <tr><td><b>Lote:</b></td><td>012</td></tr>                         <tr><td><b>Quadra:</b></td><td>34</td></tr>                         <tr><td><b>Loteamento:</b></td><td>131 - RESIDENCIAL VICTORIA PARK</td></tr>                         <tr><td><b>Bairro:</b></td><td></td></tr>                         <tr><td><b>Cód. Logr.:</b></td><td></td></tr>                         <tr><td><b>Valor M²:</b></td><td>R$ 87,88</td></tr>                         <tr><td colspan="2"><hr></td></tr>                         <tr><td><b>X (Local):</b></td><td>373310.79</td></tr>                         <tr><td><b>Y (Local):</b></td><td>7348811.44</td></tr>                     </table>                 </div>                 </div>`)[0];
+                popup_e432c1b44db9d88fd2675cb59b32893c.setContent(html_d86175e19ad6177a3dc6fe684c365ec7);
+            
+        
+
+        polygon_5c4524bb9e517887a21e44839831ea12.bindPopup(popup_e432c1b44db9d88fd2675cb59b32893c)
+        ;
+
+        
+    
+    
+            polygon_5c4524bb9e517887a21e44839831ea12.bindTooltip(
+                `<div>
+                     Lote 61164012 - Zona 6
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var polygon_7b30a47df1ab810048b6fdd0b5c86cdb = L.polygon(
+                [[-23.9683432594828, -46.2453921347437], [-23.9683432594828, -46.24523297411764], [-23.968234722974838, -46.24523297411764], [-23.968234722974838, -46.2453921347437], [-23.9683432594828, -46.2453921347437]],
+                {"bubblingMouseEvents": true, "color": "#1abc9c", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1abc9c", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_d0b083f2dc454ed84cef4aa684997be2);
+        
+    
+        var popup_d72242c7dff80679839d56498255ed1d = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_c695f1216b0e9d0d81ed9f487d2af9cf = $(`<div id="html_c695f1216b0e9d0d81ed9f487d2af9cf" style="width: 100.0%; height: 100.0%;">                 <div style="font-family: Arial; font-size: 12px; width: 250px;">                     <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Lote 61143009</h4>                     <table style="width: 100%; border-collapse: collapse;">                         <tr><td><b>Zona:</b></td><td>6</td></tr>                         <tr><td><b>Setor:</b></td><td>1143</td></tr>                         <tr><td><b>Lote:</b></td><td>009</td></tr>                         <tr><td><b>Quadra:</b></td><td>22</td></tr>                         <tr><td><b>Loteamento:</b></td><td>131 - RESIDENCIAL VICTORIA PARK</td></tr>                         <tr><td><b>Bairro:</b></td><td></td></tr>                         <tr><td><b>Cód. Logr.:</b></td><td></td></tr>                         <tr><td><b>Valor M²:</b></td><td>R$ 87,88</td></tr>                         <tr><td colspan="2"><hr></td></tr>                         <tr><td><b>X (Local):</b></td><td>373314.62</td></tr>                         <tr><td><b>Y (Local):</b></td><td>7348839.20</td></tr>                     </table>                 </div>                 </div>`)[0];
+                popup_d72242c7dff80679839d56498255ed1d.setContent(html_c695f1216b0e9d0d81ed9f487d2af9cf);
+            
+        
+
+        polygon_7b30a47df1ab810048b6fdd0b5c86cdb.bindPopup(popup_d72242c7dff80679839d56498255ed1d)
+        ;
+
+        
+    
+    
+            polygon_7b30a47df1ab810048b6fdd0b5c86cdb.bindTooltip(
+                `<div>
+                     Lote 61143009 - Zona 6
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var polygon_64750d93454fa5e5ba0a457daa061ada = L.polygon(
+                [[-23.968110143062557, -46.24549871712302], [-23.968110143062557, -46.24533953167263], [-23.96800159699565, -46.24533953167263], [-23.96800159699565, -46.24549871712302], [-23.968110143062557, -46.24549871712302]],
+                {"bubblingMouseEvents": true, "color": "#1abc9c", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1abc9c", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_d0b083f2dc454ed84cef4aa684997be2);
+        
+    
+        var popup_928b1b99b4c4400951dd5a9663dbe84d = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_395c78bfd8879a2808383b9e018141ca = $(`<div id="html_395c78bfd8879a2808383b9e018141ca" style="width: 100.0%; height: 100.0%;">                 <div style="font-family: Arial; font-size: 12px; width: 250px;">                     <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Lote 61143005</h4>                     <table style="width: 100%; border-collapse: collapse;">                         <tr><td><b>Zona:</b></td><td>6</td></tr>                         <tr><td><b>Setor:</b></td><td>1143</td></tr>                         <tr><td><b>Lote:</b></td><td>005</td></tr>                         <tr><td><b>Quadra:</b></td><td>22</td></tr>                         <tr><td><b>Loteamento:</b></td><td>131 - RESIDENCIAL VICTORIA PARK</td></tr>                         <tr><td><b>Bairro:</b></td><td></td></tr>                         <tr><td><b>Cód. Logr.:</b></td><td></td></tr>                         <tr><td><b>Valor M²:</b></td><td>R$ 87,88</td></tr>                         <tr><td colspan="2"><hr></td></tr>                         <tr><td><b>X (Local):</b></td><td>373303.55</td></tr>                         <tr><td><b>Y (Local):</b></td><td>7348864.92</td></tr>                     </table>                 </div>                 </div>`)[0];
+                popup_928b1b99b4c4400951dd5a9663dbe84d.setContent(html_395c78bfd8879a2808383b9e018141ca);
+            
+        
+
+        polygon_64750d93454fa5e5ba0a457daa061ada.bindPopup(popup_928b1b99b4c4400951dd5a9663dbe84d)
+        ;
+
+        
+    
+    
+            polygon_64750d93454fa5e5ba0a457daa061ada.bindTooltip(
+                `<div>
+                     Lote 61143005 - Zona 6
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var polygon_54ff6b97df85db8964ed5ed1162b6c86 = L.polygon(
+                [[-23.967798473068818, -46.24539286871483], [-23.967798473068818, -46.245242112094914], [-23.96768158206237, -46.245242112094914], [-23.96768158206237, -46.24539286871483], [-23.967798473068818, -46.24539286871483]],
+                {"bubblingMouseEvents": true, "color": "#1abc9c", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1abc9c", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_d0b083f2dc454ed84cef4aa684997be2);
+        
+    
+        var popup_3746f328ce46280da41b00e928691dd5 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_a643c41ba59b16e6abdc8c645fbe2b6f = $(`<div id="html_a643c41ba59b16e6abdc8c645fbe2b6f" style="width: 100.0%; height: 100.0%;">                 <div style="font-family: Arial; font-size: 12px; width: 250px;">                     <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Lote 61142012</h4>                     <table style="width: 100%; border-collapse: collapse;">                         <tr><td><b>Zona:</b></td><td>6</td></tr>                         <tr><td><b>Setor:</b></td><td>1142</td></tr>                         <tr><td><b>Lote:</b></td><td>012</td></tr>                         <tr><td><b>Quadra:</b></td><td>21</td></tr>                         <tr><td><b>Loteamento:</b></td><td>131 - RESIDENCIAL VICTORIA PARK</td></tr>                         <tr><td><b>Bairro:</b></td><td></td></tr>                         <tr><td><b>Cód. Logr.:</b></td><td></td></tr>                         <tr><td><b>Valor M²:</b></td><td>R$ 87,88</td></tr>                         <tr><td colspan="2"><hr></td></tr>                         <tr><td><b>X (Local):</b></td><td>373314.01</td></tr>                         <tr><td><b>Y (Local):</b></td><td>7348899.53</td></tr>                     </table>                 </div>                 </div>`)[0];
+                popup_3746f328ce46280da41b00e928691dd5.setContent(html_a643c41ba59b16e6abdc8c645fbe2b6f);
+            
+        
+
+        polygon_54ff6b97df85db8964ed5ed1162b6c86.bindPopup(popup_3746f328ce46280da41b00e928691dd5)
+        ;
+
+        
+    
+    
+            polygon_54ff6b97df85db8964ed5ed1162b6c86.bindTooltip(
+                `<div>
+                     Lote 61142012 - Zona 6
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var polygon_96d661a7a253366569aa38c3f3023933 = L.polygon(
+                [[-23.967653437941546, -46.24548013574021], [-23.967653437941546, -46.24484755191155], [-23.9673212493585, -46.24484755191155], [-23.9673212493585, -46.24548013574021], [-23.967653437941546, -46.24548013574021]],
+                {"bubblingMouseEvents": true, "color": "#1abc9c", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1abc9c", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_d0b083f2dc454ed84cef4aa684997be2);
+        
+    
+        var popup_8e34f139132b8a9f61e272878eddfd96 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_dd42388d1c620e35c32ef01541de3c8a = $(`<div id="html_dd42388d1c620e35c32ef01541de3c8a" style="width: 100.0%; height: 100.0%;">                 <div style="font-family: Arial; font-size: 12px; width: 250px;">                     <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Lote 61133001</h4>                     <table style="width: 100%; border-collapse: collapse;">                         <tr><td><b>Zona:</b></td><td>6</td></tr>                         <tr><td><b>Setor:</b></td><td>1133</td></tr>                         <tr><td><b>Lote:</b></td><td>001</td></tr>                         <tr><td><b>Quadra:</b></td><td></td></tr>                         <tr><td><b>Loteamento:</b></td><td>131 - RESIDENCIAL VICTORIA PARK</td></tr>                         <tr><td><b>Bairro:</b></td><td>AV    RAFHAEL BABUNOVICH</td></tr>                         <tr><td><b>Cód. Logr.:</b></td><td></td></tr>                         <tr><td><b>Valor M²:</b></td><td>R$ 87,88</td></tr>                         <tr><td colspan="2"><hr></td></tr>                         <tr><td><b>X (Local):</b></td><td>373304.99</td></tr>                         <tr><td><b>Y (Local):</b></td><td>7348915.51</td></tr>                     </table>                 </div>                 </div>`)[0];
+                popup_8e34f139132b8a9f61e272878eddfd96.setContent(html_dd42388d1c620e35c32ef01541de3c8a);
+            
+        
+
+        polygon_96d661a7a253366569aa38c3f3023933.bindPopup(popup_8e34f139132b8a9f61e272878eddfd96)
+        ;
+
+        
+    
+    
+            polygon_96d661a7a253366569aa38c3f3023933.bindTooltip(
+                `<div>
+                     Lote 61133001 - Zona 6
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var polygon_9922596826c3670bef6f5c71a0445b77 = L.polygon(
+                [[-23.968322937883464, -46.24516157337375], [-23.968322937883464, -46.24500247094487], [-23.96821442349762, -46.24500247094487], [-23.96821442349762, -46.24516157337375], [-23.968322937883464, -46.24516157337375]],
+                {"bubblingMouseEvents": true, "color": "#1abc9c", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1abc9c", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_d0b083f2dc454ed84cef4aa684997be2);
+        
+    
+        var popup_5b81975c4feeb9d0bbda414dc166df42 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_ca52b595a208dd80f6379c27379450c3 = $(`<div id="html_ca52b595a208dd80f6379c27379450c3" style="width: 100.0%; height: 100.0%;">                 <div style="font-family: Arial; font-size: 12px; width: 250px;">                     <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Lote 61142021</h4>                     <table style="width: 100%; border-collapse: collapse;">                         <tr><td><b>Zona:</b></td><td>6</td></tr>                         <tr><td><b>Setor:</b></td><td>1142</td></tr>                         <tr><td><b>Lote:</b></td><td>021</td></tr>                         <tr><td><b>Quadra:</b></td><td>21</td></tr>                         <tr><td><b>Loteamento:</b></td><td>131 - RESIDENCIAL VICTORIA PARK</td></tr>                         <tr><td><b>Bairro:</b></td><td></td></tr>                         <tr><td><b>Cód. Logr.:</b></td><td></td></tr>                         <tr><td><b>Valor M²:</b></td><td>R$ 87,88</td></tr>                         <tr><td colspan="2"><hr></td></tr>                         <tr><td><b>X (Local):</b></td><td>373338.06</td></tr>                         <tr><td><b>Y (Local):</b></td><td>7348841.66</td></tr>                     </table>                 </div>                 </div>`)[0];
+                popup_5b81975c4feeb9d0bbda414dc166df42.setContent(html_ca52b595a208dd80f6379c27379450c3);
+            
+        
+
+        polygon_9922596826c3670bef6f5c71a0445b77.bindPopup(popup_5b81975c4feeb9d0bbda414dc166df42)
+        ;
+
+        
+    
+    
+            polygon_9922596826c3670bef6f5c71a0445b77.bindTooltip(
+                `<div>
+                     Lote 61142021 - Zona 6
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var polygon_0bf595e42415ac7487382fda969d7533 = L.polygon(
+                [[-23.968039154919467, -46.24513680389369], [-23.968039154919467, -46.24497760024501], [-23.967930601294988, -46.24497760024501], [-23.967930601294988, -46.24513680389369], [-23.968039154919467, -46.24513680389369]],
+                {"bubblingMouseEvents": true, "color": "#1abc9c", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#1abc9c", "fillOpacity": 0.3, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "noClip": false, "opacity": 1.0, "smoothFactor": 1.0, "stroke": true, "weight": 2}
+            ).addTo(feature_group_d0b083f2dc454ed84cef4aa684997be2);
+        
+    
+        var popup_2e279b304049f0f41cee720556746674 = L.popup({
+  "maxWidth": 300,
+});
+
+        
+            
+                var html_1a7de49b93bf64d0bce9ce540001411d = $(`<div id="html_1a7de49b93bf64d0bce9ce540001411d" style="width: 100.0%; height: 100.0%;">                 <div style="font-family: Arial; font-size: 12px; width: 250px;">                     <h4 style="margin: 0 0 10px 0; color: #2c3e50;">Lote 61142006</h4>                     <table style="width: 100%; border-collapse: collapse;">                         <tr><td><b>Zona:</b></td><td>6</td></tr>                         <tr><td><b>Setor:</b></td><td>1142</td></tr>                         <tr><td><b>Lote:</b></td><td>006</td></tr>                         <tr><td><b>Quadra:</b></td><td>21</td></tr>                         <tr><td><b>Loteamento:</b></td><td>131 - RESIDENCIAL VICTORIA PARK</td></tr>                         <tr><td><b>Bairro:</b></td><td></td></tr>                         <tr><td><b>Cód. Logr.:</b></td><td></td></tr>                         <tr><td><b>Valor M²:</b></td><td>R$ 87,88</td></tr>                         <tr><td colspan="2"><hr></td></tr>                         <tr><td><b>X (Local):</b></td><td>373340.30</td></tr>                         <tr><td><b>Y (Local):</b></td><td>7348873.10</td></tr>                     </table>                 </div>                 </div>`)[0];
+                popup_2e279b304049f0f41cee720556746674.setContent(html_1a7de49b93bf64d0bce9ce540001411d);
+            
+        
+
+        polygon_0bf595e42415ac7487382fda969d7533.bindPopup(popup_2e279b304049f0f41cee720556746674)
+        ;
+
+        
+    
+    
+            polygon_0bf595e42415ac7487382fda969d7533.bindTooltip(
+                `<div>
+                     Lote 61142006 - Zona 6
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            feature_group_d0b083f2dc454ed84cef4aa684997be2.addTo(map_86532525445e76c045291409b59f7870);
+        
+    
+            var layer_control_cb189a68de0796c8c48d5e54e1418646_layers = {
+                base_layers : {
+                    "OpenStreetMap" : tile_layer_4b212d460072cb8c076cf3c19f548feb,
+                    "CartoDB Claro" : tile_layer_d297eb9b4150cb32e40e746fa8e848d7,
+                    "CartoDB Escuro" : tile_layer_823e18db3be0a0b577adec09ed57e59b,
+                    "Sat\u00e9lite (Esri)" : tile_layer_b9257bc3b610445d072759e7081deb55,
+                },
+                overlays :  {
+                    "Lotes" : feature_group_d0b083f2dc454ed84cef4aa684997be2,
+                },
+            };
+            let layer_control_cb189a68de0796c8c48d5e54e1418646 = L.control.layers(
+                layer_control_cb189a68de0796c8c48d5e54e1418646_layers.base_layers,
+                layer_control_cb189a68de0796c8c48d5e54e1418646_layers.overlays,
+                {
+  "position": "topright",
+  "collapsed": true,
+  "autoZIndex": true,
+}
+            ).addTo(map_86532525445e76c045291409b59f7870);
+
+        
+    
+            L.control.fullscreen(
+                {
+  "position": "topleft",
+  "title": "Full Screen",
+  "titleCancel": "Exit Full Screen",
+  "forceSeparateButton": false,
+}
+            ).addTo(map_86532525445e76c045291409b59f7870);
+        
+    
+            var measure_control_cfb94119cd05949264fae90b43aeec55 = new L.Control.Measure(
+                {
+  "position": "topleft",
+  "primaryLengthUnit": "meters",
+  "secondaryLengthUnit": "miles",
+  "primaryAreaUnit": "sqmeters",
+  "secondaryAreaUnit": "acres",
+});
+            map_86532525445e76c045291409b59f7870.addControl(measure_control_cfb94119cd05949264fae90b43aeec55);
+
+            // Workaround for using this plugin with Leaflet>=1.8.0
+            // https://github.com/ljagis/leaflet-measure/issues/171
+            L.Control.Measure.include({
+                _setCaptureMarkerIcon: function () {
+                    // disable autopan
+                    this._captureMarker.options.autoPanOnFocus = false;
+                    // default function
+                    this._captureMarker.setIcon(
+                        L.divIcon({
+                            iconSize: this._map.getSize().multiplyBy(2)
+                        })
+                    );
+                },
+            });
+
+        
+    
+            var tile_layer_5b1f6528ddf35dc3d87b5997d386eadf = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {"attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors", "detect_retina": false, "max_native_zoom": 19, "max_zoom": 19, "min_zoom": 0, "no_wrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+            );
+            var mini_map_52d0db42919d7d6aa2820d81d901f597 = new L.Control.MiniMap(
+                tile_layer_5b1f6528ddf35dc3d87b5997d386eadf,
+                {
+  "position": "bottomright",
+  "width": 150,
+  "height": 150,
+  "collapsedWidth": 25,
+  "collapsedHeight": 25,
+  "zoomLevelOffset": -5,
+  "centerFixed": false,
+  "zoomAnimation": false,
+  "toggleDisplay": true,
+  "autoToggleDisplay": false,
+  "minimized": false,
+}
+            );
+            map_86532525445e76c045291409b59f7870.addControl(mini_map_52d0db42919d7d6aa2820d81d901f597);
+        
+    
+            map_86532525445e76c045291409b59f7870.fitBounds(
+                [[-23.968660127850335, -46.24603617419916], [-23.968551556992356, -46.24587692177638], [-23.96829010472797, -46.24596540092842], [-23.9681815768351, -46.245806273339625], [-23.968115245490885, -46.24604528077732], [-23.968006718411846, -46.24588615526461], [-23.967911989408364, -46.24615071994853], [-23.96757980372398, -46.24551813324096], [-23.968589112514895, -46.24567425218301], [-23.968480562639865, -46.245514988565176], [-23.96835597252829, -46.24578076195501], [-23.96824743648471, -46.24562154578372], [-23.968102525386936, -46.245656702354296], [-23.96799401205661, -46.24549760121317], [-23.9675519606608, -46.24575677031327], [-23.967435064743306, -46.24560600703605], [-23.96859359604314, -46.24543219692593], [-23.968485127588842, -46.24527317069751], [-23.9683432594828, -46.2453921347437], [-23.968234722974838, -46.24523297411764], [-23.968110143062557, -46.24549871712302], [-23.96800159699565, -46.24533953167263], [-23.967798473068818, -46.24539286871483], [-23.96768158206237, -46.245242112094914], [-23.967653437941546, -46.24548013574021], [-23.9673212493585, -46.24484755191155], [-23.968322937883464, -46.24516157337375], [-23.96821442349762, -46.24500247094487], [-23.968039154919467, -46.24513680389369], [-23.967930601294988, -46.24497760024501]],
+                {}
+            );
+        
+</script>
+</html>

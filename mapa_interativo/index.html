@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Guarugeo - Inteligência Imobiliária</title>
+
+    <!-- Maps Engine Selection (Migration) -->
+    <!-- Turf.js (Geospatial Analysis) -->
+    <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Custom Module CSS (Restored & Modular) -->
+    <link rel="stylesheet" href="layout.css">
+    <link rel="stylesheet" href="sidebar_styles.css">
+    <link rel="stylesheet" href="map_styles.css">
+    <link rel="stylesheet" href="overlays_styles.css">
+    <link rel="stylesheet" href="neighborhood_styles.css">
+    <link rel="stylesheet" href="editor_styles.css">
+    <link rel="stylesheet" href="premium_styles.css">
+    <link rel="stylesheet" href="analytics_styles.css">
+    <link rel="stylesheet" href="carousel_styles.css">
+    <link rel="stylesheet" href="modal_styles.css">
+    <link rel="stylesheet" href="toast_styles.css">
+    <link rel="stylesheet" href="crm_styles.css">
+    <link rel="stylesheet" href="ai_chat_styles.css">
+    <link rel="stylesheet" href="mobile_styles.css">
+    <link rel="stylesheet" href="image_viewer.css">
+
+    <!-- Intro.js (User Onboarding) -->
+    <link rel="stylesheet" href="introjs.min.css">
+    <link rel="stylesheet" href="onboarding_styles.css">
+
+    <!-- PWA Manifest & Meta -->
+    <link rel="manifest" href="manifest.json">
+    <!-- Apple Touch Icon (iOS PWA) -->
+    <link rel="apple-touch-icon" href="logo.png">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registered! Scope:', reg.scope))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <!-- Login Overlay -->
+    <div id="loginOverlay">
+        <div class="login-box">
+            <img src="logo.png" alt="Omega Imóveis" style="max-width: 180px; margin-bottom: 16px;">
+            <h2>Acesso Restrito</h2>
+            <p style="color: #64748b; font-size: 13px; margin-bottom: 20px;">Guarujá GeoMap Intelligence</p>
+            <form onsubmit="event.preventDefault();">
+                <!-- Campo Nome (só no cadastro) -->
+                <div id="loginNameField" style="display: none; margin-bottom: 10px;">
+                    <input type="text" id="loginName" placeholder="Seu Nome Completo" title="Seu nome completo" aria-label="Nome completo">
+                </div>
+                <!-- E-mail -->
+                <input type="email" id="loginUser" placeholder="E-mail" autocomplete="email" title="Seu endereço de e-mail" aria-label="E-mail" style="margin-bottom: 10px;">
+                <!-- Senha (oculta no modo "esqueci") -->
+                <div id="loginPassField">
+                    <input type="password" id="loginPass" placeholder="Senha" autocomplete="current-password" title="Sua senha de acesso" aria-label="Senha" style="margin-bottom: 5px; width: 100%;">
+                    <!-- Link Esqueci a Senha -->
+                    <div id="forgotPasswordLink" style="text-align: right; margin-bottom: 15px;">
+                        <span onclick="window.Auth.toggleAuthMode('forgot')" 
+                              style="font-size: 12px; color: #3b82f6; cursor: pointer; font-weight: 600;">
+                            Esqueci minha senha
+                        </span>
+                    </div>
+                </div>
+                <!-- Botão Principal -->
+                <button id="btnLogin" type="button">Entrar</button>
+            </form>
+
+            <!-- Link Reenviar Confirmação (só no cadastro) -->
+            <div id="resendConfirmationLink" style="display: none; margin-top: 12px; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: #64748b;">
+                <i class="fas fa-envelope"></i> Não recebeu o e-mail?
+                <span onclick="window.Auth.resendConfirmation(document.getElementById('loginUser').value)"
+                      style="color: #3b82f6; font-weight: 700; cursor: pointer;">
+                    Reenviar confirmação
+                </span>
+            </div>
+
+            <!-- Link de Alternância Login/Cadastro -->
+            <p id="toggleAuthLink" style="margin-top: 15px; font-size: 13px; cursor: pointer; color: #3b82f6;" onclick="window.Auth.toggleAuthMode('signup')">
+                Não tem conta? <b>Solicitar Acesso</b>
+            </p>
+
+            <!-- Mensagem de erro/sucesso -->
+            <p id="loginError" style="color: #ef4444; display: none; margin-top: 12px; font-size: 12px; border-radius: 8px;"></p>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-text">Carregando Dados...</div>
+            <div class="loading-subtext">Processando lotes e geometrias</div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Download Apps Modal -->
+    <div id="downloadModal" class="custom-modal-overlay" style="z-index: 20000;">
+        <div class="custom-modal" style="max-width: 500px; text-align: center;">
+            <div class="custom-modal-header">
+                <div class="custom-modal-title">📱 Baixe o Guarujá GeoMap</div>
+                <button type="button" class="custom-modal-close" aria-label="Fechar"
+                    onclick="document.getElementById('downloadModal').classList.remove('active')">&times;</button>
+            </div>
+            <div class="custom-modal-body" style="padding: 24px;">
+                <p style="color: #64748b; margin-bottom: 24px; font-size: 13px;">
+                    Tenha o poder da inteligência imobiliária diretamente no seu dispositivo. Escolha a melhor opção para você:
+                </p>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <!-- Option 1: PWA (Recommended) -->
+                    <div id="pwa-install-container" style="grid-column: span 2; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px; margin-bottom: 8px; text-align: left;">
+                        <div style="display: flex; align-items: flex-start; gap: 12px;">
+                            <div style="background: #2563eb; color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fas fa-cloud-download-alt"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight: 800; color: #1e3a8a; font-size: 14px;">Instalar como Aplicativo (PWA)</div>
+                                <div style="font-size: 11px; color: #60a5fa; margin-bottom: 10px;">Recomendado para iPhone e Android</div>
+                                
+                                <button id="btn-pwa-install" class="btn-primary-rich" style="padding: 8px 16px; font-size: 12px; background: #2563eb; display: none;">
+                                    Instalar Agora
+                                </button>
+                                
+                                <div id="pwa-ios-instructions" style="display: none; font-size: 11px; color: #1e3a8a; line-height: 1.4;">
+                                    Clique no ícone de <i class="fas fa-share-square"></i> <b>Compartilhar</b> e selecione <b>"Adicionar à Tela de Início"</b>.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Option 2: Windows -->
+                    <a href="downloads/Installer_Windows.zip" download class="dashboard-btn"
+                        style="flex-direction: column; padding: 16px; font-size: 12px; height: auto; text-decoration: none; background: white; border: 1px solid #e2e8f0; color: #334155;">
+                        <i class="fab fa-windows" style="font-size: 24px; margin-bottom: 8px; color: #00a4ef;"></i>
+                        <span style="display: block; font-weight: 700;">Windows PC</span>
+                        <small style="opacity: 0.7; font-size: 10px;">Instalador .zip</small>
+                    </a>
+
+                    <!-- Option 3: Android APK -->
+                    <button type="button"
+                        onclick="window.open('https://wa.me/5513997099494?text=Olá, gostaria de solicitar o arquivo APK do Guarujá GeoMap', '_blank')"
+                        class="dashboard-btn"
+                        style="flex-direction: column; padding: 16px; font-size: 12px; height: auto; background: white; border: 1px solid #e2e8f0; cursor: pointer; color: #334155;">
+                        <i class="fab fa-android" style="font-size: 24px; margin-bottom: 8px; color: #3ddc84;"></i>
+                        <span style="display: block; font-weight: 700;">Android APK</span>
+                        <small style="opacity: 0.7; font-size: 10px;">Solicitar via Whats</small>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="image-modal" class="image-modal" onclick="closeImageModal()">
+        <div class="modal-window-frame" onclick="event.stopPropagation()">
+            <div class="modal-header-bar">
+                <span class="close-modal-btn" onclick="closeImageModal()" title="Fechar">&times;</span>
+            </div>
+            <img class="modal-content" id="modal-image" alt="Imagem ampliada">
+        </div>
+    </div>
+
+    <!-- HTML Certificate Viewer (New) -->
+    <div id="html-cert-modal" class="image-modal" style="display: none; z-index: 10001;">
+        <div
+            style="background: white; width: 23cm; height: 90vh; margin: 2vh auto; position: relative; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.5);">
+            <div
+                style="padding: 10px; background: #333; color: white; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: bold;">Visualização de Certidão</span>
+                <div>
+                    <button type="button" onclick="window.printCertFrame()"
+                        style="padding: 5px 10px; cursor: pointer; border: none; background: #2563eb; color: white; border-radius: 4px; margin-right: 10px;">🖨️
+                        Imprimir</button>
+                    <button type="button" onclick="document.getElementById('html-cert-modal').style.display='none'"
+                        style="padding: 5px 10px; cursor: pointer; border: none; background: #dc2626; color: white; border-radius: 4px;">❌
+                        Fechar</button>
+                </div>
+            </div>
+            <iframe id="cert-frame"
+                style="flex: 1; border: none; width: 100%; height: 100%; background: white;"></iframe>
+        </div>
+    </div>
+
+    <!-- Context Menu (Right Click) -->
+    <div id="context-menu" class="context-menu">
+        <div class="context-menu-item" id="ctx-create-lote" onclick="window.handleContextAction('create')">📍 Criar Novo
+            Edifício/Lote</div>
+        <div class="context-menu-item" id="ctx-add-unit" onclick="window.handleContextAction('add-unit')">➕ Adicionar
+            Unidade
+        </div>
+        <div class="context-menu-item" id="ctx-move-lote" onclick="window.handleContextAction('move')">✥ Mover
+            Localização
+        </div>
+        <div class="context-menu-item" id="ctx-edit-details" onclick="window.handleContextAction('edit')">✏️ Editar
+            Detalhes
+        </div>
+        <div class="context-menu-item" id="ctx-delete-lote" onclick="window.handleContextAction('delete')"
+            style="color: #e53935;">🗑️ Excluir Lote</div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item" id="ctx-add-lead" onclick="window.openAddLeadTooltip()" style="color: #4CAF50;">
+            👤 Adicionar Cliente CRM</div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item" onclick="window.hideContextMenu()">Cancelar</div>
+    </div>
+
+    <!-- Sidebar Toggle Button (Mobile) -->
+    <button type="button" id="sidebarToggle" class="sidebar-toggle" aria-label="Abrir menu lateral">
+        <div class="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </button>
+
+    <!-- Sidebar Backdrop (Mobile) -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+
+    <!-- Main App (Initially Hidden via CSS if desired, or covered by Overlay) -->
+    <div id="app-container">
+        <!-- Sidebar -->
+        <aside id="sidebar">
+            <div class="sidebar-header" style="background: rgba(255,255,255,0.02); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);">
+                <!-- Linha 1: Logo e Ações de Conta -->
+                <div class="header-top-row" style="margin-bottom: 20px;">
+                    <div style="display: flex; flex-direction: column;">
+                        <h2 style="font-size: 22px; font-weight: 900; letter-spacing: -1px; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <span style="color: #2563eb;">●</span> GUARUGEO
+                        </h2>
+                    </div>
+                    <div class="header-account-actions" style="display: flex; align-items: center; gap: 12px;">
+                        <button type="button" id="btnNotifications" title="Notificações" aria-label="Ver notificações" onclick="window.NotificationsHandler && window.NotificationsHandler.toggleDropdown(event)" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 8px; color: #64748b; position: relative; cursor: pointer;">
+                            <i class="fas fa-bell"></i>
+                            <span id="notifBadge" style="display: none; position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; font-size: 9px; padding: 2px 5px; border-radius: 10px;">0</span>
+                        </button>
+                        <button type="button" onclick="window.logout()" style="background: #fef2f2; border: none; width: 32px; height: 32px; border-radius: 8px; color: #ef4444; cursor: pointer;" title="Sair" aria-label="Sair do sistema">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Linha 2: Barra de Ferramentas Estratégica -->
+                <div class="strategy-bar" style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 15px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                    <div style="display: flex; gap: 15px;">
+                        <i class="fas fa-users" onclick="window.showLeadsPanel()" title="CRM Clientes" style="color: #475569; cursor: pointer;"></i>
+                        <i class="fas fa-chart-line" onclick="window.AnalyticsDashboard.show()" title="Analytics" style="color: #6366f1; cursor: pointer;"></i>
+                        <i class="fas fa-lightbulb" onclick="window.showFarolInsights()" title="Farol Insights" style="color: #f59e0b; cursor: pointer;"></i>
+                        <i class="fas fa-mobile-alt" onclick="document.getElementById('downloadModal').classList.add('active')" title="Baixar App" style="color: #10b981; cursor: pointer;"></i>
+                        <i class="fas fa-user-shield" id="btnAdminPanel" onclick="window.Admin && window.Admin.showAdminPanel()" title="Painel Admin" style="color: #1e293b; cursor: pointer; display: none;"></i>
+                    </div>
+                    <div id="user-credits-display" onclick="window.Monetization && window.Monetization.showSubscriptionPlans()" style="display: flex; align-items: center; gap: 5px; font-weight: 800; font-size: 11px; color: #2563eb; cursor: pointer;">
+                        <i class="fas fa-crown"></i> <span>0</span>
+                    </div>
+                </div>
+                
+                <div class="search-box">
+                    <gmp-place-autocomplete id="searchInput" placeholder="O que você busca no Guarujá?" title="Buscar ruas, imóveis ou edifícios" aria-label="Campo de busca" style="width: 100%; border-radius: 14px; overflow: hidden; height: 48px; border: 2px solid #f1f5f9;"></gmp-place-autocomplete>
+                    <button type="button" id="searchBtn" aria-label="Pesquisar" title="Pesquisar" style="position: absolute; right: 0; height: 100%; width: 48px; background: var(--primary-color); color: white; border: none; border-radius: 0 14px 14px 0; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2;">🔍</button>
+                    <button type="button" id="searchClearBtn" class="search-clear-btn" aria-label="Limpar busca" title="Limpar" style="position: absolute; right: 52px; top: 50%; transform: translateY(-50%); z-index: 2; display: none;">×</button>
+                </div>
+
+                <!-- Abas de Navegação -->
+                <div class="sidebar-tabs" style="margin: 20px -24px -24px; padding: 0 24px; display: flex; border-bottom: 1px solid #e2e8f0; gap: 4px; overflow-x: auto; white-space: nowrap;">
+                    <button type="button" class="tab-btn active" onclick="window.switchSidebarTab('map')" style="flex: 1; font-size: 10px; padding: 10px 5px;">📍 Mapa</button>
+                    <button type="button" class="tab-btn" onclick="window.switchSidebarTab('prospecting')" style="flex: 1; font-size: 10px; padding: 10px 5px;">🛰️ Radar</button>
+                    <button type="button" class="tab-btn" onclick="window.switchSidebarTab('crm')" style="flex: 1; font-size: 10px; padding: 10px 5px;">👥 CRM</button>
+                    <button type="button" class="tab-btn" onclick="window.switchSidebarTab('wallet')" style="flex: 1; font-size: 10px; padding: 10px 5px;">📦 Carteira</button>
+                </div>
+            </div>
+
+            <!-- TAB: MAP CONTENT (Wrapped existing content) -->
+            <div id="tab-map" class="sidebar-tab-content active">
+
+                <!-- Filter Section -->
+                <div class="filter-section">
+                    <div class="filter-title">Tipo de Busca</div>
+                    <div class="filter-grid">
+                        <div class="filter-chip master-only locked" data-search-type="all"
+                            onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Recurso exclusivo para perfil Master.')"
+                            data-tooltip="Busca completa (Master)">
+                            Todos <span class="lock-icon">🔒</span>
+                        </div>
+                        <div class="filter-chip active" data-search-type="street"
+                            data-tooltip="Pesquisa apenas por nomes de Ruas e Logradouros">Rua</div>
+                        <div class="filter-chip" data-search-type="building"
+                            data-tooltip="Pesquisa por nomes de Condomínios e Edifícios">Edifício</div>
+                        <div class="filter-chip master-only locked" data-search-type="owner"
+                            onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Recurso exclusivo para perfil Master.')"
+                            data-tooltip="Somente Masters podem buscar por nome de Proprietário">
+                            Proprietários <span class="lock-icon">🔒</span>
+                        </div>
+                        <div class="filter-chip master-only locked" data-search-type="property"
+                             onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Pesquisa por Imóveis exclusiva para perfil Master.')"
+                             data-tooltip="Pesquisa na base do Cadastro Imobiliário">Imóveis <span class="lock-icon">🔒</span></div>
+                        <div class="filter-chip master-only locked" data-search-type="opportunity"
+                            onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Radar Farol exclusivo para Masters.')"
+                            style="border-style: dashed; background: #fffbeb; color: #b45309;"
+                            data-tooltip="Radar Farol: Exclusivo para perfis Master">
+                            ✨ Oportunidades <span class="lock-icon">🔒</span>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <div id="searchResults" class="search-results hidden" style="margin-top: -15px;">
+                    <!-- Search items injected here -->
+                </div>
+            </div>
+
+            <!-- TAB: PROSPECTING (NEW) -->
+            <div id="tab-prospecting" class="sidebar-tab-content" style="display: none;">
+                <div style="padding: 20px; text-align: center;">
+                    <i class="fas fa-binoculars" style="font-size: 40px; color: #cbd5e1; margin-bottom: 20px;"></i>
+                    <h3 style="color: #1e293b; margin-bottom: 8px;">Módulo de Prospecção</h3>
+                    <p style="font-size: 13px; color: #64748b; line-height: 1.6;">
+                        Aqui você poderá gerenciar leads e oportunidades identificados pelo Radar Farol.
+                    </p>
+                    <div id="prospecting-leads-list" style="margin-top: 20px; text-align: left;">
+                        <!-- Leads list content -->
+                        <div style="padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px dashed #e2e8f0; color: #94a3b8; font-size: 12px; text-align: center;">
+                            Nenhuma oportunidade selecionada. Navegue pelo mapa e use o Radar para filtrar alvos.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: MEU CRM (NEW PERSONALIZED) -->
+            <!-- TAB: WALLET (Minha Carteira de Desbloqueios) -->
+            <div id="tab-wallet" class="sidebar-tab-content" style="display: none;">
+                <div style="padding: 24px 0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                        <div>
+                            <h3 style="font-size: 18px; font-weight: 800; color: #1e293b; margin: 0;">Minha Carteira</h3>
+                            <p style="font-size: 11px; color: #64748b; margin: 2px 0 0;">Seus imóveis desbloqueados</p>
+                        </div>
+                        <div id="wallet-stats" style="text-align: right;">
+                            <div style="font-size: 14px; font-weight: 800; color: #2563eb;">0</div>
+                            <div style="font-size: 9px; color: #94a3b8; text-transform: uppercase;">Total</div>
+                        </div>
+                    </div>
+
+                    <div id="wallet-list" class="sidebar-crm-list" style="max-height: calc(100vh - 350px); overflow-y: auto;">
+                        <!-- Injetado via JS -->
+                        <div style="padding: 40px; text-align: center; color: #94a3b8;">
+                            <i class="fas fa-box-open" style="font-size: 30px; margin-bottom: 15px; opacity: 0.3;"></i>
+                            <p style="font-size: 13px;">Sua carteira está vazia.<br><small>Desbloqueie fichas no mapa para que elas apareçam aqui.</small></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-crm" class="sidebar-tab-content" style="display: none;">
+                <div style="padding: 20px 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <div>
+                            <h3 style="color: #1e293b; margin: 0; font-size: 18px; font-weight: 800;">Meu CRM</h3>
+                            <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 0;">Gestão Pessoal de Carteira</p>
+                        </div>
+                        <button onclick="window.openAddLeadTooltip()" style="background: #2563eb; color: white; border: none; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(37,99,235,0.3);" title="Novo Lead">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <input type="text" id="crmSearchInput" placeholder="🔍 Filtrar por nome ou celular..." 
+                            style="width: 100%; padding: 10px 14px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 13px;">
+                    </div>
+
+                    <div id="sidebarCRMList" style="display: flex; flex-direction: column; gap: 12px; padding-bottom: 80px;">
+                        <!-- Lead cards injected here -->
+                        <div style="padding: 40px 20px; text-align: center; color: #94a3b8;">
+                            <i class="fas fa-user-friends" style="font-size: 32px; opacity: 0.2; margin-bottom: 12px; display: block;"></i>
+                            <p style="font-size: 12px;">Nenhum lead carregado.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="editorPanel" class="editor-panel hidden">
+                <div class="panel-header">
+                    <h3>Editar Lote</h3>
+                    <button type="button" id="closeEditor" aria-label="Fechar editor" title="Fechar">×</button>
+                </div>
+                <div id="formContainer">
+                    <!-- Form injected by JS -->
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="saveBtn" class="btn primary">Salvar Alterações</button>
+                    <button type="button" id="exportBtn" class="btn secondary">Baixar Arquivo</button>
+                </div>
+            </div>
+
+            <!-- Zone Legend -->
+
+
+
+
+            <!-- Stats Panel moved to map -->
+        </aside>
+
+        <!-- Map -->
+        <main id="map" style="position: relative;">
+            <!-- Novo Componente de Desenho (Modernizado) -->
+            <gmp-drawing-manager id="main-drawing-manager"></gmp-drawing-manager>
+            
+            <button type="button" id="mapBackBtn" class="map-back-btn hidden" aria-label="Voltar nível anterior">⬅ Voltar</button>
+
+            <!-- Unified Dashboard Panel (Floating Bottom Left) -->
+            <div id="statsPanel" class="stats-panel collapsed">
+                <button type="button" class="stats-toggle-btn" aria-label="Mostrar/ocultar estatísticas" onclick="this.parentElement.classList.toggle('collapsed')">
+                    <i class="fas fa-chart-pie"></i>
+                </button>
+                <div class="stats-collapsible-content">
+                    <div class="stat-item">
+                        <div class="stat-label">LOTES VISÍVEIS</div>
+                        <div id="totalLotes" class="stat-value">50.052 Lotes (Cache)</div>
+                    </div>
+
+                    <!-- Integrated Zone Legend -->
+                    <div id="zoneLegendContainer" class="zone-legend"></div>
+
+                    <div class="dashboard-actions">
+                        <!-- Neighborhood Toggle Button -->
+                        <button type="button" id="btnToggleNeighborhoods" class="dashboard-btn primary"
+                            onclick="window.toggleNeighborhoods(this)">
+                            <i class="fas fa-map"></i> Bairros
+                        </button>
+                        <!-- KML Export Button -->
+                        <button type="button" id="btnExportKML" class="dashboard-btn"
+                            onclick="window.GoogleEarthHandler.exportAllToKML()"
+                            title="Exportar KML"
+                            style="background: #10b981; color: white; border: 1px solid #059669;">
+                            <i class="fas fa-file-export"></i> KML
+                        </button>
+                        <!-- Edit Button -->
+                        <button type="button" id="btnEditNeighborhoods" class="dashboard-btn secondary" style="display:none;"
+                            title="Editar bairros" aria-label="Ativar edição de bairros"
+                            onclick="window.toggleNeighborhoodEditMode(this)">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODALS (Hidden by default) -->
+    <!-- ========================================== -->
+
+    <!-- 1. CRM: Add Lead Modal -->
+    <div id="modal-lead-form-overlay" class="custom-modal-overlay">
+        <div class="custom-modal">
+            <div class="custom-modal-header">
+                <div class="custom-modal-title">
+                    <span>� Novo Cliente Interessado</span>
+                </div>
+                <button type="button" class="custom-modal-close" aria-label="Fechar" onclick="closeModal('modal-lead-form-overlay')">&times;</button>
+            </div>
+            <div class="custom-modal-body">
+                <div class="form-group">
+                    <label class="form-label">Nome do Cliente</label>
+                    <input type="text" id="lead-name" class="form-input" placeholder="Ex: Ana Silva">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">WhatsApp (Celular)</label>
+                        <input type="text" id="lead-contact" class="form-input" placeholder="(11) 99999-9999">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label" for="lead-status">Interesse</label>
+                        <select id="lead-status" class="form-select" title="Selecione o nível de interesse do cliente">
+                            <option value="Quente">🔥 Muito Interessado</option>
+                            <option value="Morno" selected>🌊 Olhando</option>
+                            <option value="Frio">❄️ Apenas Curioso</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="lead-budget">Preço Máximo (R$)</label>
+                    <input type="number" id="lead-budget" class="form-input" placeholder="Ex: 500.000" title="Orçamento máximo do cliente">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label" for="lead-rooms">Mín. Quartos</label>
+                        <input type="number" id="lead-rooms" class="form-input" value="2" title="Número mínimo de quartos">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label" for="lead-neighborhoods">Bairros de Interesse</label>
+                        <input type="text" id="lead-neighborhoods" class="form-input"
+                            placeholder="Ex: Pitangueiras, Centro" title="Bairros de interesse do cliente">
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-ghost" onclick="closeModal('modal-lead-form-overlay')">Cancelar</button>
+                    <button type="button" class="btn-primary-rich" onclick="submitLeadForm()">Salvar Cliente</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MAP: New Lot Modal -->
+    <div id="modal-lot-form-overlay" class="custom-modal-overlay">
+        <div class="custom-modal">
+            <div class="custom-modal-header">
+                <div class="custom-modal-title">
+                    <span>🏗️ Novo Lote/Empreendimento</span>
+                </div>
+                <button type="button" class="custom-modal-close" aria-label="Fechar" onclick="closeModal('modal-lot-form-overlay')">&times;</button>
+            </div>
+            <div class="custom-modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="new-lot-inscricao">Inscrição (8 dígitos)</label>
+                    <input type="text" id="new-lot-inscricao" class="form-input" placeholder="Ex: 00001001"
+                        title="Código de inscrição do lote (8 dígitos)" maxlength="8">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="new-lot-address">Endereço / Localização</label>
+                    <input type="text" id="new-lot-address" class="form-input" placeholder="Rua, Número, Bairro" title="Endereço completo do lote">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label" for="new-lot-quadra">Quadra</label>
+                        <input type="text" id="new-lot-quadra" class="form-input" placeholder="Ex: 001" title="Número da quadra">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label" for="new-lot-lote-geo">Lote</label>
+                        <input type="text" id="new-lot-lote-geo" class="form-input" placeholder="Ex: 001" title="Número do lote">
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-ghost" onclick="closeModal('modal-lot-form-overlay')">Cancelar</button>
+                    <button type="button" class="btn-primary-rich" onclick="submitNewLot()">Criar Lote</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RBush (Spatial Index) - Local -->
+    <script src="rbush.min.js"></script>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js';
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: 'AIzaSyBtPbWKlq9YbXAI1NEsuoM7pjhtreskltU',
+            authDomain: "mapaguaruja-23d2a.firebaseapp.com",
+            projectId: "mapaguaruja-23d2a",
+            storageBucket: "mapaguaruja-23d2a.firebasestorage.app",
+            messagingSenderId: "1020579666949",
+            appId: "1:1020579666949:web:a6149a0845a55815c0d06c",
+            measurementId: "G-YF7TN6WSH8"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+
+        // Make available globally
+        window.firebaseApp = app;
+        window.firebaseAnalytics = analytics;
+    </script>
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="utils.js?v=1.2"></script>
+    <script src="supabase_client.js"></script>
+    <script src="auth_handler.js"></script>
+ 
+    <!-- Google Maps Engine (Migration Target) -->
+    <script src="google_maps_loader.js?v=1.2"></script>
+
+    <!-- App Logic -->
+    <script src="google_earth_handler.js?v=1.2"></script>
+
+    <!-- Anuncios Module (Load before Tooltip) -->
+    <link rel="stylesheet" href="anuncios/anuncios_styles.css?v=1.2">
+    <script src="anuncios/anuncios_handler.js?v=1.2"></script>
+    
+    <script src="monetization_handler.js?v=1.2"></script>
+    <script src="search_handler.js?v=1.2"></script>
+    <script src="tooltip_handler.js?v=1.2"></script>
+    <script src="neighborhood_handler.js?v=1.2"></script>
+    <script src="osm_handler.js?v=1.2"></script>
+    <script src="map_handler.js?v=1.2"></script>
+    <script src="editor_handler.js?v=1.2"></script>
+    <script src="enrichment_handler.js?v=1.2"></script>
+    <script src="admin_handler.js?v=1.2"></script>
+    <script src="report_handler.js?v=1.2"></script>
+    <script src="crm_handler.js?v=1.2"></script>
+    <script src="insights_handler.js?v=1.2"></script>
+    <script src="app.js?v=1.2"></script>
+
+    <!-- New Modules (Analytics & Owners) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script src="analytics_tracker.js"></script>
+    <script src="analytics_dashboard.js"></script>
+    <script src="proprietario_tooltip.js"></script>
+    <!-- <script src="infosimples_handler.js"></script> -->
+    <script src="gemini_chat_handler.js"></script>
+    <script src="ai_history_handler.js"></script>
+    <script src="marketing_handler.js"></script>
+    <script src="notifications_handler.js"></script>
+    <script src="media_handler.js"></script>
+    <script src="image_viewer_handler.js"></script>
+    <script src="zoning_handler.js"></script>
+
+    <!-- Onboarding / Tour -->
+    <script src="intro.min.js"></script>
+    <script src="onboarding_handler.js"></script>
+    <script src="location_handler.js"></script>
+
+    <!-- Analytics & Heatmap -->
+    <script src="analytics_handler.js"></script>
+
+    <!-- Legal Engines -->
+    <script src="contract_templates.js"></script>
+    <script src="renovation_radar.js"></script>
+    <script src="push_handler.js"></script>
+    
+    <!-- UX Improvements V1.2 (Cleanup duplicates) -->
+    <script src="advanced_maps_handler.js"></script>
+    <script src="report_handler.js"></script>
+    <script src="client_mode_handler.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+
+    <!-- Mobile Native -->
+    <script src="camera_handler.js"></script>
+    <script src="streetview_handler.js"></script>
+    <script src="portfolio_handler.js"></script>
+    <script src="weather_handler.js"></script>
+
+    <style>
+        /* Fix for Google Maps 'content-visibility' console warnings */
+        #map, gmp-map-3d {
+            content-visibility: visible !important;
+        }
+    </style>
+
+    <script>
+        // NUCLEAR VISIBILITY RECOVERY
+        setTimeout(() => {
+            console.log("🛡️ Running Visibility Recovery...");
+            const loading = document.getElementById('loading-overlay');
+            if (loading) {
+                loading.style.display = 'none';
+                loading.classList.add('hidden');
+            }
+            // Só libera o login se o sistema de Auth confirmar que estamos logados
+            if (localStorage.getItem('guaruja_auth') !== 'true') {
+                 const login = document.getElementById('loginOverlay');
+                 if (login) login.style.display = 'flex';
+            }
+            document.body.style.backgroundColor = ''; 
+        }, 8000);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,265 @@
+/* ============================================================
+   GUARUGEO - MOBILE UI (MODULAR & OPTIMIZED)
+   ============================================================ */
+
+@media (max-width: 768px) {
+    :root {
+        --sidebar-width: 100vw;
+    }
+
+    #app-container {
+        flex-direction: column;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+    }
+
+    /* --- SIDEBAR AS BOTTOM SHEET --- */
+    #sidebar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        height: 75vh;
+        /* More space for content */
+        z-index: 2000;
+        border-radius: 20px 20px 0 0;
+        transform: translateY(calc(100% - 65px));
+        /* Peek height */
+        transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        background: #fff;
+        box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.15);
+        display: flex;
+        flex-direction: column;
+    }
+
+    #sidebar.active {
+        transform: translateY(0);
+    }
+
+    /* Drag Handle - Larger Touch Area */
+    #sidebar::after {
+        content: '';
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 48px;
+        height: 5px;
+        background: #cbd5e1;
+        border-radius: 4px;
+        z-index: 2001;
+    }
+
+    /* Header Compacted for Mobile */
+    .sidebar-logo-container {
+        padding: 20px 16px 5px;
+        /* Adjusted for handle */
+        display: flex;
+        justify-content: flex-start;
+        height: 65px;
+        align-items: center;
+    }
+
+    .sidebar-logo-container img {
+        height: 32px;
+        width: auto;
+    }
+
+    .sidebar-header {
+        padding: 5px 16px 16px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    /* Actions Row (Icons) */
+    .header-actions {
+        position: absolute;
+        right: 16px;
+        top: 18px;
+        gap: 12px;
+    }
+
+    .header-actions button {
+        font-size: 1.25rem !important;
+        padding: 8px !important;
+    }
+
+    /* Search Box Mobile */
+    .search-box {
+        margin-top: 10px;
+    }
+    
+    .search-box input {
+        padding: 12px 16px;
+        font-size: 16px; /* Prevents iOS auto-zoom */
+    }
+
+    /* --- MAP CONTROLS REPOSITIONING --- */
+    /* Push controls up to avoid bottom sheet obstruction */
+    .leaflet-bottom {
+        bottom: 80px !important;
+    }
+
+    .gps-location-btn {
+        bottom: 140px !important;
+        right: 16px !important;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    /* --- TOOLTIP MOBILE OPTIMIZATION --- */
+    /* Full width card at bottom, or constrained modal */
+    .leaflet-popup-content-wrapper {
+        border-radius: 16px;
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .leaflet-popup-content {
+        margin: 0 !important;
+        width: 300px !important; /* Fixed width for better layout */
+        max-width: 90vw !important;
+    }
+    
+    /* If using custom non-leaflet tooltip div */
+    .lot-tooltip {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: auto !important;
+        max-height: 85vh !important;
+        border-radius: 20px 20px 0 0 !important;
+        transform: none !important; /* Override translate centering */
+        margin: 0 !important;
+        box-shadow: 0 -5px 20px rgba(0,0,0,0.2) !important;
+        overflow-y: auto !important;
+        /* Smooth Entrance */
+        animation: slideUp 0.3s ease-out;
+        z-index: 10000 !important;
+    }
+
+    @keyframes slideUp {
+        from { transform: translateY(100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Tooltip Header Mobile */
+    .lot-tooltip-header {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 10;
+        padding: 16px !important;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .lot-tooltip-close {
+        font-size: 28px !important;
+        padding: 10px !important; /* Larger touch target */
+        color: #64748b !important;
+        background: #f1f5f9 !important;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Tooltip Actions - Horizontal Scroll */
+    .header-buttons-wrapper {
+        display: flex;
+        overflow-x: auto;
+        padding: 4px 16px 12px;
+        gap: 8px;
+        -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
+        scrollbar-width: none; /* Hide scrollbar */
+    }
+    
+    .header-buttons-wrapper::-webkit-scrollbar {
+        display: none; 
+    }
+
+    .tooltip-action-btn {
+        flex: 0 0 auto; /* Don't shrink */
+        padding: 8px 16px !important;
+        border-radius: 20px !important;
+        font-size: 13px !important;
+    }
+    
+    /* Show text on mobile for better clarity in horiz scroll */
+    .tooltip-action-btn .btn-text {
+        display: inline-block !important; 
+    }
+
+    /* --- HISTORY & SOLAR WIDGETS --- */
+    /* Reposition History Panel to not block bottom sheet */
+    #history-panel {
+        bottom: 80px !important;
+        right: 10px !important;
+        width: auto !important;
+        max-width: 200px;
+        border-radius: 12px;
+    }
+    
+    #history-panel.collapsed {
+        transform: translateX(calc(100% - 40px)); /* Slide to side instead of down */
+    }
+
+    /* --- MODALS FULLSCREEN ON MOBILE --- */
+    .custom-modal {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        border-radius: 0 !important;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .custom-modal-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px !important;
+    }
+    
+    .custom-modal-close {
+        font-size: 32px;
+        padding: 10px;
+    }
+
+    /* --- FILTER CHIPS --- */
+    .filter-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .filter-chip {
+        flex: 1 1 calc(50% - 8px);
+        min-height: 44px; /* Touch target size */
+    }
+
+    /* SAFE AREA PADDING (iPhone X+) */
+    body {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    #sidebar {
+        padding-bottom: calc(env(safe-area-inset-bottom) + 10px);
+    }
+
+    /* Hide complex desktop-only elements */
+    .desktop-only {
+        display: none !important;
+    }
+}
