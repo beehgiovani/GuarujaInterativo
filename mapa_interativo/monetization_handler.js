@@ -155,12 +155,31 @@ window.Monetization = {
         try {
              const { data: { user } } = await window.supabaseApp.auth.getUser();
              if (!user) return;
-             const { data, error } = await window.supabaseApp.from('unlocked_lots').select('lote_inscricao').eq('user_id', user.id);
+             
+             // 1. Lotes desbloqueados via créditos/plano
+             const { data: unlocks, error } = await window.supabaseApp.from('unlocked_lots').select('lote_inscricao').eq('user_id', user.id);
              if (error) throw error;
              
-             const lotIds = (data || []).map(row => String(row.lote_inscricao).replace(/\D/g, ''));
-             this.unlockedLots = new Set(lotIds.filter(id => id));
-             console.log(`🔑 Carregou ${lotIds.length} lotes desbloqueados na carteira (Normalizados).`);
+             // 2. Lotes editados pelo usuário (também contam como liberados para ele)
+             const { data: edits } = await window.supabaseApp.from('user_lote_edits').select('lote_inscricao').eq('user_id', user.id);
+             const { data: unitEdits } = await window.supabaseApp.from('user_unit_edits').select('unit_inscricao').eq('user_id', user.id);
+
+             const clean = (id) => id ? String(id).replace(/\D/g, '') : '';
+             
+             this.unlockedLots = new Set();
+             
+             (unlocks || []).forEach(row => this.unlockedLots.add(clean(row.lote_inscricao)));
+             (edits || []).forEach(row => this.unlockedLots.add(clean(row.lote_inscricao)));
+             (unitEdits || []).forEach(row => {
+                 const uId = clean(row.unit_inscricao);
+                 this.unlockedLots.add(uId);
+                 if (uId.length >= 11) this.unlockedLots.add(uId.substring(0, 8)); // Adiciona o lote pai
+             });
+
+             console.log(`🔑 Carteira sincronizada: ${this.unlockedLots.size} itens (Unlocks + Edits).`);
+             
+             // Avisar ao mapa para renderizar a camada persistente
+             if (window.renderHierarchy) window.renderHierarchy();
         } catch(e) {
              console.error("Error loading unlocked lots:", e);
         }
@@ -806,36 +825,48 @@ window.Monetization = {
                 return;
             }
 
-            listEl.innerHTML = unlocks.map(item => {
-                const date = new Date(item.desbloqueado_em).toLocaleDateString('pt-BR');
+            // --- AGRUPAMENTO POR EDIFÍCIO ---
+            const groups = {};
+            unlocks.forEach(item => {
                 const lot = item.lotes || {};
-                const name = lot.building_name || `Lote ${item.lote_inscricao}`;
-                const addr = lot.bairro || 'Localização no Mapa';
+                const building = lot.building_name || "Lotes Avulsos / Terrenos";
+                if (!groups[building]) groups[building] = [];
+                groups[building].push(item);
+            });
 
+            listEl.innerHTML = Object.keys(groups).map(buildingName => {
+                const items = groups[buildingName];
+                const isGroup = items.length > 1;
+                
                 return `
-                    <div class="crm-lead-card" style="cursor: pointer; margin-bottom: 12px; transition: all 0.2s; border-left: 4px solid #10b981; padding: 15px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"
-                         onclick="window.Monetization.flyToUnlocked('${item.lote_inscricao}')"
-                         onmouseover="this.style.transform='translateX(5px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.05)'"
-                         onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.02)'">
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas ${buildingName.includes('Lote') ? 'fa-map' : 'fa-building'}" style="color: #94a3b8;"></i>
+                            ${buildingName}
+                            <span style="background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 10px; font-size: 9px;">${items.length}</span>
+                        </div>
                         
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                            <div style="font-weight: 800; color: #1e293b; font-size: 14px;">${name}</div>
-                            <span style="font-size: 10px; color: #94a3b8; font-weight: 600;">${date}</span>
-                        </div>
+                        ${items.map(item => {
+                            const date = new Date(item.desbloqueado_em).toLocaleDateString('pt-BR');
+                            const lot = item.lotes || {};
+                            const addr = lot.bairro || 'Guarujá, SP';
 
-                        <div style="font-size: 11px; color: #64748b; line-height: 1.4; display: flex; align-items: center; gap: 6px;">
-                             <i class="fas fa-map-marker-alt" style="color: #94a3b8;"></i> 
-                             ${addr}
-                        </div>
-
-                        <div style="margin-top: 12px; display: flex; gap: 8px;">
-                            <div style="flex: 1; text-align: center; background: #f0fdf4; color: #166534; font-size: 9px; font-weight: 800; padding: 4px; border-radius: 4px; border: 1px solid #dcfce7;">
-                                <i class="fas fa-lock-open"></i> FICHA LIBERADA
-                            </div>
-                            <div style="flex: 1; text-align: center; background: #eff6ff; color: #1e40af; font-size: 9px; font-weight: 800; padding: 4px; border-radius: 4px; border: 1px solid #dbeafe;">
-                                <i class="fas fa-location-arrow"></i> IR PARA MAPA
-                            </div>
-                        </div>
+                            return `
+                                <div class="crm-lead-card" style="cursor: pointer; margin-bottom: 10px; transition: all 0.2s; border-left: 4px solid #10b981; padding: 12px; background: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"
+                                     onclick="window.Monetization.flyToUnlocked('${item.lote_inscricao}')"
+                                     onmouseover="this.style.transform='translateX(5px)'"
+                                     onmouseout="this.style.transform='none'">
+                                    
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <div style="font-weight: 700; color: #1e293b; font-size: 13px;">${lot.inscricao}</div>
+                                            <div style="font-size: 10px; color: #94a3b8;">Liberado em ${date}</div>
+                                        </div>
+                                        <i class="fas fa-chevron-right" style="font-size: 10px; color: #cbd5e1;"></i>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 `;
             }).join('');

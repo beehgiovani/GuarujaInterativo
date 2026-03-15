@@ -1260,7 +1260,6 @@ window.renderHierarchy = function() {
                 console.error("Error creating AdvancedMarker (Sector):", markerErr);
             }
         }
-
     } else if (window.currentLevel === 2) {
         // --- LEVEL 2: LOTES ---
         if (!window.cityData[window.currentZone] || !window.cityData[window.currentZone].sectors[window.currentSector]) {
@@ -1303,51 +1302,33 @@ window.renderHierarchy = function() {
 
             // OFF MARKET FILTER OVERRIDE (Visual Mock para Apresentação de Vendas)
             if (window.currentOffMarketFilter && window.currentOffMarketFilter !== 'todos') {
-                // Pseudo-aleatório fixo baseado na inscrição (apenas para demo de vendas)
                 const num = parseInt(lote.inscricao.replace(/\D/g, '').substring(0, 6) || '0');
                 const hash = num % 100;
-                
-                const isDivida = hash < 15; // 15% como dívida
-                const isAnulado = hash >= 15 && hash < 20; // 5% anulado
-                const isAtivo = hash >= 20; // 80% ativo
+                const isDivida = hash < 15;
+                const isAnulado = hash >= 15 && hash < 20;
+                const isAtivo = hash >= 20;
                 
                 if (window.currentOffMarketFilter === 'divida') {
-                    if (isDivida) color = '#ef4444'; // Vermelho vivo
-                    else continue; // Pula a renderização deste lote (esconde)
+                    if (isDivida) color = '#ef4444';
+                    else continue;
                 } 
                 else if (window.currentOffMarketFilter === 'anulado') {
-                    if (isAnulado) color = '#f59e0b'; // Laranja/Amarelo
+                    if (isAnulado) color = '#f59e0b';
                     else continue;
                 } 
                 else if (window.currentOffMarketFilter === 'ativo') {
-                    if (isAtivo) color = '#10b981'; // Verde Esmeralda
+                    if (isAtivo) color = '#10b981';
                     else continue;
                 }
             }
 
             const displayLabel = lote.building_name || meta.lote || '?';
-
             const content = document.createElement('div');
             content.innerHTML = `<div style="
-                background-color:${color};
-                color: white;
-                border-radius: 4px;
-                padding: 2px 6px;
-                font-size: 10px;
-                font-weight: bold;
-                box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-                cursor: pointer;
-                border: 1px solid white;
-                transform: translate(-50%, -50%);
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 90px;
-                white-space: normal;
-                line-height: 1.2;
-                text-align: center;
+                background-color:${color}; color: white; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: bold;
+                box-shadow: 0 0 2px rgba(0, 0, 0, 0.5); cursor: pointer; border: 1px solid white; transform: translate(-50%, -50%);
+                display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;
+                max-width: 90px; white-space: normal; line-height: 1.2; text-align: center;
             ">${displayLabel}</div>`;
 
             const marker = new google.maps.marker.AdvancedMarkerElement({
@@ -1359,13 +1340,9 @@ window.renderHierarchy = function() {
 
             marker.addListener('gmp-click', async () => {
                 const fullLote = await window.fetchLotDetails(lote.inscricao);
-                if (fullLote) {
-                    // Converter para coordenadas de pixel para o tooltip (aproximado)
-                    window.showLotTooltip(fullLote, 0, 0);
-                }
+                if (fullLote) window.showLotTooltip(fullLote, 0, 0);
             });
 
-            // Context Menu alternativo para Google Maps
             content.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 const syntheticEvent = {
@@ -1377,6 +1354,65 @@ window.renderHierarchy = function() {
             });
 
             googleMarkers.push(marker);
+        }
+    }
+
+    // ========================================
+    // PERSISTENT PRIORITY LAYER (Unlocked/Edited)
+    // ========================================
+    // Renderiza lotes liberados/editados mesmo que não estejam no setor/zona atual
+    if (window.Monetization && window.Monetization.unlockedLots) {
+        const priorityLotIds = window.Monetization.unlockedLots;
+        
+        for (const lotId of priorityLotIds) {
+            // Se o nível atual for 2 e o lote já estiver no setor renderizado, evitamos duplicata
+            const isAtLotLevel = window.currentLevel === 2;
+            const alreadyRendered = isAtLotLevel && window.cityData[window.currentZone]?.sectors[window.currentSector]?.lotes.some(l => l.inscricao === lotId);
+            
+            if (alreadyRendered) continue;
+
+            const lote = window.allLotes.find(l => l.inscricao === lotId);
+            if (!lote || !lote._lat) continue;
+
+            const displayLabel = lote.building_name || lote.metadata?.lote || '⭐';
+            const color = "#10b981"; // Emerald para liberados
+
+            const content = document.createElement('div');
+            content.innerHTML = `<div style="
+                background-color:${color};
+                color: white;
+                border-radius: 50px;
+                padding: 4px 8px;
+                font-size: 9px;
+                font-weight: 800;
+                box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+                cursor: pointer;
+                border: 2px solid white;
+                transform: translate(-50%, -50%);
+                display: flex; align-items: center; gap: 4px;
+                max-width: 120px; white-space: nowrap;
+                overflow: hidden; text-overflow: ellipsis;
+            ">
+                <i class="fas fa-star" style="font-size: 8px;"></i>
+                ${displayLabel}
+            </div>`;
+
+            try {
+                const marker = new google.maps.marker.AdvancedMarkerElement({
+                    map: window.map,
+                    position: { lat: lote._lat, lng: lote._lng },
+                    content: content,
+                    title: `SEU IMÓVEL: ${displayLabel}`,
+                    zIndex: 2000 // Sempre no topo
+                });
+
+                marker.addListener('gmp-click', async () => {
+                    const fullLote = await window.fetchLotDetails(lote.inscricao);
+                    if (fullLote) window.showLotTooltip(fullLote, 0, 0);
+                });
+
+                googleMarkers.push(marker);
+            } catch (e) { console.error("Error drawing persistent marker:", e); }
         }
     }
 

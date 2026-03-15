@@ -32,17 +32,23 @@ window.showFarolInsights = async function () {
             }, {})
         };
 
-        const prompt = `Como seu Farol (Estrategista de Real Estate da Omega Imóveis), analise os seguintes dados de GAPS de mercado no Guarujá:
+        const prompt = `Aja como o "Farol GuaruGeo", o estrategista sênior de Inteligência de Mercado imobiliário especializado no Guarujá/SP.
         
-        DEMANDA (Leads procurando): ${JSON.stringify(summary.demanda)}
-        OFERTA (O que temos no estoque): ${JSON.stringify(summary.oferta)}
+        Sua missão é cruzar os dados de INTENÇÃO DE COMPRA (CRM) com a DISPONIBILIDADE atual para encontrar minas de ouro.
         
-        Sua tarefa:
-        1. Identifique o maior "GAP" (Onde temos muita procura e pouco estoque).
-        2. Dê uma direção de prospecção para o corretor (Ex: "Focar em captação de 2 dorms na Zona 2").
-        3. Crie um "Alerta de Oportunidade" para a equipe de vendas.
+        DADOS ATUAIS (Guarujá):
+        - DEMANDA Real (Leads ativos): ${JSON.stringify(summary.demanda)}
+        - OFERTA Atual (Imóveis em estoque): ${JSON.stringify(summary.oferta)}
         
-        Seja direto, estratégico e encorajador.`;
+        Sua análise deve conter:
+        1. **Onde está o Dinheiro?:** Identifique o bairro/zona com maior desequilíbrio (muita busca p/ pouca oferta).
+        2. **Diretiva de Prospecção:** Diga EXATAMENTE qual edifício ou tipo de imóvel o corretor deve "bater na porta" para captar hoje.
+        3. **Sales Pitch:** Dê uma frase matadora que o corretor pode usar ao ligar para um proprietário nessas áreas quentes.
+        4. **Alerta de Risco:** Identifique se há excesso de estoque em alguma área (risco de queda de preço).
+
+        DICA LOCAL: Considere que Zonas 1 e 2 (Pitangueiras/Enseada/Astúrias) são alta liquidez. Zonas de expansão podem ter mais margem.
+        
+        Seja técnico, direto e use um tom de "insider" do mercado.`;
 
         if (!window.Farol) {
             window.Toast.error("IA do Farol não inicializada.");

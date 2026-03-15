@@ -267,6 +267,12 @@ window.saveEditFromTooltip = async function (inscricao) {
         }
 
         editedLotes[inscricao] = edits;
+        
+        // Adicionar à carteira persistente (se ainda não estiver)
+        if (window.Monetization && window.Monetization.unlockedLots) {
+            window.Monetization.unlockedLots.add(String(inscricao).replace(/\D/g, ''));
+        }
+
         if (window.renderHierarchy) window.renderHierarchy();
 
         Loading.hide();
@@ -612,9 +618,20 @@ window.saveUnitEdit = async function (unitInscricao) {
         if (window.loadUserPendingEdits) await window.loadUserPendingEdits();
 
         window.editedLotes[unitInscricao] = edits;
+
+        // Adicionar lote pai à carteira persistente
+        if (window.Monetization && window.Monetization.unlockedLots) {
+            const cleanId = String(unitInscricao).replace(/\D/g, '');
+            window.Monetization.unlockedLots.add(cleanId);
+            if (cleanId.length >= 11) {
+                window.Monetization.unlockedLots.add(cleanId.substring(0, 8));
+            }
+        }
+
         window.Toast.success(isAdmin ? 'Edição salva globalmente!' : 'Sugestão enviada para curadoria!');
         window.Loading.hide();
         window.closeLotTooltip();
+        if (window.renderHierarchy) window.renderHierarchy();
     } catch (e) {
         console.error(e);
         window.Loading.hide();
