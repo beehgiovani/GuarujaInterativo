@@ -87,7 +87,10 @@ window.showFarolInsights = async function () {
 
     } catch (e) {
         console.error("Erro Farol Insights:", e);
-        window.Toast.error("Farol teve um problema ao cruzar dados de mercado.");
+        const msg = e.message.includes('403') || e.message.includes('desativada') 
+            ? "A IA do Farol está desativada ou com problemas na chave. Verifique o modal que apareceu na tela."
+            : "Farol teve um problema ao cruzar dados de mercado.";
+        window.Toast.error(msg);
     } finally {
         window.Loading.hide();
     }

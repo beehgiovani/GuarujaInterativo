@@ -120,36 +120,50 @@ const LocationHandler = {
     updateMarker(lat, lng, accuracy) {
         const position = { lat, lng };
 
+        if (!this._styleInjected) {
+            const style = document.createElement('style');
+            style.innerHTML = `
+                @keyframes pulse-blue {
+                    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.7); }
+                    70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(2, 132, 199, 0); }
+                    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
+                }
+                .location-pulse-dot {
+                    width: 16px; height: 16px; background: #0284c7; border-radius: 50%;
+                    border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.3);
+                    animation: pulse-blue 2s infinite;
+                }
+            `;
+            document.head.appendChild(style);
+            this._styleInjected = true;
+        }
+
         if (this.userMarker) {
-            this.userMarker.setPosition(position);
+            this.userMarker.position = position;
             this.userCircle.setCenter(position);
             this.userCircle.setRadius(accuracy / 2);
         } else {
-            // Create Google Maps Geolocation Marker
+            // Create Google Maps Geolocation Marker (Pulsing Dot)
             this.userCircle = new google.maps.Circle({
                 map: window.map,
                 center: position,
                 radius: accuracy / 2,
                 fillColor: '#0284c7',
-                fillOpacity: 0.1,
+                fillOpacity: 0.08,
                 strokeColor: '#0284c7',
                 strokeWeight: 1,
+                strokeOpacity: 0.3,
                 clickable: false
             });
 
-            this.userMarker = new google.maps.Marker({
+            const content = document.createElement('div');
+            content.className = 'location-pulse-dot';
+
+            this.userMarker = new google.maps.marker.AdvancedMarkerElement({
                 map: window.map,
                 position: position,
-                icon: {
-                    path: google.maps.SymbolPath.CIRCLE,
-                    scale: 8,
-                    fillColor: '#0284c7',
-                    fillOpacity: 1,
-                    strokeColor: '#ffffff',
-                    strokeWeight: 3
-                },
-                title: "Você está aqui",
-                optimized: false // Better for updates
+                content: content,
+                title: "Você está aqui"
             });
         }
     }

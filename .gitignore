@@ -63,6 +63,13 @@ credentials.json
 
 # Large data files
 mapa_interativo/lotes_merged.json
+Antigos/*.json
+Antigos/*.html
+Antigos/*.db
+Antigos/*.docx
+Antigos/*.pdf
+Antigos/*.log
+Antigos/*.txt
 
 # Logs
 *.log

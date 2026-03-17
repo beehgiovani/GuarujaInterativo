@@ -4,14 +4,27 @@
 
 class GeminiChatHandler {
     constructor() {
-        this.apiKey = "AIzaSyBtPbWKlq9YbXAI1NEsuoM7pjhtreskltU";
+        // PRIORIDADE: Chave salva localmente > Chave padrão
+        this.apiKey = localStorage.getItem('gemini_api_key') || "AIzaSyBEDlAUo-ptLTl6_I-q4wrejNgqjAb7r_A";
 
-        // Model Registry
+        // Model Registry - Prioritizing models with higher RPM/TPM based on user registry
         this.models = {
-            'smart': 'gemini-2.5-flash-lite',
-            'balanced': 'gemini-2.5-flash-lite',
-            'fast': 'gemini-2.5-flash-lite'
+            'smart': 'gemini-3.1-flash-lite', // Higher RPM (15) + RPD (500)
+            'balanced': 'gemini-2.5-flash-lite', // RPM 10
+            'fast': 'gemini-3-flash' // RPM 5
         };
+
+        // Fallback models to try if 404 or persistent 429 occurs
+        this.fallbackModels = [
+            'gemini-3.1-flash-lite',
+            'gemini-2.5-flash-lite',
+            'gemini-3-flash',
+            'gemini-3-flash-preview',
+            'gemini-3.1-pro',
+            'gemini-2.5-pro',
+            'gemini-2-flash',
+            'gemma-3-27b' 
+        ];
 
         // Default Model
         this.currentModel = this.models.smart;
@@ -487,6 +500,36 @@ Profissional, direto, focado em fechar negócios. Use emojis imobiliários (🏢
 
                 if (!response.ok) {
                     const errText = await response.text();
+                    
+                    // ERRO 403: API Desativada ou Sem Permissão
+                    if (response.status === 403) {
+                        console.error("🚫 Gemini 403 Forbidden:", errText);
+                        this.handle403Error(errText);
+                        throw new Error("API do Gemini desativada. Verifique o modal de configuração.");
+                    }
+
+                    // ERRO 404: Modelo não encontrado - Tentar Fallback
+                    if (response.status === 404 && this.fallbackModels && this.fallbackModels.length > 0) {
+                        const nextModel = this.fallbackModels.shift();
+                        console.warn(`⚠️ Model ${this.currentModel} not found. Retrying with ${nextModel}...`);
+                        this.currentModel = nextModel;
+                        
+                        // Wait a bit before retry to avoid spamming
+                        await new Promise(res => setTimeout(res, 1000));
+                        return this._callGeminiApi(history); 
+                    }
+
+                    // ERRO 429: API Busy - Se persistir, tentar trocar de modelo no fallback
+                    if (response.status === 429) {
+                        if (retries >= 2 && this.fallbackModels && this.fallbackModels.length > 0) {
+                            const nextModel = this.fallbackModels.shift();
+                            console.warn(`⏳ Model ${this.currentModel} remains busy (429). Switching to fallback: ${nextModel}`);
+                            this.currentModel = nextModel;
+                            return this._callGeminiApi(history);
+                        }
+                        throw new Error(`API Busy (${response.status})`);
+                    }
+
                     // If 400 with 'google_search not supported', fallback to no tools? 
                     // No, invalid argument usually means config error. 
                     if (response.status === 400 && errText.includes('google_search')) {
@@ -532,6 +575,78 @@ Profissional, direto, focado em fechar negócios. Use emojis imobiliários (🏢
             return data.candidates[0].content.parts[0].text;
         }
         throw new Error("Falha no Fallback (Sem Tools).");
+    }
+
+    handle403Error(errorBody) {
+        let activationUrl = "https://aistudio.google.com/app/apikey";
+        
+        // Tenta extrair a URL de ativação do corpo do erro (Google Cloud Console)
+        try {
+            const errJson = JSON.parse(errorBody);
+            const helpLink = errJson.error?.details?.find(d => d.links)?.links?.[0]?.url;
+            if (helpLink) activationUrl = helpLink;
+        } catch(e) {}
+
+        this.showApiConfigModal(activationUrl);
+    }
+
+    showApiConfigModal(activationUrl) {
+        // Evita múltiplos modais
+        if (document.getElementById('gemini-config-modal')) return;
+
+        const modal = document.createElement('div');
+        modal.id = 'gemini-config-modal';
+        modal.className = 'custom-modal-overlay active';
+        modal.style.zIndex = '10002';
+        modal.innerHTML = `
+            <div class="custom-modal" style="max-width: 500px;">
+                <div class="custom-modal-header" style="background: #ef4444; color: white;">
+                    <div class="custom-modal-title">🚨 IA Desativada (Erro 403)</div>
+                    <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()">&times;</button>
+                </div>
+                <div class="custom-modal-body" style="padding: 25px;">
+                    <p style="margin-bottom: 15px; font-weight: 600; color: #1e293b;">
+                        A API do Google Gemini não está ativa ou sua chave expirou.
+                    </p>
+                    
+                    <div style="background: #fef2f2; border: 1px solid #fee2e2; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="margin: 0 0 10px 0; color: #991b1b; font-size: 14px;">Como resolver (Grátis):</h4>
+                        <ol style="margin: 0; padding-left: 20px; font-size: 13px; color: #7f1d1d;">
+                            <li style="margin-bottom: 8px;"><b>Ative a API:</b> Clique no botão abaixo para ir ao console do Google e ativar a "Generative Language API".</li>
+                            <li style="margin-bottom: 8px;"><b>Ou use sua própria chave:</b> Vá em <a href="https://aistudio.google.com/" target="_blank" style="color: #b91c1c; font-weight: bold;">AI Studio</a>, gere uma chave grátis e cole abaixo.</li>
+                        </ol>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 800; margin-bottom: 5px;">Sua Nova Chave API (Opcional)</label>
+                        <input type="password" id="new-gemini-key" placeholder="AIzaSy..." 
+                               style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: monospace;">
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <a href="${activationUrl}" target="_blank" 
+                           style="background: #1e293b; color: white; padding: 12px; border-radius: 8px; text-decoration: none; text-align: center; font-weight: 700; font-size: 13px;">
+                           <i class="fas fa-external-link-alt"></i> Abrir Console de Ativação
+                        </a>
+                        <button id="save-gemini-key" 
+                                style="background: #10b981; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer;">
+                           Salvar Chave e Tentar Novamente
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        modal.querySelector('#save-gemini-key').onclick = () => {
+            const newKey = document.getElementById('new-gemini-key').value.trim();
+            if (newKey) {
+                localStorage.setItem('gemini_api_key', newKey);
+                window.location.reload(); // Recarrega para aplicar a nova chave
+            } else {
+                window.Toast.info("Por favor, ative a API no console primeiro ou insira uma nova chave.");
+            }
+        };
     }
 }
 

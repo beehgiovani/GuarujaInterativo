@@ -290,15 +290,83 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
     }
 
     const navigateBtn = (lat && lng) ? `
-        <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" 
-           target="_blank"
+        <button onclick="window.showNavigationMenu(${lat}, ${lng}, '${lote.logradouro || ''}')" 
            title="Navegar até o Imóvel"
            style="background: #2563eb; border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px; text-decoration: none;"
            onmouseover="this.style.background='#1d4ed8'"
            onmouseout="this.style.background='#2563eb'">
             <i class="fas fa-route"></i> Como Chegar
-        </a>
+        </button>
     ` : '';
+
+    // Define Navigation Menu helper if not exists
+    if (!window.showNavigationMenu) {
+        window.showNavigationMenu = function(lat, lng, addr) {
+            const existing = document.getElementById('nav-menu-overlay');
+            if (existing) existing.remove();
+
+            const overlay = document.createElement('div');
+            overlay.id = 'nav-menu-overlay';
+            overlay.style.cssText = `
+                position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+                z-index: 20000; display: flex; align-items: flex-end; justify-content: center;
+                animation: fadeIn 0.3s;
+            `;
+
+            const menu = document.createElement('div');
+            menu.style.cssText = `
+                background: white; width: 100%; max-width: 450px;
+                border-radius: 20px 20px 0 0; padding: 25px;
+                animation: slideUp 0.3s cubic-bezier(0.1, 0.7, 0.1, 1);
+                box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
+            `;
+
+            menu.innerHTML = `
+                <div style="width: 40px; height: 4px; background: #e2e8f0; border-radius: 2px; margin: 0 auto 20px auto;"></div>
+                <h3 style="margin: 0 0 5px 0; color: #0f172a; font-size: 18px; font-weight: 800;">Como deseja chegar?</h3>
+                <p style="margin: 0 0 20px 0; color: #64748b; font-size: 13px;">Selecione seu aplicativo de navegação favorito.</p>
+                
+                <div style="display: grid; gap: 12px;">
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" target="_blank"
+                       style="display: flex; align-items: center; gap: 15px; padding: 15px; background: #f8fafc; border-radius: 12px; text-decoration: none; border: 1px solid #e2e8f0;">
+                       <img src="https://upload.wikimedia.org/wikipedia/commons/a/aa/Google_Maps_icon_%282020%29.svg" style="width: 32px;">
+                       <div>
+                           <div style="font-weight: 700; color: #1e293b;">Google Maps</div>
+                           <div style="font-size: 11px; color: #64748b;">Navegação precisa e Street View</div>
+                       </div>
+                    </a>
+
+                    <a href="https://waze.com/ul?ll=${lat},${lng}&navigate=yes" target="_blank"
+                       style="display: flex; align-items: center; gap: 15px; padding: 15px; background: #f8fafc; border-radius: 12px; text-decoration: none; border: 1px solid #e2e8f0;">
+                       <img src="https://upload.wikimedia.org/wikipedia/commons/6/66/Waze_icon.svg" style="width: 32px;">
+                       <div>
+                           <div style="font-weight: 700; color: #1e293b;">Waze</div>
+                           <div style="font-size: 11px; color: #64748b;">Melhor para trânsito e alertas</div>
+                       </div>
+                    </a>
+
+                    <button onclick="navigator.clipboard.writeText('${lat},${lng}'); window.Toast.success('Coordenadas copiadas!')"
+                       style="display: flex; align-items: center; gap: 15px; padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; cursor: pointer; text-align: left; width: 100%;">
+                       <div style="width: 32px; height: 32px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #475569;"><i class="fas fa-copy"></i></div>
+                       <div>
+                           <div style="font-weight: 700; color: #1e293b;">Copiar Coordenadas</div>
+                           <div style="font-size: 11px; color: #64748b;">${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
+                       </div>
+                    </button>
+                </div>
+
+                <button onclick="document.getElementById('nav-menu-overlay').remove()"
+                        style="width: 100%; margin-top: 20px; padding: 12px; border: none; background: #f1f5f9; border-radius: 12px; color: #64748b; font-weight: 700; cursor: pointer;">Cancelar</button>
+            `;
+
+            overlay.appendChild(menu);
+            document.body.appendChild(overlay);
+
+            overlay.onclick = (e) => {
+                if (e.target === overlay) overlay.remove();
+            };
+        };
+    }
 
     const streetViewBtn = (lat && lng) ? `
         <button onclick="window.StreetViewHandler.open(${lat}, ${lng}, window.currentLoteForUnit)" 
@@ -372,7 +440,8 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
 
     // Title & Address Logic (Requested by USER)
     const validOwner = (lote.nome_proprietario && lote.nome_proprietario !== 'null' && lote.nome_proprietario.trim() !== '');
-    const headerTitle = lote.building_name || (validOwner ? lote.nome_proprietario : 'Lote sem Nome');
+    const isEliteOrUnlocked = window.Monetization && (window.Monetization.isEliteOrAbove() || window.Monetization.isUnlocked(lote.inscricao));
+    const headerTitle = lote.building_name || (validOwner ? (isEliteOrUnlocked ? lote.nome_proprietario : window.maskName(lote.nome_proprietario)) : 'Lote sem Nome');
 
     const lotHeaderAddress = (() => {
         let addr = lote.logradouro || lote.endereco || '';
@@ -1189,23 +1258,24 @@ async function showUnitTooltip(unit, parentLote, x, y) {
                                 
                                 if (showsFull) {
                                     return `
-                                        <div style="font-size: 14px; color: #1e293b; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                                        <div style="font-size: 14px; color: #1e293b; font-weight: 700; display: flex; align-items: center; gap: 8px;">
                                             <i class="fas fa-check-circle" style="color: #10b981;"></i>
                                             ${unit.nome_proprietario || 'Não informado'}
                                         </div>
                                         <button onclick="window.showPreviousOwners('${unit.inscricao}')" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #475569; border-radius: 4px; padding: 2px 6px; font-size: 9px; font-weight: 700; cursor: pointer;" title="Ver proprietários anteriores">
-                                            <i class="fas fa-history"></i> Anteriores
+                                            <i class="fas fa-history"></i> Histórico
                                         </button>
                                     `;
                                 } else {
-                                    if (isFree) {
+                                    const isProOrElite = window.Monetization.canAccess('radar_mercado');
+                                    if (!isProOrElite) {
                                         return `
                                             <div style="font-size: 13px; color: #64748b; font-weight: 600; font-style: italic;">
                                                 ${window.maskName(unit.nome_proprietario)}
                                             </div>
                                             <button onclick="window.Monetization.showSubscriptionPlans()" 
                                                     style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; border-radius: 6px; padding: 6px 14px; font-size: 10px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.3);">
-                                                <i class="fas fa-star"></i> Exclusivo Pro / Elite
+                                                <i class="fas fa-star"></i> Ver Plano
                                             </button>
                                         `;
                                     } else {
@@ -1237,19 +1307,19 @@ async function showUnitTooltip(unit, parentLote, x, y) {
                     <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0; transition: all 0.2s;" onmouseover="this.style.borderColor='#cbd5e1'">
                         <div style="font-size: 10px; color: #64748b; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">📋 Matrícula Registro</div>
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <input type="text" id="input-matricula-${unit.inscricao}" value="${unit.matricula || ''}" placeholder="Ex: 123.456" 
-                                style="width: 100%; border: none; background: transparent; font-size: 14px; font-weight: 700; color: #1e293b; outline: none; ${isFree ? 'pointer-events: none;' : ''}"
-                                ${isFree ? 'readonly' : `onchange="window.updateUnitField('${unit.inscricao}', 'matricula', this.value)"`}>
-                            <i class="fas ${isFree ? 'fa-lock' : 'fa-edit'}" style="font-size: 11px; color: ${isFree ? '#fcd34d' : '#cbd5e1'};"></i>
+                            <input type="text" id="input-matricula-${unit.inscricao}" value="${(isFree && !showsFull) ? '***.***' : (unit.matricula || '')}" placeholder="Ex: 123.456" 
+                                style="width: 100%; border: none; background: transparent; font-size: 14px; font-weight: 700; color: #1e293b; outline: none; ${(isFree && !showsFull) ? 'pointer-events: none;' : ''}"
+                                ${(isFree && !showsFull) ? 'readonly' : `onchange="window.updateUnitField('${unit.inscricao}', 'matricula', this.value)"`}>
+                            <i class="fas ${(isFree && !showsFull) ? 'fa-lock' : 'fa-edit'}" style="font-size: 11px; color: ${(isFree && !showsFull) ? '#fcd34d' : '#cbd5e1'};"></i>
                         </div>
                     </div>
                     <div style="background: #f8fafc; padding: 14px; border-radius: 12px; border: 1px solid #e2e8f0; transition: all 0.2s;" onmouseover="this.style.borderColor='#cbd5e1'">
                         <div style="font-size: 10px; color: #64748b; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">⚓ RIP (Marinha)</div>
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <input type="text" id="input-rip-${unit.inscricao}" value="${unit.rip || ''}" placeholder="Ex: 000123.45" 
-                                style="width: 100%; border: none; background: transparent; font-size: 14px; font-weight: 700; color: #1e293b; outline: none; ${isFree ? 'pointer-events: none;' : ''}"
-                                ${isFree ? 'readonly' : `onchange="window.updateUnitField('${unit.inscricao}', 'rip', this.value)"`}>
-                            <i class="fas ${isFree ? 'fa-lock' : 'fa-anchor'}" style="font-size: 11px; color: ${isFree ? '#fcd34d' : '#cbd5e1'};"></i>
+                            <input type="text" id="input-rip-${unit.inscricao}" value="${(isFree && !showsFull) ? '******' : (unit.rip || '')}" placeholder="Ex: 000123.45" 
+                                style="width: 100%; border: none; background: transparent; font-size: 14px; font-weight: 700; color: #1e293b; outline: none; ${(isFree && !showsFull) ? 'pointer-events: none;' : ''}"
+                                ${(isFree && !showsFull) ? 'readonly' : `onchange="window.updateUnitField('${unit.inscricao}', 'rip', this.value)"`}>
+                            <i class="fas ${(isFree && !showsFull) ? 'fa-lock' : 'fa-anchor'}" style="font-size: 11px; color: ${(isFree && !showsFull) ? '#fcd34d' : '#cbd5e1'};"></i>
                         </div>
                     </div>
                 </div>
@@ -2370,8 +2440,12 @@ window.switchTooltipTab = function (btn, tabId) {
     const panes = container.querySelectorAll('.tab-content-pane');
     panes.forEach(p => p.style.display = 'none');
 
-    const target = container.querySelector(`#${tabId} `);
-    if (target) target.style.display = 'block';
+    const target = container.querySelector(`#${tabId.trim()}`);
+    if (target) {
+        target.style.display = 'block';
+    } else {
+        console.warn(`Tab pane not found: #${tabId}`);
+    }
 };
 
 window.copyToClipboard = function (text) {

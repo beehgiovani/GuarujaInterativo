@@ -42,7 +42,14 @@ window.Enrichment = {
 
     // Função Principal: Enriquecer Unidade
     async enrichUnit(inscricao) {
-        // Encontrar unidade localmente (ou buscar no DB se necessário)
+        // SECURITY GUARD: Check if user can use marketing tools (Enrichment)
+        if (window.Monetization && !window.Monetization.canAccess('marketing_tools')) {
+            window.Monetization.showSubscriptionPlans();
+            window.Toast.info("Fichas Avançadas são exclusivas para planos Pro ou superiores.");
+            return;
+        }
+
+        // Encontrar unidade localmente...
         let unit = window.allLotes
             ? window.allLotes.flatMap(l => l.unidades || []).find(u => u.inscricao === inscricao)
             : null;
@@ -115,6 +122,12 @@ window.Enrichment = {
 
     // Função: Enriquecer via CPF/CNPJ direto (Para Tooltip Proprietário)
     async enrichPerson(cpf_cnpj) {
+        // SECURITY GUARD: Check if user can use marketing tools (Enrichment)
+        if (window.Monetization && !window.Monetization.canAccess('marketing_tools')) {
+            window.Monetization.showSubscriptionPlans();
+            return;
+        }
+
         const doc = cpf_cnpj ? cpf_cnpj.replace(/\D/g, '') : null;
         if (!doc) {
             window.Toast.warning('Documento inválido para consulta.');
@@ -173,7 +186,7 @@ window.Enrichment = {
                         dados_enrichment: result,
                         rg: result.rg,
                         data_nascimento: result.birthday,
-                        idade: result.age,
+                        idade: result.age ? parseInt(String(result.age).match(/\d+/)) : null,
                         genero: result.gender,
                         nome_mae: result.mother_name,
                         situacao_cadastral: result.registry_situation,
@@ -399,7 +412,7 @@ window.Enrichment = {
                         dados_enrichment: data,
                         rg: data.rg,
                         data_nascimento: data.birthday,
-                        idade: data.age,
+                        idade: data.age ? parseInt(String(data.age).match(/\d+/)) : null,
                         genero: data.gender,
                         nome_mae: data.mother_name,
                         situacao_cadastral: data.registry_situation,

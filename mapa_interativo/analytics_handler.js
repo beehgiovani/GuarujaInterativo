@@ -16,8 +16,11 @@ const AnalyticsHandler = {
         // Find the specific actions container in the stats panel
         const dashboardActions = document.querySelector('.dashboard-actions');
         if (dashboardActions) {
+            // Check if already exists
+            if (document.querySelector('.btn-heatmap')) return;
+
             const toggleBtn = document.createElement('button');
-            toggleBtn.className = 'dashboard-btn secondary';
+            toggleBtn.className = 'dashboard-btn secondary btn-heatmap';
             toggleBtn.style.marginLeft = '8px'; // Spacing
             toggleBtn.innerHTML = '<i class="fas fa-fire"></i> Calor';
             toggleBtn.title = "Ativar/Desativar Mapa de Calor";
@@ -26,13 +29,9 @@ const AnalyticsHandler = {
                 const isActive = toggleBtn.classList.contains('active');
                 if (isActive) {
                     toggleBtn.classList.remove('active');
-                    toggleBtn.style.background = ''; // Revert to secondary style
-                    toggleBtn.style.color = '';
                     this.toggleHeatmap(false);
                 } else {
                     toggleBtn.classList.add('active');
-                    toggleBtn.style.background = 'linear-gradient(135deg, #f87171, #ef4444)';
-                    toggleBtn.style.color = 'white';
                     this.toggleHeatmap(true);
                 }
             };

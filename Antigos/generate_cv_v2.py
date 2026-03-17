@@ -172,3 +172,4 @@ if __name__ == "__main__":
     create_docx("Curriculo_Bruno_Pereira_V2.docx")
     create_pdf("Curriculo_Bruno_Pereira_V2.pdf")
     print("CV V2 atualizado com sucesso!")
+.gitignore

@@ -118,6 +118,9 @@ def sync_property_to_anuncios(property_data: Dict) -> bool:
             
             # Match score
             'match_score': property_data.get('match_score', 0),
+
+            # Municipio
+            'municipio': property_data.get('municipio', 'Guarujá'),
         }
         
         # 3. Validar dados obrigatórios

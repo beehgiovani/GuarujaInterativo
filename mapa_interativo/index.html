@@ -59,9 +59,9 @@
     <!-- Login Overlay -->
     <div id="loginOverlay">
         <div class="login-box">
-            <img src="logo.png" alt="Omega Imóveis" style="max-width: 180px; margin-bottom: 16px;">
-            <h2>Acesso Restrito</h2>
-            <p style="color: #64748b; font-size: 13px; margin-bottom: 20px;">Guarujá GeoMap Intelligence</p>
+            <img src="logo.png" alt="Guarugeo" style="max-width: 220px; margin-bottom: 24px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));">
+            <h2>Bem-vindo ao Guarugeo</h2>
+            <p style="color: #475569; font-size: 14px; margin-bottom: 32px; font-weight: 500;">Inteligência de Dados e Mapas do Guarujá</p>
             <form onsubmit="event.preventDefault();">
                 <!-- Campo Nome (só no cadastro) -->
                 <div id="loginNameField" style="display: none; margin-bottom: 10px;">
@@ -223,6 +223,8 @@
         <div class="context-menu-divider"></div>
         <div class="context-menu-item" id="ctx-add-lead" onclick="window.openAddLeadTooltip()" style="color: #4CAF50;">
             👤 Adicionar Cliente CRM</div>
+        <div class="context-menu-item" id="ctx-report-discrepancy" onclick="window.handleContextAction('report')" style="color: #6d28d9;">
+            🚩 Reportar Erro/Divergência</div>
         <div class="context-menu-divider"></div>
         <div class="context-menu-item" onclick="window.hideContextMenu()">Cancelar</div>
     </div>
@@ -245,13 +247,11 @@
         <aside id="sidebar">
             <div class="sidebar-header" style="background: rgba(255,255,255,0.02); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);">
                 <!-- Linha 1: Logo e Ações de Conta -->
-                <div class="header-top-row" style="margin-bottom: 20px;">
-                    <div style="display: flex; flex-direction: column;">
-                        <h2 style="font-size: 22px; font-weight: 900; letter-spacing: -1px; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 8px;">
-                            <span style="color: #2563eb;">●</span> GUARUGEO
-                        </h2>
+                <div class="header-top-row" style="margin-bottom: 20px; align-items: center;">
+                    <div class="sidebar-logo-container" style="padding: 0; flex: 1; display: flex; justify-content: flex-start;">
+                        <img src="logo.png" alt="Guarugeo" style="height: 32px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
                     </div>
-                    <div class="header-account-actions" style="display: flex; align-items: center; gap: 12px;">
+                    <div class="header-account-actions" style="display: flex; align-items: center; gap: 8px;">
                         <button type="button" id="btnNotifications" title="Notificações" aria-label="Ver notificações" onclick="window.NotificationsHandler && window.NotificationsHandler.toggleDropdown(event)" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 8px; color: #64748b; position: relative; cursor: pointer;">
                             <i class="fas fa-bell"></i>
                             <span id="notifBadge" style="display: none; position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; font-size: 9px; padding: 2px 5px; border-radius: 10px;">0</span>
@@ -268,6 +268,7 @@
                         <i class="fas fa-users" onclick="window.showLeadsPanel()" title="CRM Clientes" style="color: #475569; cursor: pointer;"></i>
                         <i class="fas fa-chart-line" onclick="window.AnalyticsDashboard.show()" title="Analytics" style="color: #6366f1; cursor: pointer;"></i>
                         <i class="fas fa-lightbulb" onclick="window.showFarolInsights()" title="Farol Insights" style="color: #f59e0b; cursor: pointer;"></i>
+                        <i class="fas fa-info-circle" onclick="window.Institutional?.showMenu(event)" title="Info & Suporte" style="color: #64748b; cursor: pointer;"></i>
                         <i class="fas fa-mobile-alt" onclick="document.getElementById('downloadModal').classList.add('active')" title="Baixar App" style="color: #10b981; cursor: pointer;"></i>
                         <i class="fas fa-user-shield" id="btnAdminPanel" onclick="window.Admin && window.Admin.showAdminPanel()" title="Painel Admin" style="color: #1e293b; cursor: pointer; display: none;"></i>
                     </div>
@@ -285,7 +286,7 @@
                 <!-- Abas de Navegação -->
                 <div class="sidebar-tabs" style="margin: 20px -24px -24px; padding: 0 24px; display: flex; border-bottom: 1px solid #e2e8f0; gap: 4px; overflow-x: auto; white-space: nowrap;">
                     <button type="button" class="tab-btn active" onclick="window.switchSidebarTab('map')" style="flex: 1; font-size: 10px; padding: 10px 5px;">📍 Mapa</button>
-                    <button type="button" class="tab-btn" onclick="window.switchSidebarTab('prospecting')" style="flex: 1; font-size: 10px; padding: 10px 5px;">🛰️ Radar</button>
+                    <button type="button" class="tab-btn" onclick="window.switchSidebarTab('prospecting')" style="flex: 1; font-size: 10px; padding: 10px 5px;">🔥 Oportunidades</button>
                     <button type="button" class="tab-btn" onclick="window.switchSidebarTab('crm')" style="flex: 1; font-size: 10px; padding: 10px 5px;">👥 CRM</button>
                     <button type="button" class="tab-btn" onclick="window.switchSidebarTab('wallet')" style="flex: 1; font-size: 10px; padding: 10px 5px;">📦 Carteira</button>
                 </div>
@@ -296,6 +297,29 @@
 
                 <!-- Filter Section -->
                 <div class="filter-section">
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="filter-title" style="margin-bottom: 0;">Filtro de Zona</div>
+                            <select id="opportunityZoneSelect" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 11px; padding: 4px 8px; font-weight: 700; color: #1e293b; outline: none;">
+                                <option value="">Todas as Zonas</option>
+                                <option value="0">Zona 00</option>
+                                <option value="1">Zona 01</option>
+                                <option value="2">Zona 02</option>
+                                <option value="3">Zona 03</option>
+                                <option value="4">Zona 04</option>
+                                <option value="5">Zona 05</option>
+                                <option value="6">Zona 06</option>
+                            </select>
+                        </div>
+                        <div id="typeFilterRow" style="display: none; flex-direction: column; gap: 8px; background: #fffbeb; padding: 12px; border-radius: 12px; border: 1px solid #fef3c7; margin-bottom: 4px;">
+                            <div class="filter-title" style="margin-bottom: 0; color: #92400e; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Foco da Prospecção</div>
+                            <div class="opportunity-type-chips" style="display: flex; gap: 8px;">
+                                <button type="button" class="opt-chip active" data-type="all" onclick="window.switchOpportunityType('all')" style="flex: 1; border: 1px solid #fcd34d; background: white; border-radius: 8px; padding: 8px; font-size: 11px; font-weight: 800; color: #92400e; cursor: pointer; transition: all 0.2s;">🎯 Todos</button>
+                                <button type="button" class="opt-chip" data-type="seller" onclick="window.switchOpportunityType('seller')" style="flex: 1; border: 1px solid transparent; background: rgba(255,255,255,0.5); border-radius: 8px; padding: 8px; font-size: 11px; font-weight: 700; color: #92400e; cursor: pointer; transition: all 0.2s;">🚩 Venda</button>
+                                <button type="button" class="opt-chip" data-type="buyer" onclick="window.switchOpportunityType('buyer')" style="flex: 1; border: 1px solid transparent; background: rgba(255,255,255,0.5); border-radius: 8px; padding: 8px; font-size: 11px; font-weight: 700; color: #92400e; cursor: pointer; transition: all 0.2s;">💰 Compra</button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="filter-title">Tipo de Busca</div>
                     <div class="filter-grid">
                         <div class="filter-chip master-only locked" data-search-type="all"
@@ -316,7 +340,6 @@
                              onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Pesquisa por Imóveis exclusiva para perfil Master.')"
                              data-tooltip="Pesquisa na base do Cadastro Imobiliário">Imóveis <span class="lock-icon">🔒</span></div>
                         <div class="filter-chip master-only locked" data-search-type="opportunity"
-                            onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Radar Farol exclusivo para Masters.')"
                             style="border-style: dashed; background: #fffbeb; color: #b45309;"
                             data-tooltip="Radar Farol: Exclusivo para perfis Master">
                             ✨ Oportunidades <span class="lock-icon">🔒</span>
@@ -334,15 +357,20 @@
             <!-- TAB: PROSPECTING (NEW) -->
             <div id="tab-prospecting" class="sidebar-tab-content" style="display: none;">
                 <div style="padding: 20px; text-align: center;">
-                    <i class="fas fa-binoculars" style="font-size: 40px; color: #cbd5e1; margin-bottom: 20px;"></i>
-                    <h3 style="color: #1e293b; margin-bottom: 8px;">Módulo de Prospecção</h3>
-                    <p style="font-size: 13px; color: #64748b; line-height: 1.6;">
-                        Aqui você poderá gerenciar leads e oportunidades identificados pelo Radar Farol.
-                    </p>
-                    <div id="prospecting-leads-list" style="margin-top: 20px; text-align: left;">
-                        <!-- Leads list content -->
-                        <div style="padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px dashed #e2e8f0; color: #94a3b8; font-size: 12px; text-align: center;">
-                            Nenhuma oportunidade selecionada. Navegue pelo mapa e use o Radar para filtrar alvos.
+                    <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 16px; padding: 25px; margin-bottom: 20px;">
+                        <i class="fas fa-fire" style="font-size: 44px; color: #f59e0b; margin-bottom: 15px; filter: drop-shadow(0 4px 6px rgba(245,158,11,0.3));"></i>
+                        <h3 style="color: #92400e; margin-bottom: 8px; font-weight: 900;">Radar Oportunidades 🔥</h3>
+                        <p style="font-size: 12px; color: #b45309; line-height: 1.6; font-weight: 500;">
+                            Nossa IA analisa em tempo real o comportamento dos proprietários para identificar quem tem mais chance de vender ou aceitar propostas.
+                        </p>
+                        <button onclick="window.switchSidebarTab('map'); document.querySelector('[data-search-type=\'opportunity\']').click();" 
+                                class="btn-primary-rich" style="margin-top: 20px; background: #f59e0b; width: 100%; border-radius: 10px; font-weight: 800; font-size: 12px; height: 44px;">
+                            <i class="fas fa-search-dollar"></i> Rodar Diagnóstico Agora
+                        </button>
+                    </div>
+                    <div id="prospecting-leads-list" style="text-align: left;">
+                        <div style="padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px dashed #e2e8f0; color: #94a3b8; font-size: 11px; text-align: center;">
+                            Ative o Radar acima para ver a lista de investidores e oportunidades quentes.
                         </div>
                     </div>
                 </div>
@@ -603,6 +631,7 @@
     <script src="auth_handler.js"></script>
  
     <!-- Google Maps Engine (Migration Target) -->
+    <script type="module" src="https://unpkg.com/@googlemaps/extended-component-library@0.6"></script>
     <script src="google_maps_loader.js?v=1.3"></script>
 
     <!-- App Logic -->
@@ -638,7 +667,11 @@
     <script src="notifications_handler.js"></script>
     <script src="media_handler.js"></script>
     <script src="image_viewer_handler.js"></script>
+    <script src="institutional_handler.js"></script>
     <script src="zoning_handler.js"></script>
+    <script src="relationship_handler.js"></script>
+    <script src="graph_handler.js"></script>
+    <script src="predictive_handler.js"></script>
 
     <!-- Onboarding / Tour -->
     <script src="intro.min.js"></script>
@@ -662,6 +695,7 @@
     <!-- Mobile Native -->
     <script src="camera_handler.js"></script>
     <script src="streetview_handler.js"></script>
+    <script src="regional_handler.js"></script>
     <script src="portfolio_handler.js"></script>
     <script src="weather_handler.js"></script>
 

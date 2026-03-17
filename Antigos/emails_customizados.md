@@ -516,3 +516,4 @@ Podemos marcar um café virtual para explorarmos potenciais de integração?
 Um abraço,
 
 Bruno Giovani Pereira (13) 99124-8146 Brunogp.corretor@gmail.com
+.gitignore

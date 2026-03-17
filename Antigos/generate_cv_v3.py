@@ -167,3 +167,4 @@ if __name__ == "__main__":
     create_docx("Curriculo_Bruno_Pereira_Final.docx")
     create_pdf("Curriculo_Bruno_Pereira_Final.pdf")
     print("Versão Final Profissional gerada!")
+.gitignore

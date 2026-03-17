@@ -252,6 +252,7 @@ Tabela: lotes
   - salao_festas (boolean - format: boolean)
   - area_verde (boolean - format: boolean)
   - valor_condominio (string - format: text)
+  - municipio (string - format: character varying)
 
 Tabela: credit_transactions
 -----------------------------
@@ -302,6 +303,7 @@ Tabela: unidades
   - valor_vendavel (number - format: numeric)
   - matricula (string - format: text)
   - rip (string - format: text)
+  - municipio (string - format: character varying)
 
 Tabela: user_lote_edits
 -------------------------
@@ -379,6 +381,16 @@ Tabela: vw_bairros_centroids
   - total_lotes (integer - format: bigint)
   - utm_x (number - format: double precision)
   - utm_y (number - format: double precision)
+
+Tabela: municipios
+--------------------
+  - id (integer - format: integer)
+  - nome (string - format: character varying)
+  - slug (string - format: character varying)
+  - lat_centro (number - format: double precision)
+  - lng_centro (number - format: double precision)
+  - zoom_padrao (integer - format: integer)
+  - created_at (string - format: timestamp with time zone)
 
 Tabela: audit_logs
 --------------------

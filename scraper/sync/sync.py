@@ -124,6 +124,10 @@ def sync_property_to_supabase(property_data: Dict) -> bool:
                     if not current_data.get(supabase_field):
                         update_data[supabase_field] = property_data[scraped_field]
         
+        # Municipio
+        if property_data.get('municipio'):
+            update_data['municipio'] = property_data['municipio']
+        
         # Images
         if supabase_image_urls:
             update_data['imagens'] = supabase_image_urls

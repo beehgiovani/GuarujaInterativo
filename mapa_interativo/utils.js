@@ -141,6 +141,12 @@ const MobileSidebar = {
 // ========================================
 window.maskName = function(name) {
     if (!name) return 'Nome Reservado';
+    
+    // Admin/Master/Elite see full names
+    if (window.Monetization && window.Monetization.isEliteOrAbove()) {
+        return name;
+    }
+
     const parts = name.trim().split(' ');
     if (parts.length === 1) {
         return parts[0].substring(0, 2) + '*'.repeat(parts[0].length - 2);

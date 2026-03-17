@@ -120,3 +120,4 @@ if __name__ == "__main__":
     create_docx("Curriculo_Bruno_Pereira.docx")
     create_pdf("Curriculo_Bruno_Pereira.pdf")
     print("Arquivos criados com sucesso!")
+.gitignore

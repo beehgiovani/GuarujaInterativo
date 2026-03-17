@@ -31,7 +31,31 @@
 - [x] **PGFN & Certidões**: Backend e visualizador corrigidos.
 - [x] **Notificações**: Sistema de sininho realtime implementado.
 
+### 4. Inteligência Farol Preditivo (Diferenciação)
+
+- [x] **Diferenciar Oportunidades**:
+  - [x] Classificar perfis como "Vendedores" (Concentração/Inventário) ou "Compradores" (Aquisições recentes).
+  - [x] Atualizar UI de busca para filtrar por tipo de oportunidade.
+  - [x] Ajustar algoritmo de scoring para refletir as duas categorias.
+
+### 5. Estética e Branding
+
+- [x] **Refinamento Premium**:
+  - [x] Integrar logotipos no Sidebar e Login.
+  - [x] Melhorar sombras e efeitos de glassmorphism (Layout).
+  - [x] Polir transições e estados de hover.
+
 ---
 
-**Status Final**: Módulo de Anúncios finalizado, estilizado, limpo e
-documentado. 🚀
+## 🌎 Futuras Expansões
+
+- [x] **Mantendo Foco no Guarujá**:
+  - [x] Remover seletor de cidades da UI.
+  - [x] Garantir que a busca continua vinculada ao banco (Guarujá).
+  - [x] Validar linkagem de busca Google -> Lote via coordenada.
+- [x] **Correção de Visibilidade do Autocomplete**:
+  - [x] Adicionar biblioteca de componentes estendidos do Google Maps.
+  - [x] Ajustar estilos CSS para garantir que o componente seja visível.
+  - [x] Verificar inicialização no `search_handler.js`.
+
+**Status Final**: Sistema consolidado no Guarujá. Busca híbrida (Google + Supabase) operacional. 🚀

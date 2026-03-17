@@ -14,6 +14,13 @@ window.AnalyticsDashboard = {
     async show() {
         if (this.isOpen) return;
 
+        // VERIFICADOR DE PRIVILÉGIOS
+        const isMaster = window.Monetization && (window.Monetization.userRole === 'admin' || window.Monetization.userRole === 'master');
+        if (!isMaster) {
+            window.Toast.error("Acesso restrito ao Administrador.");
+            return;
+        }
+
         Loading.show('Carregando Analytics...', 'Processando dados');
 
         try {

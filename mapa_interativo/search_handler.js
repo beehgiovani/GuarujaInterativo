@@ -6,6 +6,13 @@ window.currentSearchType = 'all';
 
 // Initialize Search Listeners
 window.setupSearchAndFilters = function () {
+    window.searchByEnter = function () {
+        const query = document.getElementById('searchInput').value;
+        if (query && query.length >= 3) {
+            window.performSearch(query);
+        }
+    };
+
     console.log("Initializing Search Handler...");
 
     // Filter Chips
@@ -36,8 +43,15 @@ window.setupSearchAndFilters = function () {
             console.log(`Search Type Changed to: ${window.currentSearchType}`);
 
             if (window.currentSearchType === 'opportunity') {
+                const typeFilterRow = document.getElementById('typeFilterRow');
+                if (typeFilterRow) typeFilterRow.style.display = 'flex';
+                // Reset chips to 'all' on first enter
+                window.switchOpportunityType('all', false); 
                 window.performOpportunitySearch();
                 return;
+            } else {
+                const typeFilterRow = document.getElementById('typeFilterRow');
+                if (typeFilterRow) typeFilterRow.style.display = 'none';
             }
 
             // Re-run search if input is present
@@ -89,6 +103,7 @@ window.setupSearchAndFilters = function () {
                     west: -46.33
                 };
 
+                // No componente moderno, passamos o objeto de restrição diretamente
                 autocompleteElement.locationRestriction = guarujaBounds;
 
                 // Evento disparado quando o usuário escolhe um endereço da lista
@@ -107,10 +122,11 @@ window.setupSearchAndFilters = function () {
                         window.Toast.info("Não foi possível obter a localização exata.");
                         return;
                     }
-
+                    // Get street and coords
                     const lat = place.location.lat();
                     const lng = place.location.lng();
-                    
+
+                    const streetNameFromDisplayName = place.displayName || "";
                     // Sincronizar campo com o endereço formatado
                     // autocompleteElement.value = place.formattedAddress; // gmp-place-autocomplete gerencia isso
 
@@ -120,6 +136,7 @@ window.setupSearchAndFilters = function () {
                         const route = place.addressComponents.find(c => c.types.includes("route"));
                         if (route) streetName = route.longName;
                     }
+                    if (!streetName && place.displayName) streetName = place.displayName;
 
                     if (streetName) {
                         window.performSearch(streetName);
@@ -143,17 +160,6 @@ window.setupSearchAndFilters = function () {
 
                 autocompleteElement.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
-                        // Se não houver seleção ativa, fazemos a busca manual
-                        const query = e.target.value;
-                        if (query && query.length >= 3) {
-                            window.performSearch(query);
-                        }
-                    }
-                });
-
-                autocompleteElement.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        // Se não houver seleção ativa (place selecionado), fazemos a busca manual
                         const query = e.target.value;
                         if (query && query.length >= 3) {
                             window.performSearch(query);
@@ -231,6 +237,10 @@ window.performSearch = async function (query) {
                 .from('unidades')
                 .select('inscricao, endereco_completo, numero, bairro_unidade, lote_inscricao');
 
+            if (window.currentCity) {
+                queryBuilder = queryBuilder.eq('municipio', window.currentCity);
+            }
+
             if (numberMatch) {
                 const rawStreet = numberMatch[1].trim();
                 const rawNumber = numberMatch[2];
@@ -288,6 +298,7 @@ window.performSearch = async function (query) {
                 .from('lotes')
                 .select('inscricao, building_name')
                 .textSearch('building_name', tsQuery, { config: 'portuguese' })
+                .eq('municipio', window.currentCity || 'Guarujá')
                 .limit(10)
                 .then(r => ({ type: 'building', data: r.data || [] })));
 
@@ -298,6 +309,7 @@ window.performSearch = async function (query) {
                     .from('unidades')
                     .select('inscricao, nome_proprietario, lote_inscricao, tipo, complemento, endereco_completo')
                     .textSearch('nome_proprietario', tsQuery, { config: 'portuguese' })
+                    .eq('municipio', window.currentCity || 'Guarujá')
                     .limit(20)
                     .then(r => ({ type: 'legacy_unit', data: r.data || [] })));
             }
@@ -345,6 +357,9 @@ window.performSearch = async function (query) {
                 .select('id, nome_completo, cpf_cnpj, total_propriedades')
                 .ilike('nome_completo', `%${query.trim()}%`)
                 .limit(20);
+            
+            // Note: Proprietarios table might need a municipio link in the future 
+            // but for now they are global or matched via units.
 
             if (owners && owners.length > 0) {
                 results = results.concat(owners.map(owner => ({
@@ -364,6 +379,7 @@ window.performSearch = async function (query) {
                 .from('lotes')
                 .select('inscricao, bairro')
                 .ilike('inscricao', `%${query.trim()}%`)
+                .eq('municipio', window.currentCity || 'Guarujá')
                 .limit(5);
 
             if (byInscricao) {
@@ -554,8 +570,14 @@ window.displaySearchResults = function (results) {
                     background: white;
                 `;
                 
+                const isElite = window.Monetization.isEliteOrAbove();
+                const displayLabel = (item.isOwner && !isElite) ? window.maskName(item.label) : item.label;
+
                 div.innerHTML = `
-                    <div class="result-title" style="font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 2px;">${item.label}</div>
+                    <div class="result-title" style="font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 2px;">
+                        ${displayLabel}
+                        ${(item.isOwner && !isElite) ? '<i class="fas fa-lock" style="font-size: 10px; margin-left: 4px; opacity: 0.5;"></i>' : ''}
+                    </div>
                     <div class="result-subtitle" style="font-size: 11px; color: #64748b; display: flex; align-items: center; justify-content: space-between;">
                         <span>${item.sub || ''}</span>
                         ${item.isUnit ? `<span style="background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 9px;">UNIDADE</span>` : ''}
@@ -726,8 +748,121 @@ window.navigateToInscricao = async function (loteInscricao, unitInscricao = null
     }
 };
 
+
+window.performOpportunitySearch = async function () {
+    console.log("🔥 Searching for Platinum Opportunities...");
+    
+    // UI Loading State
+    const searchResults = document.getElementById('searchResults');
+    const sidebar = document.getElementById('sidebar');
+    if (searchResults) searchResults.classList.remove('hidden');
+    if (sidebar) sidebar.classList.add('searching');
+    
+    searchResults.innerHTML = '<div style="padding: 40px; text-align: center; color: #64748b;"><i class="fas fa-fire fa-spin" style="color: #ef4444; font-size: 24px; margin-bottom: 15px;"></i><br>Farol IA analisando o mercado...</div>';
+
+    try {
+        const zoneSelect = document.getElementById('opportunityZoneSelect');
+        const activeChip = document.querySelector('.opt-chip.active');
+        const zone = zoneSelect ? zoneSelect.value : (window.currentZone || null);
+        const type = activeChip ? activeChip.dataset.type : 'all';
+        
+        console.log(`🔍 Filtering by Zone: ${zone || 'GLOBAL'}, Type: ${type}`);
+
+        const { data: leads, error } = await window.supabaseApp.rpc('get_predictive_opportunities', {
+            p_zone: zone || null,
+            p_min_score: 30,
+            p_type: type
+        });
+
+        if (error) throw error;
+
+        if (!leads || leads.length === 0) {
+            searchResults.innerHTML = `
+                <div style="padding: 60px 20px; text-align: center;">
+                    <div style="font-size: 40px; margin-bottom: 20px;">🌊</div>
+                    <div style="font-weight: 800; font-size: 18px; color: #1e293b;">Mercado Calmo</div>
+                    <p style="color: #64748b; font-size: 14px; margin-top: 10px;">Não encontramos oportunidades urgentes (Score > 70) nesta região no momento.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = `
+            <div style="padding: 15px; background: #fee2e2; border-bottom: 1px solid #fecaca; color: #991b1b; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-fire"></i> ${leads.length} OPORTUNIDADES QUENTES
+            </div>
+        `;
+
+        leads.forEach(lead => {
+            const scoreColor = window.PredictiveHandler.getScoreColor(lead.score);
+            const isSeller = lead.opportunity_type === 'seller';
+            const typeLabel = isSeller ? 'VENDA' : 'COMPRA';
+            const typeColor = isSeller ? '#ef4444' : '#10b981';
+            const typeBg = isSeller ? '#fee2e2' : '#dcfce7';
+            
+            html += `
+                <div class="search-result-item" onclick="window.ProprietarioTooltip.show(${lead.proprietario_id})" style="border-left: 4px solid ${scoreColor}; padding: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                <span style="background: ${typeBg}; color: ${typeColor}; padding: 2px 8px; border-radius: 6px; font-size: 9px; font-weight: 900; border: 1px solid ${typeColor}30;">${typeLabel}</span>
+                                <div style="font-weight: 800; font-size: 14px; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">
+                                    ${window.Monetization.isEliteOrAbove() ? lead.nome_completo : window.maskName(lead.nome_completo)}
+                                </div>
+                            </div>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                                ${window.formatDocument(lead.cpf_cnpj, true)} · <b>${lead.total_propriedades}</b> Propriedades
+                            </div>
+                            <div style="margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap;">
+                                <span style="background: ${scoreColor}15; color: ${scoreColor}; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 800;">
+                                    SCORE: ${lead.score}
+                                </span>
+                                <span style="background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700;">
+                                    ${lead.top_reason}
+                                </span>
+                            </div>
+                        </div>
+                        <div style="width: 32px; height: 32px; background: ${typeBg}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: ${typeColor}; flex-shrink: 0;">
+                            <i class="fas ${isSeller ? 'fa-sign-out-alt' : 'fa-shopping-cart'}"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        searchResults.innerHTML = html;
+
+    } catch (e) {
+        console.error("Opportunity search failed:", e);
+        searchResults.innerHTML = `<div style="padding:40px; text-align:center; color:#64748b;">Farol Temporariamente offline.</div>`;
+    }
+};
+
 // Re-export fetchLotDetails if not globally available, but it should be in app.js
 // We assume fetchLotDetails is window.fetchLotDetails in app.js.
+
+window.switchOpportunityType = function(type, triggerSearch = true) {
+    const chips = document.querySelectorAll('.opt-chip');
+    chips.forEach(chip => {
+        if (chip.dataset.type === type) {
+            chip.classList.add('active');
+            chip.style.background = 'white';
+            chip.style.border = '1px solid #fcd34d';
+            chip.style.fontWeight = '800';
+            chip.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+        } else {
+            chip.classList.remove('active');
+            chip.style.background = 'rgba(255,255,255,0.5)';
+            chip.style.border = '1px solid transparent';
+            chip.style.fontWeight = '700';
+            chip.style.boxShadow = 'none';
+        }
+    });
+
+    if (triggerSearch) {
+        window.performOpportunitySearch();
+    }
+};
 
 // Initialize on Load
 document.addEventListener('DOMContentLoaded', window.setupSearchAndFilters);

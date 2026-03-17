@@ -106,50 +106,27 @@ O **Guarujá GeoMap** é uma plataforma web premium desenvolvida para imobiliár
 
 ```
 guaruja_geo/
-├── mapa_interativo/           # Aplicação Web Principal
-│   ├── index.html             # Página principal
-│   ├── app.js                 # Entry point e inicialização
-│   ├── map_handler.js         # Gerenciamento de mapa e hierarquia
-│   ├── tooltip_handler.js     # Sistema de tooltips
-│   ├── search_handler.js      # Busca e filtros
-│   ├── editor_handler.js      # CRUD de lotes/unidades
-│   ├── crm_handler.js         # Sistema CRM
-│   ├── enrichment_handler.js  # Integração Enriquecimento API
-│   ├── notifications_handler.js # Sistema de Notificações (Sininho)
-│   ├── infosimples_handler.js # Gerenciador de Certidões Jurídicas
-│   ├── utils.js               # Utilidades gerais
-│   ├── supabase_client.js     # Cliente Supabase
-│   ├── styles.css             # Estilos principais
-│   ├── premium_styles.css     # Estilos premium
-│   ├── carousel_styles.css    # Carrossel de imagens
-│   ├── modal_styles.css       # Modais
-│   ├── crm_styles.css         # Estilos CRM
-│   └── logo.png               # Logo da aplicação
-│
-├── scripts/                   # Scripts Python de Coleta e Upload
-│   ├── upload_data_via_api.py # Upload bulk para Supabase
-│   ├── probe_balance.py       # Verificar saldo API
-│   ├── probe_enrichment.py    # Testar API Enriquecimento API
-│   └── config_*.json          # Configurações
-│
-├── _legacy/                   # Scripts de Coleta Legacy
-│   ├── guaruja_lotes_extractor.py      # Extrator de lotes
-│   ├── guaruja_extrator_completo.py    # Extrator completo
-│   ├── guaruja_mapa_visualizador.py    # Visualizador antigo
-│   ├── capture_and_vectorize.py        # Captura e vetorização
-│   └── merge_data.py                   # Merge de datasets
-│
-├── supabase/
-│   └── functions/
-│       └── enrich-data/        # Edge Function Enriquecimento API
-│
-├── docs/                       # Documentação
-│   ├── DEPLOY_FIREBASE.md      # Guia de deploy
-│   └── FIREBASE_COMMANDS.md    # Comandos úteis
-│
-├── firebase.json               # Configuração Firebase
-│   ├── .firebaserc             # Projeto Firebase
-│   └── README.md               # Este arquivo
+├── mapa_interativo/           # Aplicação Web Principal (Frontend + Handlers)
+├── scraper/                   # Sistema de Scraping (Python)
+│   ├── sources/               # Extratores por fonte (OLX, Google, Serper)
+│   ├── core/                  # DB, Configurações e Matcher
+│   ├── sync/                  # Scripts de sincronização cloud/local
+│   └── cron/                  # Scripts disparados via CRON
+├── scripts/                   # Scripts de Ferramentas e IA
+│   ├── automation/            # Git push, Automação de Releases
+│   ├── ai_tools/              # Debug Gemini, Listagem de Modelos
+│   └── valuation/             # Ferramentas de avaliação por IA
+├── docs/                      # Documentação Centralizada
+│   ├── business/              # Estratégia, Monetização e Prospectos
+│   ├── planning/              # Roadmaps e Tarefas futuras
+│   ├── database/              # Esquema Real Nuvem (Source of Truth)
+│   └── technical/             # Manuais de deploy e comandos Firebase
+├── Antigos/                   # Legacy & Backup (Não deletar sem backup)
+│   ├── migrations/            # Migrations antigas do Supabase
+│   ├── Curriculos/            # Arquivos pessoais (Bruno)
+│   └── drafts/                # Rascunhos de e-mails e notas antigas
+├── supabase/                  # Backend Supabase Configs
+└── firebase.json              # Configuração Firebase Hosting
 ```
 
 ---

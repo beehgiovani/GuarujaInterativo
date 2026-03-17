@@ -145,21 +145,27 @@ window.ProprietarioTooltip = {
         tooltip.className = 'proprietario-tooltip';
         tooltip.style.cssText = `
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 90%; max-width: 900px; height: 80vh; background: white;
-            border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+            width: 90%; max-width: 900px; height: 85vh; background: var(--glass-bg, white);
+            backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border-radius: var(--radius-lg, 28px); box-shadow: var(--shadow-premium);
+            border: 1px solid var(--glass-border, #f1f5f9);
             z-index: 9999; overflow: hidden; display: flex; flex-direction: column;
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         `;
 
         let html = this.renderHeader(prop);
+
+        const isElite = window.Monetization.isEliteOrAbove();
+        const isPro = window.Monetization.canAccess('radar_mercado');
 
         // TABS
         html += `
             <div class="tooltip-tabs" style="padding: 0 24px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; gap: 8px; flex-wrap: wrap;">
                 <div class="tooltip-tab active" onclick="window.switchTooltipTab(this, 'prop-tab-geral')" style="padding: 12px 16px; font-size: 13px; font-weight: 700; color: #764ba2; cursor: pointer; border-bottom: 3px solid #764ba2;">📋 Geral</div>
-                <div class="tooltip-tab" onclick="window.switchTooltipTab(this, 'prop-tab-imoveis')" style="padding: 12px 16px; font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer;">🏠 Imóveis (${prop.unidades.length})</div>
-                <!-- <div class="tooltip-tab" onclick="window.switchTooltipTab(this, 'prop-tab-juridico')" style="padding: 12px 16px; font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer;">📂 Jurídico</div> -->
+                <div class="tooltip-tab" onclick="window.switchTooltipTab(this, 'prop-tab-imoveis')" style="padding: 12px 16px; font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer;">🏠 Imóveis (${prop.unidades.length}) ${!isPro ? '<i class="fas fa-lock" style="font-size: 10px; margin-left: 4px; opacity: 0.6;"></i>' : ''}</div>
                 <div class="tooltip-tab" onclick="window.switchTooltipTab(this, 'prop-tab-outras')" style="padding: 12px 16px; font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer;">ℹ️ Outras Info</div>
-                ${prop.tipo === 'PJ' ? `<div class="tooltip-tab" onclick="window.switchTooltipTab(this, 'prop-tab-socios')" style="padding: 12px 16px; font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer;">👥 Sócios</div>` : ''}
+                <div class="tooltip-tab" onclick="window.switchTooltipTab(this, 'prop-tab-conexoes')" style="padding: 12px 16px; font-size: 13px; font-weight: 700; color: #2563eb; cursor: pointer;">🕸️ Rede de Conexões ${!isElite ? '<i class="fas fa-lock" style="font-size: 10px; margin-left: 4px; opacity: 0.6;"></i>' : ''}</div>
+                ${prop.tipo === 'PJ' ? `<div class="tooltip-tab" onclick="window.switchTooltipTab(this, 'prop-tab-socios')" style="padding: 12px 16px; font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer;">👥 Sócios ${!isElite ? '<i class="fas fa-lock" style="font-size: 10px; margin-left: 4px; opacity: 0.6;"></i>' : ''}</div>` : ''}
             </div>
         `;
 
@@ -167,6 +173,20 @@ window.ProprietarioTooltip = {
 
         // ABA: GERAL
         html += '<div id="prop-tab-geral" class="tab-content-pane active">';
+        
+        // Farol Insight (Predictive Reasons)
+        const pred = window.PredictiveHandler.calculateScore(prop);
+        if (pred.reasons.length > 0) {
+            html += `
+                <div style="background: ${pred.color}10; border: 1px solid ${pred.color}30; padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+                    <div style="color: ${pred.color}; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px;">🎯 Análise Preditiva Farol</div>
+                    <ul style="margin: 0; padding-left: 18px; color: #1e293b; font-size: 13px; font-weight: 600;">
+                        ${pred.reasons.map(r => `<li style="margin-bottom: 4px;">${r}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+
         html += this.renderContatos(prop.dados_enrichment || {});
         html += this.renderEnderecos(prop.dados_enrichment || {});
         html += this.renderDadosAdicionais(prop);
@@ -174,7 +194,11 @@ window.ProprietarioTooltip = {
 
         // ABA: IMÓVEIS
         html += '<div id="prop-tab-imoveis" class="tab-content-pane" style="display:none;">';
-        html += this.renderPropriedades(prop.unidades || []);
+        if (isPro) {
+            html += this.renderPropriedades(prop.unidades || []);
+        } else {
+            html += this.renderLockedFeature('Imóveis do Proprietário', 'Veja todas as propriedades vinculadas a este CPF/CNPJ em todo o Guarujá.', 'Pro');
+        }
         html += '</div>';
 
         // ABA: JURÍDICO (Apenas Certidões) - DESATIVADA
@@ -191,14 +215,38 @@ window.ProprietarioTooltip = {
         html += this.renderFamilia(prop.dados_enrichment || {});
         html += '</div>';
 
+        // ABA: CONEXÕES
+        html += '<div id="prop-tab-conexoes" class="tab-content-pane" style="display:none;">';
+        if (isElite) {
+            html += '<div id="conexoes-loading" style="padding: 40px; text-align: center; color: #64748b;"><i class="fas fa-spinner fa-spin"></i> Mapeando rede de influência...</div>';
+            html += '<div id="conexoes-list"></div>';
+        } else {
+            html += this.renderLockedFeature('Rede de Conexões', 'Mapeie o ecossistema do proprietário: sócios em outras empresas, familiares e vínculos cruzados.', 'Elite');
+        }
+        html += '</div>';
+
         // ABA: SÓCIOS (PJ)
         if (prop.tipo === 'PJ') {
             html += '<div id="prop-tab-socios" class="tab-content-pane" style="display:none;">';
-            html += this.renderSocios(prop);
+            if (isElite) {
+                html += this.renderSocios(prop);
+            } else {
+                html += this.renderLockedFeature('Quadro Societário', 'Acesse a lista completa de sócios, cargos e participações societárias desta empresa.', 'Elite');
+            }
             html += '</div>';
         }
 
         html += '</div>';
+
+        html += `
+            <div style="background: #f8fafc; padding: 12px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 11px; color: #94a3b8;">Ref ID: ${prop.id} · Dados processados por IA Preditiva</span>
+                <button onclick="window.Maintenance.showReportModal('owner', {id: ${prop.id}, building_name: '${prop.nome_completo}'})" 
+                    style="background: none; border: none; color: #6d28d9; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-flag"></i> Informar dado incorretos aqui
+                </button>
+            </div>
+        `;
 
         tooltip.innerHTML = html;
         document.body.appendChild(tooltip);
@@ -212,6 +260,11 @@ window.ProprietarioTooltip = {
         tooltip.backdrop = backdrop;
 
         this.setupHandlers(tooltip, prop);
+        
+        // Load connections in background if has access
+        if (isElite) {
+            this.loadConnections(prop.id, prop.nome_completo);
+        }
 
         // Trigger Context Help
         if (window.Onboarding && window.Onboarding.checkAndShowContextHelp) {
@@ -249,13 +302,23 @@ window.ProprietarioTooltip = {
                         <i class="fas ${icone}" style="font-size: 32px;"></i>
                     </div>
                     <div style="flex: 1;">
-                        <div style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">${window.maskName(prop.nome_completo)}</div>
+                        <div style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px;">
+                            ${window.Monetization.isEliteOrAbove() ? prop.nome_completo : window.maskName(prop.nome_completo)}
+                            ${(() => {
+                                const pred = window.PredictiveHandler.calculateScore(prop);
+                                return `
+                                    <div style="background: ${pred.color}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                                        <i class="fas fa-fire"></i> ${pred.score}
+                                    </div>
+                                `;
+                            })()}
+                        </div>
                         <div style="font-size: 14px; opacity: 0.9; margin-top: 6px; display: flex; align-items: center; gap: 12px;">
                             <span style="background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 4px; font-weight: 600;">${tipoPessoa}</span>
                             <span>
                                 CPF/CNPJ: 
-                                <span class="doc-value" style="font-family: monospace; font-weight: 700;">${window.formatDocument(prop.cpf_cnpj, !window.Monetization.canAccess('advanced_ai'))}</span>
-                                <i class="fas fa-eye" style="cursor: pointer; margin-left: 6px; opacity: 0.8;" 
+                                <span class="doc-value" style="font-family: monospace; font-weight: 700;">${window.formatDocument(prop.cpf_cnpj, window.Monetization.canAccess('advanced_ai'))}</span>
+                                <i class="fas ${window.Monetization.canAccess('advanced_ai') ? 'fa-eye' : 'fa-lock'}" style="cursor: pointer; margin-left: 6px; opacity: 0.8;" 
                                    onclick="window.toggleCpfVisibility(this, '${prop.cpf_cnpj}')" title="Mostrar/Ocultar"></i>
                             </span>
                         </div>
@@ -283,6 +346,18 @@ window.ProprietarioTooltip = {
                         onmouseover="this.style.background='#059669'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#10b981'; this.style.transform='none';">
                         <i class="fas ${window.Monetization.canAccess('mapear_patrimonio') ? 'fa-map-marked-alt' : 'fa-lock'}"></i> Mapear Patrimônio
                     </button>
+
+                    <button onclick="window.ProprietarioTooltip.analiseIA(${prop.id})" 
+                        style="background: #7c3aed; border: 1px solid #6d28d9; color: white; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3); transition: all 0.2s;"
+                        onmouseover="this.style.background='#6d28d9'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#7c3aed'; this.style.transform='none';">
+                        <i class="fas fa-brain"></i> Análise Farol
+                    </button>
+
+                    <button onclick="window.ProprietarioTooltip.adicionarComoLead(${prop.id})" 
+                        style="background: #3b82f6; border: 1px solid #2563eb; color: white; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); transition: all 0.2s;"
+                        onmouseover="this.style.background='#2563eb'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#3b82f6'; this.style.transform='none';">
+                        <i class="fas fa-user-plus"></i> Virar Lead
+                    </button>
                 </div>
             </div>
                 
@@ -291,6 +366,26 @@ window.ProprietarioTooltip = {
                     ${prop.ocupacao ? `<span>💼 ${prop.ocupacao}</span>` : ''}
                     ${prop.renda_estimada ? `<span>💰 ${prop.renda_estimada}</span>` : ''}
                 </div>
+
+                ${(() => {
+                    const pred = window.PredictiveHandler.calculateScore(prop);
+                    if (pred.score > 70) {
+                        return `
+                            <div style="margin-top: 20px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 12px; padding: 15px; display: flex; align-items: center; gap: 15px; backdrop-filter: blur(10px);">
+                                <div style="font-size: 32px; filter: drop-shadow(0 0 10px #f59e0b);">🔥</div>
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 900; font-size: 14px; letter-spacing: 0.5px;">ALERTA DE OPORTUNIDADE PLATINUM</div>
+                                    <div style="font-size: 11px; opacity: 0.9; font-weight: 500;">Este proprietário possui score ${pred.score}%. Alta probabilidade de liquidez ou interesse em desinvestimento.</div>
+                                </div>
+                                <button onclick="window.ProprietarioTooltip.analiseIA(${prop.id})" 
+                                    style="background: white; color: #7c3aed; border: none; padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;">
+                                    Ver Detalhes IA
+                                </button>
+                            </div>
+                        `;
+                    }
+                    return '';
+                })()}
             </div>
         `;
     },
@@ -330,17 +425,11 @@ window.ProprietarioTooltip = {
 
             html += `
                 <div class="prop-item" data-inscricao="${u.inscricao}" style="
-                    background: white;
-                    border: 1px solid #e2e8f0;
-                    border-left: 4px solid ${statusColor};
-                    border-radius: 8px;
-                    padding: 16px;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                " onmouseover="this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.1)'" 
-                   onmouseout="this.style.boxShadow='none'">
+                    background: white; border: 1px solid #e2e8f0; border-left: 4px solid ${statusColor};
+                    border-radius: 8px; padding: 16px; transition: all 0.2s;
+                " onmouseover="this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
                     <div style="display: flex; justify-content: space-between; align-items: start;">
-                        <div style="flex: 1;">
+                        <div style="flex: 1; cursor: pointer;" onclick="window.navigateToInscricao('${lote.inscricao}', '${u.inscricao}')">
                             <div style="font-weight: 700; color: #1e293b; font-size: 15px; margin-bottom: 4px;">
                                 ${lote.building_name || lote.endereco || 'Imóvel'}
                             </div>
@@ -351,15 +440,19 @@ window.ProprietarioTooltip = {
                                 📍 ${lote.bairro || '-'} • Zona ${lote.zona || '-'}
                             </div>
                         </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 10px; color: ${statusColor}; font-weight: 600; margin-bottom: 4px;">
-                                ${u.status_venda || 'N/A'}
+                        <div style="text-align: right; display: flex; flex-direction: column; gap: 8px;">
+                            <div>
+                                <div style="font-size: 10px; color: ${statusColor}; font-weight: 600; margin-bottom: 4px;">
+                                    ${u.status_venda || 'N/A'}
+                                </div>
+                                ${u.valor_venal ? `<div style="font-size: 12px; color: #334155; font-weight: 600;">R$ ${(u.valor_venal).toLocaleString('pt-BR')}</div>` : ''}
                             </div>
-                            ${u.valor_venal ? `<div style="font-size: 12px; color: #334155; font-weight: 600;">R$ ${(u.valor_venal).toLocaleString('pt-BR')}</div>` : ''}
+                            <button onclick="window.ProprietarioTooltip.solicitarTransferencia('${u.inscricao}', '${lote.building_name || 'Lote'}')" 
+                                    style="background: none; border: none; color: #94a3b8; font-size: 10px; cursor: pointer; text-decoration: underline;"
+                                    onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">
+                                <i class="fas fa-exchange-alt"></i> Outro Dono?
+                            </button>
                         </div>
-                    </div>
-                    <div style="margin-top: 8px; font-size: 10px; color: #94a3b8; font-family: monospace;">
-                        ${u.inscricao}
                     </div>
                 </div>
             `;
@@ -367,6 +460,30 @@ window.ProprietarioTooltip = {
 
         html += '</div></div>';
         return html;
+    },
+
+    async solicitarTransferencia(inscricao, local) {
+        const motivo = prompt(`Este imóvel (${local} - ${inscricao}) pertence a outro proprietário? Descreva o que você sabe (opcional):`);
+        if (motivo === null) return;
+
+        window.Loading.show("Registrando sugestão...");
+        try {
+            const { data: { user } } = await window.supabaseApp.auth.getUser();
+            const { error } = await window.supabaseApp.from('audit_logs').insert({
+                user_id: user?.id,
+                action: 'SUGGEST_OWNER_CHANGE',
+                details: { inscricao, local, observacao: motivo },
+                severity: 'info'
+            });
+
+            if (error) throw error;
+            window.Toast.success("Obrigado! Nossa equipe de curadoria analisará a titularidade deste imóvel.");
+        } catch (e) {
+            console.error(e);
+            window.Toast.error("Erro ao enviar sugestão.");
+        } finally {
+            window.Loading.hide();
+        }
     },
 
     renderContatos(dados) {
@@ -811,6 +928,107 @@ window.ProprietarioTooltip = {
         });
     },
 
+    async analiseIA(propId) {
+        if (!window.Farol) {
+            window.Toast.error("Farol IA não disponível.");
+            return;
+        }
+
+        window.Loading.show("Farol Analisando...", "Cruzando dados do patrimônio");
+
+        try {
+            // Re-fetch to have clean data or use currentTooltip context
+            const { data: prop } = await window.supabaseApp.from('proprietarios').select('*').eq('id', propId).single();
+            const { data: unidades } = await window.supabaseApp.from('unidades').select('*, lotes(*)').eq('proprietario_id', propId);
+            
+            if (!unidades || unidades.length === 0) {
+                window.Toast.info("Poucos dados para uma análise profunda.");
+                window.Loading.hide();
+                return;
+            }
+
+            const prompt = `Você é o 'Farol GuaruGeo', uma IA especialista em inteligência de mercado imobiliário para o Guarujá. 
+            Analise o patrimônio de ${prop.nome_completo}:
+            - Total de imóveis: ${unidades.length}
+            - Tipologias: ${[...new Set(unidades.map(u => u.tipo))].join(', ')}
+            - Bairros de Atuação: ${[...new Set(unidades.map(u => u.lotes?.bairro)).filter(b => b)].join(', ')}
+            - Metragem Total Estimada: ${unidades.reduce((acc, u) => acc + (parseFloat(u.metragem) || 0), 0).toLocaleString('pt-BR')} m²
+
+            Informação Importante: O valor venal total é R$ ${unidades.reduce((acc, u) => acc + (u.valor_venal || 0), 0).toLocaleString('pt-BR')}, mas lembre-se que este NÃO é o valor de mercado. Use o Valor Venal apenas como referência técnica de base de tributação.
+
+            Gere um relatório estratégico conciso (3 seções) para o corretor:
+            1. 👤 PERFIL: Comportamento do investidor e sua relevância no cenário local.
+            2. 🎯 OPORTUNIDADE: Como o corretor deve abordar esse cliente? Que tipo de produto esse investidor costuma comprar ou vender?
+            3. 🚀 ESTRATÉGIA: Sugestão de abordagem ativa (permuta, upgrade, consolidação).
+            Seja profissional, direto e use o 'faro' de um corretor de elite.`;
+
+            const res = await window.Farol.ask(prompt);
+            
+            // Mostrar em um modal bonito
+            const modal = document.createElement('div');
+            modal.className = 'custom-modal-overlay active';
+            modal.style.zIndex = '10050';
+            modal.innerHTML = `
+                <div class="custom-modal" style="max-width: 600px;">
+                    <div class="custom-modal-header" style="background: #7c3aed; color: white;">
+                        <div class="custom-modal-title"><i class="fas fa-brain"></i> Análise Estratégica Farol</div>
+                        <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()">&times;</button>
+                    </div>
+                    <div class="custom-modal-body" style="line-height: 1.6; color: #1e293b; font-size: 14px; max-height: 70vh; overflow-y: auto;">
+                        <div style="padding: 10px 0;">
+                            ${window.parseMarkdown ? window.parseMarkdown(res) : res.replace(/\n/g, '<br>')}
+                        </div>
+                        
+                        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: right;">
+                            <button onclick="this.closest('.custom-modal-overlay').remove()" style="padding: 8px 20px; background: #f1f5f9; border: none; border-radius: 6px; color: #475569; font-weight: 700; cursor: pointer;">Fechar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+        } catch (e) {
+            console.error(e);
+            window.Toast.error("Erro na análise Farol.");
+        } finally {
+            window.Loading.hide();
+        }
+    },
+
+    async adicionarComoLead(propId) {
+        window.Loading.show("Salvando Lead...");
+        try {
+             const { data: prop } = await window.supabaseApp.from('proprietarios').select('*').eq('id', propId).single();
+             const { data: { user } } = await window.supabaseApp.auth.getUser();
+             
+             if (!user) {
+                 window.Toast.error("Você precisa estar logado para salvar leads.");
+                 return;
+             }
+
+             const contacts = prop.dados_enrichment || {};
+             const mobile = contacts.mobile_phones?.[0]?.number || "";
+             const ddd = contacts.mobile_phones?.[0]?.ddd || "";
+
+             const { error } = await window.supabaseApp.from('leads').insert({
+                 nome: prop.nome_completo,
+                 cpf_cnpj: prop.cpf_cnpj,
+                 telefone: mobile ? `(${ddd}) ${mobile}` : null,
+                 email: contacts.emails?.[0]?.email || null,
+                 observacoes: `Lead gerado automaticamente via Patrimônio de ${prop.nome_completo}`,
+                 user_id: user.id
+             });
+
+             if (error) throw error;
+             window.Toast.success("Proprietário adicionado à sua lista de Leads!");
+        } catch(e) {
+            console.error(e);
+            window.Toast.error("Erro ao salvar lead.");
+        } finally {
+            window.Loading.hide();
+        }
+    },
+
     renderSocios(prop) {
         const publicData = prop.dados_publicos || (prop.dados_enrichment ? prop.dados_enrichment.raw_public_data : null);
         const rawSocios = publicData ? publicData.socios : [];
@@ -1075,6 +1293,125 @@ window.ProprietarioTooltip = {
         } finally {
             window.Loading.hide();
         }
+    },
+
+    async loadConnections(propId, propName) {
+        if (!window.RelationshipHandler) return;
+        
+        try {
+            const connections = await window.RelationshipHandler.getConnections(propId);
+            const container = document.getElementById('conexoes-list');
+            const loading = document.getElementById('conexoes-loading');
+            
+            if (loading) loading.style.display = 'none';
+            if (!container) return;
+
+            if (!connections || connections.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #64748b;">
+                        <i class="fas fa-project-diagram" style="font-size: 32px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <p>Nenhuma conexão direta ou indireta mapeada ainda.</p>
+                        <p style="font-size: 11px; margin-top: 8px; color: #94a3b8;">A rede cresce conforme novos sócios e empresas são detalhados.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div style="padding: 16px; background: rgba(37, 99, 235, 0.05); border-radius: 12px; border: 1px solid rgba(37, 99, 235, 0.1); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1;">
+                        <div style="font-size: 11px; font-weight: 800; color: #2563eb; text-transform: uppercase; margin-bottom: 4px;">🎯 Insight de Rede</div>
+                        <div style="font-size: 13px; color: #1e3a8a;">Identificamos <strong>${connections.length} entidades</strong> vinculadas a este proprietário.</div>
+                    </div>
+                    <button onclick="window.ProprietarioTooltip.visualizarTeia(${propId}, '${propName}')" 
+                        style="background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);">
+                        <i class="fas fa-project-diagram"></i> Visualizar Teia
+                    </button>
+                </div>
+                <div style="display: grid; gap: 10px;">
+            `;
+
+            connections.forEach(c => {
+                html += `
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 700; color: #1e293b; font-size: 13px;">${c.nome}</div>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                                <span style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: 700; color: #2563eb;">${c.type}</span>
+                                <span style="margin-left: 8px;">${c.doc ? window.formatDocument(c.doc, true) : 'Doc. Indisponível'}</span>
+                            </div>
+                        </div>
+                        ${c.id ? `
+                            <button onclick="window.ProprietarioTooltip.show(${c.id})" style="background: #f1f5f9; border: none; padding: 6px 12px; border-radius: 6px; color: #475569; font-size: 11px; font-weight: 700; cursor: pointer;">
+                                Detalhar
+                            </button>
+                        ` : `
+                            <button onclick="window.ProprietarioTooltip.consultarSocio('${c.nome}', ${propId})" style="background: white; border: 1px solid #3b82f6; color: #3b82f6; padding: 6px 12px; border-radius: 6px; color: #3b82f6; font-size: 11px; font-weight: 700; cursor: pointer;">
+                                <i class="fas fa-search"></i> Mapear
+                            </button>
+                        `}
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+
+        } catch (e) {
+            console.error("Error loading connections UI:", e);
+        }
+    },
+
+    /**
+     * Triggers the full-screen Graph visualization
+     */
+    async visualizarTeia(propId) {
+        if (!window.GraphHandler || !window.RelationshipHandler) {
+            window.Toast.error("Módulo de grafos não carregado.");
+            return;
+        }
+
+        window.Loading.show('Mapeando Conexões', 'Gerando teia de influência...');
+
+        try {
+            // Re-fetch connections to get fresh data for the graph
+            const connections = await window.RelationshipHandler.getConnections(propId);
+            
+            // Get owner name from current state or DB
+            const { data: prop } = await window.supabaseApp.from('proprietarios').select('nome_completo').eq('id', propId).single();
+            const name = prop ? prop.nome_completo : 'Proprietário';
+
+            const graphData = window.RelationshipHandler.createGraphData(propId, name, connections);
+            
+            window.GraphHandler.showOverlay(graphData.nodes, graphData.links);
+
+        } catch (e) {
+            console.error("Error launching graph:", e);
+            window.Toast.error("Falha ao gerar visualização.");
+        } finally {
+            window.Loading.hide();
+        }
+    },
+
+    renderLockedFeature(title, description, requiredTier) {
+        const color = requiredTier === 'Elite' ? '#7c3aed' : '#2563eb';
+        return `
+            <div style="padding: 60px 40px; text-align: center; background: white; border-radius: 16px; border: 1px dashed #e2e8f0; margin: 20px 0;">
+                <div style="width: 80px; height: 80px; background: ${color}10; color: ${color}; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; font-size: 32px;">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h4 style="font-size: 20px; font-weight: 800; color: #1e293b; margin-bottom: 12px;">${title}</h4>
+                <p style="font-size: 14px; color: #64748b; line-height: 1.6; max-width: 400px; margin: 0 auto 28px;">
+                    ${description}
+                </p>
+                <div style="background: #f8fafc; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; display: inline-block;">
+                    <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 15px;">Disponível no Plano ${requiredTier}</div>
+                    <button onclick="window.Monetization.showSubscriptionPlans()" style="background: ${color}; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 12px ${color}30;">
+                        <i class="fas fa-arrow-up"></i> Fazer Upgrade Agora
+                    </button>
+                </div>
+            </div>
+        `;
     },
 
     close() {

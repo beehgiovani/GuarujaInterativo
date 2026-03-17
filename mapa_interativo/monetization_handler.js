@@ -21,7 +21,7 @@ window.Monetization = {
     },
 
     canAccess: function(feature) {
-        const role = this.userRole;
+        const role = String(this.userRole || 'user').toLowerCase();
         const isMaster = role === 'admin' || role === 'master';
         const isElite = role === 'elite' || isMaster;
         const isPro = role === 'pro' || isElite;
@@ -35,6 +35,7 @@ window.Monetization = {
             case 'advanced_ai': return isPro; // Farol IA
             case 'legal_checkup': return isElite; // Due Diligence logic
             case 'marketing_tools': return isPro;
+            case 'regional_insights': return isElite;
             default: return true;
         }
     },
@@ -61,7 +62,8 @@ window.Monetization = {
 
             if (error) throw error;
             this.userProfile = data;
-            this.userRole = data.role || 'user';
+            this.userRole = String(data.role || 'user').toLowerCase();
+            console.log("👤 User Role Loaded:", this.userRole);
 
             const isMaster = this.userRole === 'admin' || this.userRole === 'master';
             const isPro = this.canAccess('radar_mercado');
@@ -241,7 +243,8 @@ window.Monetization = {
     },
 
     isEliteOrAbove: function() {
-        return ['admin', 'master', 'elite'].includes(this.userRole);
+        const role = String(this.userRole || 'user').toLowerCase();
+        return ['admin', 'master', 'elite'].includes(role);
     },
 
     promptUnlockLote: function(loteInscricao, unitId, price = 1) {
@@ -594,24 +597,33 @@ window.Monetization = {
 
         body.innerHTML = `
             <div style="text-align: center; padding: 25px;">
-                <div style="font-size: 14px; color: #64748b; margin-bottom: 5px;">Total a pagar:</div>
-                <div style="font-size: 28px; font-weight: 800; color: #1e293b; margin-bottom: 20px;">R$ ${price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                <div style="background: #f8fafc; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                    <div style="font-size: 13px; color: #64748b; margin-bottom: 10px;">
+                        <i class="fas fa-clock fa-spin" style="color: #2563eb; margin-right: 5px;"></i> Aguardando confirmação do pagamento...
+                    </div>
+                    <div style="font-size: 32px; font-weight: 800; color: #1e293b;">R$ ${price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                </div>
                 
-                <div style="background: white; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 20px; display: inline-block;">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixPayload)}" style="width: 180px; height: 180px;">
+                <div style="background: white; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 20px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pixPayload)}" style="width: 180px; height: 180px; border-radius: 8px;">
                 </div>
 
                 <div style="margin-bottom: 20px; text-align: left;">
                     <label style="font-size: 10px; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Pix Copia e Cola</label>
                     <div style="display: flex; gap: 8px; margin-top: 5px;">
-                        <input readonly value="${pixPayload}" style="flex: 1; font-size: 10px; padding: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-family: monospace;" />
-                        <button onclick="navigator.clipboard.writeText('${pixPayload}'); window.Toast.success('Copiado!')" style="background: #1e293b; color: white; border: none; padding: 0 12px; border-radius: 6px; cursor: pointer;"><i class="fas fa-copy"></i></button>
+                        <input readonly value="${pixPayload}" style="flex: 1; font-size: 10px; padding: 8px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; font-family: monospace;" />
+                        <button onclick="navigator.clipboard.writeText('${pixPayload}'); window.Toast.success('Copiado!')" style="background: #1e293b; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#0f172a'" onmouseout="this.style.background='#1e293b'"><i class="fas fa-copy"></i></button>
                     </div>
                 </div>
 
-                <button onclick="window.Monetization.submitPendingPlan('${plan}', ${price})" class="btn-primary-rich" style="width: 100%; background: #2563eb; height: 45px;">
-                    <i class="fas fa-check"></i> Já paguei, ativar plano
-                </button>
+                <div style="display: grid; gap: 10px;">
+                    <button onclick="window.Monetization.submitPendingPlan('${plan}', ${price})" class="btn-primary-rich" style="width: 100%; background: #2563eb; height: 48px; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">
+                        <i class="fas fa-check-circle"></i> Já paguei via Pix
+                    </button>
+                    <button onclick="this.closest('.custom-modal-overlay').remove()" style="background: none; border: none; color: #94a3b8; font-size: 12px; cursor: pointer; padding: 10px;">
+                        Cancelar e voltar
+                    </button>
+                </div>
             </div>
         `;
     },

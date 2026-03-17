@@ -70,45 +70,118 @@ window.initRuler = function() {
         }
     });
 };
-
 window.init3DToggle = function() {
     if (!window.map) return;
     
-    // Container para controles de Tilt
-    const controlsContainer = document.createElement('div');
-    controlsContainer.className = 'landscape-control-v2';
-    controlsContainer.style.cssText = `
-        position: absolute; right: 10px; top: 180px; display: flex; flex-direction: column; gap: 8px; z-index: 1000;
-    `;
+    // Check if device is mobile for performance optimization
+    const isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     
-    // Controles de Ângulo (Tilt)
+    // Controles de Ângulo (Tilt/3D Perspective)
     const angleUp = document.createElement('div');
-    angleUp.title = 'Inclinar Mapa (Perspectiva)';
-    angleUp.innerHTML = '<i class="fas fa-chevron-up"></i>';
+    angleUp.className = 'landscape-control';
+    angleUp.title = 'Inclinar Mapa (Perspectiva 3D)';
+    angleUp.innerHTML = '<i class="fas fa-cube"></i>';
     angleUp.style.cssText = `
-        background: white; border-radius: 8px; width: 44px; height: 44px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer;
+        margin: 10px; background: white; border-radius: 8px; width: 44px; height: 44px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15); cursor: pointer;
         display: flex; align-items: center; justify-content: center;
-        border: 1px solid #e2e8f0; font-size: 16px; color: #334155;
+        border: 1px solid #e2e8f0; font-size: 18px; color: #334155;
     `;
     
     const angleDown = angleUp.cloneNode(true);
     angleDown.title = 'Visão de Topo (2D)';
-    angleDown.innerHTML = '<i class="fas fa-chevron-down"></i>';
+    angleDown.innerHTML = '<i class="fas fa-layer-group"></i>';
     
-    controlsContainer.appendChild(angleUp);
-    controlsContainer.appendChild(angleDown);
-    
-    document.body.appendChild(controlsContainer);
-
     angleUp.onclick = () => {
+        // On mobile, 45 is fine, but we can set a slightly lower tilt if we wanted 
+        // to save some rendering cost, though 45 is standard.
         window.map.setTilt(45);
-        window.Toast.info("Perspectiva 45° Ativada.");
+        window.Toast.info(isMobile ? "3D Ativo" : "Perspectiva 45° Ativada.");
+        angleUp.style.color = '#2563eb';
+        angleDown.style.color = '#334155';
+        
+        if (isMobile) {
+            // Close mobile sidebar if open to give more space for 3D
+            window.closeMobileSidebar?.();
+        }
     };
 
     angleDown.onclick = () => {
         window.map.setTilt(0);
         window.Toast.info("Visão de Topo (2D)");
+        angleDown.style.color = '#2563eb';
+        angleUp.style.color = '#334155';
+    };
+
+    // Push to RIGHT_CENTER to avoid stack conflicts with TOP/BOTTOM controls
+    window.map.controls[google.maps.ControlPosition.RIGHT_CENTER].push(angleUp);
+    window.map.controls[google.maps.ControlPosition.RIGHT_CENTER].push(angleDown);
+};
+
+window.initHeatmap = function() {
+    if (!window.map) return;
+    let heatmap = null;
+    let isActive = false;
+    
+    const heatmapBtn = document.createElement('div');
+    heatmapBtn.className = 'landscape-control heatmap-btn';
+    heatmapBtn.title = 'Mapa de Calor (Valor m²)';
+    heatmapBtn.style.cssText = `
+        margin: 10px; background: white; border-radius: 8px; width: 44px; height: 44px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15); cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        border: 1px solid #e2e8f0; font-size: 18px; color: #334155;
+    `;
+    heatmapBtn.innerHTML = '<i class="fas fa-fire"></i>';
+    // Move to LEFT_CENTER to separate from administrative/tilt tools on the right
+    window.map.controls[google.maps.ControlPosition.LEFT_CENTER].push(heatmapBtn);
+
+    heatmapBtn.onclick = async () => {
+        isActive = !isActive;
+        heatmapBtn.style.backgroundColor = isActive ? '#fff7ed' : 'white';
+        heatmapBtn.style.color = isActive ? '#f97316' : '#334155';
+        
+        if (isActive) {
+            window.Toast.info("Gerando mapa de calor de mercado...");
+            try {
+                if (!heatmap) {
+                    await google.maps.importLibrary("visualization");
+                    const { data } = await window.supabaseApp.from('lotes').select('minx, miny, maxx, maxy, valor_m2').not('valor_m2', 'is', null).gt('valor_m2', 0);
+                    
+                    if (!data || data.length === 0) {
+                        window.Toast.warning("Dados de valor insuficiente para o mapa.");
+                        isActive = false;
+                        heatmapBtn.style.backgroundColor = 'white';
+                        heatmapBtn.style.color = '#334155';
+                        return;
+                    }
+
+                    const points = data.map(l => {
+                        const cx = (l.minx + l.maxx) / 2;
+                        const cy = (l.miny + l.maxy) / 2;
+                        const ll = window.utmToLatLon(cx, cy);
+                        return {
+                            location: new google.maps.LatLng(ll.lat, ll.lng),
+                            weight: parseFloat(l.valor_m2) / 100 // Normalize weight
+                        };
+                    });
+
+                    heatmap = new google.maps.visualization.HeatmapLayer({
+                        data: points,
+                        map: window.map,
+                        radius: 40,
+                        opacity: 0.8
+                    });
+                } else {
+                    heatmap.setMap(window.map);
+                }
+            } catch (err) {
+                console.error("Heatmap error:", err);
+                window.Toast.error("Erro ao carregar visualização.");
+            }
+        } else {
+            if (heatmap) heatmap.setMap(null);
+        }
     };
 };
 
@@ -233,17 +306,32 @@ window.initMap = async function () {
         const mapDiv = document.getElementById('map');
         if (!mapDiv) throw new Error("Container 'map' não encontrado no DOM");
 
+        window.PREMIUM_MAP_STYLE = [
+            { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#0e213b" }] },
+            { "featureType": "landscape", "elementType": "geometry", "stylers": [{ "color": "#f5f5f5" }] },
+            { "featureType": "poi", "elementType": "labels", "stylers": [{ "visibility": "off" }] },
+            { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#ffffff" }] },
+            { "featureType": "road", "elementType": "labels.text.fill", "stylers": [{ "color": "#757575" }] },
+            { "featureType": "road.highway", "elementType": "geometry", "stylers": [{ "color": "#dadada" }] },
+            { "featureType": "transit", "elementType": "geometry", "stylers": [{ "color": "#e5e5e5" }] },
+            { "featureType": "administrative", "elementType": "geometry", "stylers": [{ "color": "#cfd8dc" }] },
+            { "featureType": "administrative.locality", "elementType": "labels.text.fill", "stylers": [{ "color": "#2c3e50" }] },
+            { "featureType": "poi.park", "elementType": "geometry", "stylers": [{ "color": "#e8f5e9" }] },
+            { "featureType": "poi.park", "elementType": "labels.text.fill", "stylers": [{ "color": "#2e7d32" }] }
+        ];
+
         const mapOptions = {
             center: { lat: -23.9934, lng: -46.2567 },
             zoom: 13,
             minZoom: 12,
-            mapTypeId: 'satellite', 
-            tilt: 0,            // Começar em 2D por padrão
+            mapTypeId: 'roadmap', // Changed to roadmap for premium style
+            styles: window.PREMIUM_MAP_STYLE,
+            tilt: 45, // Inicia automaticamente em 45º (3D perspective)
             heading: 0,
-            mapId: window.GoogleMapsConfig.MAP_ID || 'DEMO_MAP_ID', // Requerido para 3D e marcadores avançados
+            mapId: window.GoogleMapsConfig.MAP_ID || 'DEMO_MAP_ID',
             disableDefaultUI: false,
             gestureHandling: 'greedy',
-            streetViewControl: true, // Explicitamente habilitado
+            streetViewControl: true,
             mapTypeControl: true
         };
 
@@ -331,6 +419,7 @@ window.initMap = async function () {
 
         window.initRuler();
         window.init3DToggle();
+        window.initHeatmap();
 
         // 5. Initialize Search Autocomplete (Integrated Database Search)
         if (typeof window.initSearchAutocomplete === 'function') {
@@ -398,12 +487,16 @@ window.initMap = async function () {
             eachLayer: (cb) => window.drawnItems.layers.forEach(cb)
         };
 
+        // 6. Start Data Loading Sequence
+        await window.initMapData();
+
     } catch (err) {
         console.error("Erro ao inicializar Google Maps:", err);
         window.Toast.error("Falha ao carregar o motor de mapas (Google Maps). Verifique a API Key.");
         Loading.hide();
         return;
     }
+};
 
     // --- SPATIAL UTILITIES ---
     window.findNearestLot = function(lat, lng) {
@@ -862,9 +955,15 @@ window.initMap = async function () {
     window.Loading.setProgress(40);
 
     let isCachedLoaded = false;
+    window.currentCity = window.currentCity || 'Guarujá';
 
-    try {
-        // --- CACHE STRATEGY: Stale-While-Revalidate ---
+    window.changeCity = async function(cityName) {
+        return; // City switching disabled for now
+    };
+
+    window.initMapData = async function() {
+        try {
+            // --- CACHE STRATEGY: Stale-While-Revalidate ---
         // 1. Try Load from Cache
         let cached = await window.loadLotesFromCache();
 
@@ -875,9 +974,12 @@ window.initMap = async function () {
             // Render Cache Immediately
             window.processDataHierarchy();
             window.renderHierarchy();
-            totalLotesEl.innerText = `${window.allLotes.length.toLocaleString()} Lotes (Cache)`;
+            
+            const totalLotesEl = document.getElementById('totalLotes');
+            if (totalLotesEl) totalLotesEl.innerText = `${window.allLotes.length.toLocaleString()} Lotes (Cache)`;
 
             // Setup Back Button immediately if cached
+            const mapBackBtn = document.getElementById('mapBackBtn');
             if (mapBackBtn) mapBackBtn.onclick = window.goUpLevel;
 
             isCachedLoaded = true;
@@ -901,6 +1003,7 @@ window.initMap = async function () {
             const { data, error } = await window.supabaseApp
                 .from('lotes')
                 .select('*')
+                .eq('municipio', window.currentCity || 'Guarujá')
                 .range(from, from + step - 1);
 
             if (error) throw new Error(error.message);
@@ -957,7 +1060,8 @@ window.initMap = async function () {
         processDataHierarchy();
         window.renderHierarchy();
 
-        totalLotesEl.innerText = `${allLotes.length.toLocaleString()} Lotes`;
+        const totalLotesEl = document.getElementById('totalLotes');
+        if (totalLotesEl) totalLotesEl.innerText = `${window.allLotes.length.toLocaleString()} Lotes`;
 
         if (!isCachedLoaded) Loading.setProgress(100);
 
@@ -977,11 +1081,10 @@ window.initMap = async function () {
         } else {
             setTimeout(() => {
                 Loading.hide();
-                Toast.success(`${allLotes.length.toLocaleString()} lotes carregados!`);
+                Toast.success(`${window.allLotes.length.toLocaleString()} lotes carregados!`);
                 if (window.Onboarding) window.Onboarding.checkAndStart();
             }, 500);
         }
-
     } catch (e) {
         console.error(e);
         if (isCachedLoaded) {
@@ -1154,7 +1257,17 @@ window.renderHierarchy = function() {
 
     if (window.currentLevel === 0) {
         // --- LEVEL 0: ZONES (Multi-Centroid) ---
-        if (totalLotesEl) totalLotesEl.innerText = "Visão Geral: Selecione uma Zona";
+        if (totalLotesEl) {
+            totalLotesEl.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px; justify-content: center;">
+                    Visão Geral: Selecione uma Zona
+                    <button onclick="window.RegionalHandler.showTopInvestors(window.currentZone || '0')" 
+                        class="btn-primary-rich" style="padding: 4px 10px; font-size: 10px; background: #0f172a; border: 1px solid #334155;">
+                        <i class="fas fa-chart-line"></i> Analisar Mercado Regional
+                    </button>
+                </div>
+            `;
+        }
 
         for (const zoneKey in window.cityData) {
             const zone = window.cityData[zoneKey];
@@ -1212,7 +1325,17 @@ window.renderHierarchy = function() {
             return;
         }
 
-        if (totalLotesEl) totalLotesEl.innerText = `Zona ${window.currentZone}: Selecione um Setor`;
+        if (totalLotesEl) {
+            totalLotesEl.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px; justify-content: center;">
+                    Zona ${window.currentZone}: Selecione um Setor
+                    <button onclick="window.RegionalHandler.showTopInvestors('${window.currentZone}')" 
+                        class="btn-primary-rich" style="padding: 4px 10px; font-size: 10px; background: #1e293b; border: 1px solid #475569;">
+                        <i class="fas fa-crown" style="color: #f59e0b;"></i> Ranking Tubarões
+                    </button>
+                </div>
+            `;
+        }
 
         const zone = window.cityData[window.currentZone];
         for (const sectorKey in zone.sectors) {
@@ -1322,7 +1445,14 @@ window.renderHierarchy = function() {
                 }
             }
 
-            const displayLabel = lote.building_name || meta.lote || '?';
+            let displayLabel = lote.building_name || meta.lote || '?';
+            
+            // FAROL PREDITIVO: Adicionar Fogo de Oportunidade
+            const leadScore = window.PredictiveHandler.calculateScore(lote);
+            if (leadScore.score >= 80) {
+                displayLabel = `🔥 ${displayLabel}`;
+            }
+
             const content = document.createElement('div');
             content.innerHTML = `<div style="
                 background-color:${color}; color: white; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: bold;
@@ -1633,11 +1763,16 @@ window.handleContextMenu = function (e, type, data) {
     dividers.forEach(d => d.style.display = 'none');
 
     if (type === 'map') {
-        document.getElementById('ctx-create-lote').style.display = 'flex';
+        const isMaster = window.Monetization && window.Monetization.userRole === 'master';
+        if (isMaster) {
+            document.getElementById('ctx-create-lote').style.display = 'flex';
+        }
         document.getElementById('ctx-add-lead').style.display = 'flex';
+        document.getElementById('ctx-report-discrepancy').style.display = 'flex';
         if (dividers[0]) dividers[0].style.display = 'block';
         if (dividers[1]) dividers[1].style.display = 'block';
     } else if (type === 'lote') {
+        document.getElementById('ctx-report-discrepancy').style.display = 'flex';
         document.getElementById('ctx-add-unit').style.display = 'flex';
         document.getElementById('ctx-move-lote').style.display = 'flex';
         document.getElementById('ctx-edit-details').style.display = 'flex';
@@ -1701,6 +1836,12 @@ window.handleContextAction = function (action) {
         });
     } else if (action === 'delete' && type === 'lote') {
         if (typeof window.deleteLote === 'function') window.deleteLote(data.inscricao);
+    } else if (action === 'report') {
+        if (window.Maintenance && window.Maintenance.showReportModal) {
+            window.Maintenance.showReportModal(type, data);
+        } else {
+            window.Toast.info("Solicitando suporte para: " + (data?.inscricao || "Mapa"));
+        }
     } else if (action === 'add-lead') {
         if (typeof window.openAddLeadTooltip === 'function') {
             window.openAddLeadTooltip();

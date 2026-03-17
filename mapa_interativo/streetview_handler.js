@@ -100,23 +100,25 @@ window.StreetViewHandler = (function() {
 
             if (dist < 100) { // Shows lots within 100m
                 const isCurrent = currentLote && lote.inscricao === currentLote.inscricao;
+                const buildingName = lote.building_name || lote.metadata?.lote || lote.inscricao;
+                
                 const marker = new google.maps.Marker({
                     position: { lat: lote._lat, lng: lote._lng },
                     panorama: panorama,
-                    title: lote.building_name || lote.inscricao,
+                    title: buildingName,
                     icon: {
                         path: google.maps.SymbolPath.CIRCLE,
-                        scale: isCurrent ? 12 : 8,
+                        scale: isCurrent ? 14 : 10,
                         fillColor: isCurrent ? "#2563eb" : "#fbbf24",
-                        fillOpacity: 0.9,
-                        strokeWeight: 2,
+                        fillOpacity: 1,
+                        strokeWeight: 3,
                         strokeColor: "white"
                     },
                     label: {
-                        text: (lote.building_name || lote.inscricao).substring(0, 15),
+                        text: buildingName,
                         color: "white",
-                        fontSize: "10px",
-                        fontWeight: "bold",
+                        fontSize: "11px",
+                        fontWeight: "900",
                         className: "sv-marker-label"
                     }
                 });
@@ -135,14 +137,26 @@ window.StreetViewHandler = (function() {
         const content = document.getElementById('sv-info-content');
         if (!infobox || !content) return;
 
+        const ownerInfo = lote.nome_proprietario || 'Proprietário Não Identificado';
+        const docInfo = lote.cpf_cnpj ? `DOC: ${lote.cpf_cnpj}` : '';
+
         content.innerHTML = `
-            <div style="font-weight: bold; font-size: 14px; margin-bottom: 4px; color: #1e293b;">${lote.building_name || 'Edifício sem Nome'}</div>
-            <div style="font-family: monospace; font-size: 11px; color: #64748b; margin-bottom: 8px;">${lote.inscricao}</div>
-            <div style="font-size:12px; color: #475569; line-height: 1.4;">
-                ${lote.unidades ? `<b>${lote.unidades.length}</b> unidades cadastradas` : 'Sem unidades carregadas'}
+            <div style="font-weight: 900; font-size: 15px; margin-bottom: 2px; color: #1e293b; text-transform: uppercase;">
+                ${lote.building_name || 'Edifício/Loteamento'}
             </div>
-            <button onclick="window.StreetViewHandler.goToLot('${lote.inscricao}')" style="margin-top: 10px; width: 100%; background: #1e293b; color: white; border: none; padding: 6px; border-radius: 4px; cursor: pointer; font-size: 11px;">
-                VER DETALHES COMPLETOS
+            <div style="font-family: monospace; font-size: 10px; color: #2563eb; margin-bottom: 10px; font-weight: bold;">
+                ID: ${lote.inscricao}
+            </div>
+            <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 12px;">
+                <div style="font-size: 10px; color: #94a3b8; font-weight: 800; text-transform: uppercase;">Proprietário Base</div>
+                <div style="font-size: 13px; color: #1e293b; font-weight: 700;">${ownerInfo}</div>
+                <div style="font-size: 10px; color: #64748b;">${docInfo}</div>
+            </div>
+            <div style="font-size:12px; color: #475569; line-height: 1.4; margin-bottom: 10px;">
+                <i class="fas fa-building"></i> ${lote.unidades ? `<b>${lote.unidades.length}</b> unidades cadastradas` : 'Dados de unidades em rede'}
+            </div>
+            <button onclick="window.StreetViewHandler.goToLot('${lote.inscricao}')" style="width: 100%; background: #2563eb; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; transition: all 0.2s; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2);">
+                ABRIR FICHA COMPLETA
             </button>
         `;
         infobox.style.display = 'block';

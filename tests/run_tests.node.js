@@ -6,8 +6,19 @@ const vm = require('vm');
 const context = {
     window: {},
     document: {
-        getElementById: () => ({ appendChild: () => {}, querySelector: () => ({ textContent: '' }) }),
-        createElement: () => ({ style: {} }),
+        getElementById: () => ({ 
+            appendChild: () => {}, 
+            querySelector: () => ({ textContent: '' }),
+            classList: { add: () => {}, remove: () => {} },
+            style: {},
+            remove: function() { }
+        }),
+        createElement: () => ({ 
+            style: {}, 
+            classList: { add: () => {}, remove: () => {} }, 
+            appendChild: () => {},
+            remove: function() { }
+        }),
         head: { appendChild: () => {} },
         body: { appendChild: () => {} }
     },
@@ -38,7 +49,10 @@ const context = {
     Boolean: Boolean,
     RegExp: RegExp,
     Date: Date,
-    Error: Error
+    Error: Error,
+    // Add CustomEvent mock
+    CustomEvent: function(name, detail) { this.name = name; this.detail = detail; },
+    dispatchEvent: () => {}
 };
 
 context.window = context;
@@ -54,14 +68,33 @@ try {
     loadScript('utils.js');
     loadScript('zoning_handler.js');
     loadScript('tooltip_handler.js');
+    loadScript('monetization_handler.js');
+    loadScript('portfolio_handler.js');
+    loadScript('institutional_handler.js');
 } catch (e) {
     process.stdout.write(`Failed to load scripts: ${e.message}\n`);
     process.exit(1);
 }
 
+// --- 2. GLOBAL MOCKS FOR NEW LOGIC ---
+context.supabaseApp = {
+    auth: { getUser: () => Promise.resolve({ data: { user: { id: '123' } } }) },
+    from: () => ({
+        select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null }), single: () => Promise.resolve({ data: null }) }) }),
+        insert: () => Promise.resolve({ error: null })
+    })
+};
+context.Toast = { success: () => {}, error: () => {}, info: () => {}, warning: () => {} };
+context.Loading = { show: () => {}, hide: () => {} };
+context.map = { fitBounds: () => {}, setZoom: () => {}, queryRenderedFeatures: () => [] };
+context.google.maps.importLibrary = () => Promise.resolve({ AdvancedMarkerElement: function() { return { map: null }; } });
+context.google.maps.LatLngBounds = function() { return { extend: () => {} }; };
+
+
 // --- 3. TEST ENGINE ---
 const results = [];
 function describe(name, fn) {
+    // Reset defaults between describes if needed
     process.stdout.write(`\n📦 ${name}\n`);
     fn();
 }
@@ -109,12 +142,18 @@ function expect(actual) {
 // --- 4. TEST CASES ---
 
 describe('Utils: Document Formatting', () => {
-    it('should obfuscate CPF correctly', () => {
-        expect(context.formatDocument('12345678901', false)).toBe('***********');
+    it('should obfuscate CPF correctly (Masked)', () => {
+        expect(context.formatDocument('12345678901', false)).toBe('123.***.***-01');
     });
 
-    it('should format visible CPF correctly', () => {
+    it('should format visible CPF if Elite+', () => {
+        context.Monetization.userRole = 'elite';
         expect(context.formatDocument('12345678901', true)).toBe('123.456.789-01');
+    });
+
+    it('should keep masking if not Elite+', () => {
+        context.Monetization.userRole = 'user';
+        expect(context.formatDocument('12345678901', true)).toBe('123.***.***-01');
     });
 });
 
@@ -162,7 +201,50 @@ describe('Tooltip: Unit Classification', () => {
     });
 });
 
-// --- 5. EXECUTION SUMMARY ---
+describe('Monetization: Feature Access', () => {
+    it('should allow master everything', () => {
+        context.Monetization.userRole = 'master';
+        expect(context.Monetization.canAccess('mapear_patrimonio')).toBeTruthy();
+        expect(context.Monetization.canAccess('dossier_pdf')).toBeTruthy();
+    });
+
+    it('should restrict elite from some master features if any', () => {
+        context.Monetization.userRole = 'elite';
+        expect(context.Monetization.canAccess('mapear_patrimonio')).toBeTruthy();
+    });
+
+    it('should restrict pro from elite features', () => {
+        context.Monetization.userRole = 'pro';
+        expect(context.Monetization.canAccess('mapear_patrimonio')).toBeFalsy();
+    });
+});
+
+describe('Monetization: Unlock Logic', () => {
+    it('should identify unlocked lot from Set', () => {
+        const insc = '12345678000';
+        context.Monetization.unlockedLots = new Set(['12345678']); // Parent lot unlocked
+        expect(context.Monetization.isUnlocked(insc)).toBeTruthy();
+    });
+
+    it('should identify locked lot correctly', () => {
+        context.Monetization.unlockedLots = new Set(['99999999']);
+        expect(context.Monetization.isUnlocked('11111111')).toBeFalsy();
+    });
+});
+
+describe('Portfolio: Aggregation Integrity', () => {
+    it('should exist and be initialized', () => {
+        expect(typeof context.PortfolioHandler).toBe('object');
+    });
+
+    it('should be able to clear portfolio', () => {
+        context.PortfolioHandler.activePortfolioMarkers = [];
+        context.PortfolioHandler.activePortfolioPolygons = [];
+        context.PortfolioHandler.clearPortfolio();
+        expect(context.PortfolioHandler.activePortfolioMarkers.length).toBe(0);
+    });
+});
+
 setTimeout(() => {
     const passed = results.filter(r => r).length;
     process.stdout.write(`\n--- SUMMARY ---\n`);

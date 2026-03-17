@@ -42,7 +42,7 @@
 /* Floating Unified Panel (Stats + Legend) - Bottom Left & Discrete */
 .stats-panel {
     position: absolute;
-    bottom: 30px;
+    bottom: 80px; /* Alavancado para evitar botões de angulação/tilt do Google */
     left: 20px;
     background: rgba(255, 255, 255, 0.95);
     -webkit-backdrop-filter: blur(10px);
@@ -57,7 +57,7 @@
     border: 1px solid rgba(255, 255, 255, 0.4);
     width: 200px;
     /* Width fixed to keep it discrete */
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .stat-item {
@@ -146,6 +146,14 @@
 .dashboard-btn.secondary:hover {
     background: #e2e8f0;
     color: #334155;
+}
+
+/* Heatmap specific style */
+.btn-heatmap.active {
+    background: linear-gradient(135deg, #f87171, #ef4444) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3) !important;
 }
 
 .dashboard-btn.active {

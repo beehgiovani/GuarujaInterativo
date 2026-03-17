@@ -74,9 +74,10 @@ window.ReportHandler = {
                     footer { position: absolute; bottom: 2cm; left: 2cm; right: 2cm; border-top: 1px solid #e2e8f0; padding-top: 15px; font-size: 10px; color: #94a3b8; display: flex; justify-content: space-between; }
                     
                     @media print {
-                        body { background: white; }
-                        .page { margin: 0; box-shadow: none; }
+                        body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        .page { margin: 0; box-shadow: none; border: none; padding: 1.5cm; }
                         .no-print { display: none; }
+                        .info-box { border: 1px solid #eee !important; }
                     }
                 </style>
             </head>
@@ -107,7 +108,7 @@ window.ReportHandler = {
                         <div class="subtitle">${address}</div>
                     </section>
 
-                    <div class="grid">
+                     <div class="grid">
                         <div class="info-box">
                             <div class="info-title">Dados da Unidade</div>
                             <div class="info-row"><span class="info-label">Tipo:</span><span class="info-value">${unit.tipo || 'Residencial'}</span></div>
@@ -116,32 +117,58 @@ window.ReportHandler = {
                             <div class="info-row"><span class="info-label">Vagas:</span><span class="info-value">${unit.vagas || 0}</span></div>
                         </div>
                         <div class="info-box">
+                            <div class="info-title">Farol Preditivo 💎</div>
+                            <div style="display: flex; align-items: center; gap: 20px;">
+                                <div style="position: relative; width: 80px; height: 80px;">
+                                    <svg viewBox="0 0 36 36" style="transform: rotate(-90deg); width: 80px; height: 80px;">
+                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#eee" stroke-width="3" />
+                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="${(lote.predictive_score || 0) > 70 ? '#10b981' : '#f59e0b'}" stroke-width="3" stroke-dasharray="${lote.predictive_score || 0}, 100" />
+                                    </svg>
+                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 800; font-size: 18px; color: var(--primary);">
+                                        ${lote.predictive_score || 0}%
+                                    </div>
+                                </div>
+                                <div style="flex: 1; font-size: 11px; color: #64748b;">
+                                    <strong>Probabilidade de Negócio:</strong> Este imóvel possui características que o colocam no topo dos leads qualificados da região.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ai-insight">
+                        <div class="ai-title"><i class="fas fa-robot"></i> Parecer Farol IA Platinum</div>
+                        <div style="font-size: 14px; color: #334155; font-style: italic;">
+                            "${lote.predictive_analysis || `Análise preliminar indica alto potencial de liquidez devido à metragem e localização em ${lote.bairro || 'zona valorizada'}. O valor de mercado estimado está alinhado com a média da região.`}"
+                        </div>
+                    </div>
+
+                    <div class="grid">
+                        <div class="info-box">
                             <div class="info-title">Informações Fiscais</div>
                             <div class="info-row"><span class="info-label">Matrícula:</span><span class="info-value">${unit.matricula || 'N/A'}</span></div>
                             <div class="info-row"><span class="info-label">RIP:</span><span class="info-value">${unit.rip || 'N/A'}</span></div>
                             <div class="info-row"><span class="info-label">Valor Venal:</span><span class="info-value">R$ ${(unit.valor_venal || 0).toLocaleString('pt-BR')}</span></div>
                             <div class="info-row"><span class="info-label">IPTU Estimado:</span><span class="info-value">Consultar Prefeitura</span></div>
                         </div>
-                    </div>
-
-                    <div class="ai-insight">
-                        <div class="ai-title"><i class="fas fa-robot"></i> Parecer Farol IA</div>
-                        <div style="font-size: 14px; color: #334155; font-style: italic;">
-                            "Análise preliminar indica alto potencial de liquidez devido à metragem e localização em ${lote.bairro || 'zona valorizada'}. 
-                            O valor de mercado estimado de R$ ${(unit.valor_real || 0).toLocaleString('pt-BR')} está alinhado com a média da região. 
-                            Recomendado para investidores de perfil moderado."
+                        <div class="info-box">
+                            <div class="info-title">Ecossistema de Influência</div>
+                            <div style="font-size: 12px; color: #1e293b; line-height: 1.4;">
+                                <i class="fas fa-project-diagram" style="color: #6366f1; margin-right: 5px;"></i> 
+                                Proprietário possui <strong>${lote.conexoes_count || 'conexões diretas'}</strong> mapeadas na Teia de Influência.
+                                <p style="margin-top: 5px; font-size: 10px; color: #94a3b8;">* Detalhes societários completos disponíveis na plataforma online.</p>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="info-title">Galeria do Ativo</div>
+                    <div class="info-title">Visualização do Ativo</div>
                     <div class="images">
                         <div class="img-wrap"><img src="${unit.image_url || 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&q=80&w=800'}" alt="Foto 1"></div>
                         <div class="img-wrap"><img src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=800" alt="Foto 2"></div>
                     </div>
 
                     <footer>
-                        <div>Guarujá GeoMap - Documento gerado em ${date}</div>
-                        <div>Página 01 / 01</div>
+                        <div>Guarujá GeoMap PLATINUM - Documento gerado em ${date}</div>
+                        <div>ID: ${unit.inscricao} | Página 01 / 01</div>
                     </footer>
                 </div>
             </body>
