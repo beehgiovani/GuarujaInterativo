@@ -819,7 +819,7 @@ window.Monetization = {
             // 2. Fetch PERSONS
             const { data: personUnlocks, error: personError } = await window.supabaseApp
                 .from('unlocked_persons')
-                .select('*, proprietario:proprietarios(id, nome_completo, cpf_cnpj)')
+                .select('*')
                 .eq('user_id', user.id)
                 .order('unlocked_at', { ascending: false });
 
@@ -856,7 +856,7 @@ window.Monetization = {
                 `;
                 
                 personUnlocks.forEach(item => {
-                    const p = item.proprietario || { nome_completo: 'Nome Oculto', cpf_cnpj: item.cpf_cnpj };
+                    const p = { nome_completo: 'Proprietário Desbloqueado', cpf_cnpj: item.cpf_cnpj };
                     const date = new Date(item.unlocked_at || item.created_at).toLocaleDateString('pt-BR');
                     
                     html += `
