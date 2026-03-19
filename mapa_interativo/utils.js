@@ -273,24 +273,27 @@ function validateCNPJ(cnpj) {
 window.toggleCpfVisibility = function (btn, docValue) {
     const valueSpan = btn.previousElementSibling;
     const isHidden = btn.classList.contains('fa-eye');
-    const isEliteOrAbove = window.Monetization && window.Monetization.isEliteOrAbove();
-
-    if (!isEliteOrAbove) {
-        window.Toast.warning("Acesso restrito. Somente para perfil Elite / Master.");
-        if (window.Monetization && window.Monetization.showSubscriptionPlans) {
-            window.Monetization.showSubscriptionPlans();
-        }
-        return;
-    }
+    
+    // 1. Is it already unlocked or is Master?
+    const isUnlocked = window.Monetization && window.Monetization.isUnlockedPerson(docValue);
 
     if (isHidden) {
-        // Show
-        valueSpan.textContent = window.formatDocument(docValue, true);
-        btn.classList.remove('fa-eye');
-        btn.classList.add('fa-eye-slash');
-        btn.title = "Ocultar";
+        // Wants to SHOW
+        if (isUnlocked) {
+            valueSpan.textContent = window.formatDocument(docValue, true);
+            btn.classList.remove('fa-eye');
+            btn.classList.add('fa-eye-slash');
+            btn.title = "Ocultar";
+        } else {
+            // Prompt Unlock
+            if (window.Monetization && window.Monetization.unlockPerson) {
+                window.Monetization.unlockPerson(docValue);
+            } else {
+                window.Toast.warning("Acesso restrito. Desbloqueie este proprietário para ver o documento.");
+            }
+        }
     } else {
-        // Hide
+        // Wants to HIDE
         valueSpan.textContent = window.formatDocument(docValue, false);
         btn.classList.remove('fa-eye-slash');
         btn.classList.add('fa-eye');
