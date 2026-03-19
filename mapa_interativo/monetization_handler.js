@@ -781,11 +781,16 @@ window.Monetization = {
         this.promptUnlockLote(loteInscricao, unitInscricao, 1);
     },
 
-    isUnitUnlocked: function(unitInscricao) {
-        if (this.userRole === 'admin' || this.userRole === 'master') return true;
-        // Check in-memory Set (loaded from Supabase on init)
-        const loteInscricao = unitInscricao.slice(0, -3);
-        return this.unlockedLots.has(loteInscricao) || this.unlockedLots.has(unitInscricao);
+    isUnlocked: function(id) {
+        if (!id) return true;
+        if (this.userRole === 'master' || this.userRole === 'admin') return true;
+        
+        const cleanId = String(id).replace(/\D/g, '');
+        // O sistema de "Minha Carteira" salva o lote (8 dígitos)
+        // Se recebermos uma unidade (11+ dígitos), pegamos os primeiros 8
+        const loteInscricao = cleanId.length >= 8 ? cleanId.substring(0, 8) : cleanId;
+        
+        return this.unlockedLots.has(loteInscricao) || this.unlockedLots.has(cleanId);
     },
 
     loadWallet: async function() {
@@ -804,76 +809,124 @@ window.Monetization = {
             const { data: { user } } = await window.supabaseApp.auth.getUser();
             if (!user) return;
 
-            // Busca os lotes desbloqueados com os dados do lote via INNER JOIN (ou similar se suportado)
-            // Como Supabase é postgrest, usamos sintaxe de relação
-            const { data: unlocks, error } = await window.supabaseApp
+            // 1. Fetch LOTS
+            const { data: lotUnlocks, error: lotError } = await window.supabaseApp
                 .from('unlocked_lots')
                 .select('*, lotes(inscricao, building_name, bairro)')
                 .eq('user_id', user.id)
                 .order('desbloqueado_em', { ascending: false });
 
-            if (error) throw error;
+            // 2. Fetch PERSONS
+            const { data: personUnlocks, error: personError } = await window.supabaseApp
+                .from('unlocked_persons')
+                .select('*, proprietario:proprietarios(id, nome_completo, cpf_cnpj)')
+                .eq('user_id', user.id)
+                .order('unlocked_at', { ascending: false });
 
+            if (lotError) console.warn("Lot unlock error:", lotError);
+            if (personError) console.warn("Person unlock error:", personError);
+
+            const totalCount = (lotUnlocks?.length || 0) + (personUnlocks?.length || 0);
             if (statsEl) {
-                 statsEl.querySelector('div').innerText = unlocks.length;
+                 statsEl.querySelector('div').innerText = totalCount;
             }
 
-            if (!unlocks || unlocks.length === 0) {
+            if (totalCount === 0) {
                 listEl.innerHTML = `
                     <div style="padding: 40px; text-align: center; background: #f8fafc; border-radius: 12px; border: 2px dashed #e2e8f0; margin: 10px;">
                         <i class="fas fa-wallet" style="font-size: 32px; color: #cbd5e1; margin-bottom: 15px;"></i>
                         <p style="font-size: 13px; font-weight: 700; color: #475569;">Carteira Vazia</p>
-                        <p style="font-size: 11px; color: #94a3b8;">Desbloqueie fichas no mapa para investir em sua carteira pessoal.</p>
+                        <p style="font-size: 11px; color: #94a3b8;">Desbloqueie fichas e proprietários no mapa para investir em sua carteira pessoal.</p>
                     </div>
                 `;
                 return;
             }
 
-            // --- AGRUPAMENTO POR EDIFÍCIO ---
-            const groups = {};
-            unlocks.forEach(item => {
-                const lot = item.lotes || {};
-                const building = lot.building_name || "Lotes Avulsos / Terrenos";
-                if (!groups[building]) groups[building] = [];
-                groups[building].push(item);
-            });
+            let html = '';
 
-            listEl.innerHTML = Object.keys(groups).map(buildingName => {
-                const items = groups[buildingName];
-                const isGroup = items.length > 1;
-                
-                return `
-                    <div style="margin-bottom: 20px;">
-                        <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-                            <i class="fas ${buildingName.includes('Lote') ? 'fa-map' : 'fa-building'}" style="color: #94a3b8;"></i>
-                            ${buildingName}
-                            <span style="background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 10px; font-size: 9px;">${items.length}</span>
+            // --- CATEGORY: PROPRIETÁRIOS ---
+            if (personUnlocks && personUnlocks.length > 0) {
+                html += `
+                    <div style="margin-bottom: 24px;">
+                        <div style="font-size: 11px; font-weight: 800; color: #7c3aed; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-user-shield"></i> Proprietários Desbloqueados
+                            <span style="background: #f3e8ff; color: #7c3aed; padding: 2px 6px; border-radius: 10px; font-size: 9px;">${personUnlocks.length}</span>
                         </div>
-                        
-                        ${items.map(item => {
-                            const date = new Date(item.desbloqueado_em).toLocaleDateString('pt-BR');
-                            const lot = item.lotes || {};
-                            const addr = lot.bairro || 'Guarujá, SP';
-
-                            return `
-                                <div class="crm-lead-card" style="cursor: pointer; margin-bottom: 10px; transition: all 0.2s; border-left: 4px solid #10b981; padding: 12px; background: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"
-                                     onclick="window.Monetization.flyToUnlocked('${item.lote_inscricao}')"
-                                     onmouseover="this.style.transform='translateX(5px)'"
-                                     onmouseout="this.style.transform='none'">
-                                    
-                                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <div>
-                                            <div style="font-weight: 700; color: #1e293b; font-size: 13px;">${lot.inscricao}</div>
-                                            <div style="font-size: 10px; color: #94a3b8;">Liberado em ${date}</div>
-                                        </div>
-                                        <i class="fas fa-chevron-right" style="font-size: 10px; color: #cbd5e1;"></i>
-                                    </div>
+                        <div style="display: grid; gap: 8px;">
+                `;
+                
+                personUnlocks.forEach(item => {
+                    const p = item.proprietario || { nome_completo: 'Nome Oculto', cpf_cnpj: item.cpf_cnpj };
+                    const date = new Date(item.unlocked_at || item.created_at).toLocaleDateString('pt-BR');
+                    
+                    html += `
+                        <div class="crm-lead-card" style="cursor: pointer; transition: all 0.2s; border-left: 4px solid #7c3aed; padding: 12px; background: white; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"
+                             onclick="window.ProprietarioTooltip.show('${p.cpf_cnpj}')"
+                             onmouseover="this.style.transform='translateX(5px)'"
+                             onmouseout="this.style.transform='none'">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-weight: 700; color: #1e293b; font-size: 13px;">${p.nome_completo}</div>
+                                    <div style="font-size: 10px; color: #94a3b8;">${window.formatDocument(p.cpf_cnpj, false)} • ${date}</div>
                                 </div>
-                            `;
-                        }).join('')}
+                                <i class="fas fa-chevron-right" style="font-size: 10px; color: #cbd5e1;"></i>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div></div>`;
+            }
+
+            // --- CATEGORY: LOTES/EDIFÍCIOS ---
+            if (lotUnlocks && lotUnlocks.length > 0) {
+                const groups = {};
+                lotUnlocks.forEach(item => {
+                    const lot = item.lotes || {};
+                    const building = lot.building_name || "Lotes Avulsos / Terrenos";
+                    if (!groups[building]) groups[building] = [];
+                    groups[building].push(item);
+                });
+
+                html += `
+                    <div style="font-size: 11px; font-weight: 800; color: #10b981; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-map-marked-alt"></i> Fichas de Imóveis
+                        <span style="background: #ecfdf5; color: #059669; padding: 2px 6px; border-radius: 10px; font-size: 9px;">${lotUnlocks.length}</span>
                     </div>
                 `;
-            }).join('');
+
+                html += Object.keys(groups).map(buildingName => {
+                    const items = groups[buildingName];
+                    return `
+                        <div style="margin-bottom: 16px; padding-left: 8px; border-left: 1px solid #e2e8f0;">
+                            <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas ${buildingName.includes('Lote') ? 'fa-draw-polygon' : 'fa-building'}" style="opacity: 0.5;"></i>
+                                ${buildingName}
+                            </div>
+                            ${items.map(item => {
+                                const date = new Date(item.desbloqueado_em).toLocaleDateString('pt-BR');
+                                const lot = item.lotes || {};
+
+                                return `
+                                    <div class="crm-lead-card" style="cursor: pointer; margin-bottom: 6px; transition: all 0.2s; border-left: 3px solid #10b981; padding: 10px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.01);"
+                                         onclick="window.Monetization.flyToUnlocked('${item.lote_inscricao}')"
+                                         onmouseover="this.style.transform='translateX(4px)'"
+                                         onmouseout="this.style.transform='none'">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <div>
+                                                <div style="font-weight: 700; color: #334155; font-size: 12px;">${lot.inscricao}</div>
+                                                <div style="font-size: 9px; color: #94a3b8;">Liberado em ${date}</div>
+                                            </div>
+                                            <i class="fas fa-location-arrow" style="font-size: 9px; color: #10b981;"></i>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            listEl.innerHTML = html;
 
         } catch (e) {
             console.error("Error loading wallet:", e);
