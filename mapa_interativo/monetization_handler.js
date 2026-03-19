@@ -204,27 +204,23 @@ window.Monetization = {
         }
     },
 
-    isUnlocked: function(inscricao, lotInscricao = null) {
-        if (this.userRole === 'admin' || this.userRole === 'master') return true;
+    isUnlocked: function(id) {
+        if (!id) return true;
         
-        const clean = (id) => id ? String(id).replace(/\D/g, '') : '';
-        const cInsc = clean(inscricao);
-        const cLot = clean(lotInscricao);
-
-        // Check lots
-        if (cLot && this.unlockedLots.has(cLot)) return true;
-        if (cInsc && this.unlockedLots.has(cInsc)) return true;
-        
-        // Check persons (fallback search in unlockedLots set just in case, or direct clean)
-        if (this.unlockedPersons.has(cInsc)) return true;
-
-        for (let unlocked of this.unlockedLots) {
-            const cUnlocked = clean(unlocked);
-            if (!cUnlocked) continue;
-            if (cInsc.startsWith(cUnlocked) || cUnlocked.startsWith(cInsc)) return true;
+        // Fast-path bypass for Master/Admin
+        const role = String(this.userRole || '').toLowerCase();
+        if (role === 'master' || role === 'admin') {
+            return true;
         }
+
+        const clean = (val) => String(val).replace(/\D/g, '');
+        const cleanId = clean(id);
         
-        return false;
+        // O sistema de "Minha Carteira" salva o lote (8 dígitos)
+        // Se recebermos uma unidade (11+ dígitos), pegamos os primeiros 8
+        const loteInscricao = cleanId.length >= 8 ? cleanId.substring(0, 8) : cleanId;
+        
+        return this.unlockedLots.has(loteInscricao) || this.unlockedLots.has(cleanId);
     },
 
     isUnlockedPerson: function(cpf_cnpj) {
@@ -314,29 +310,46 @@ window.Monetization = {
                 }
             }
 
+            console.log("💰 [Monetization] Starting Unlock Flow for:", { loteInscricao, unitId, price, role: this.userRole });
+
             if (hasMonthlyAllowance) {
-                // Consome do limite do plano (Custo 0 de créditos, mas incrementa monthly_unlocks_used)
+                console.log("💎 [Monetization] Using Plan Allowance (RPC: unlock_lote_with_plan)");
                 const { error } = await window.supabaseApp.rpc('unlock_lote_with_plan', {
                     target_lote: loteInscricao
                 });
-                if (error) throw error;
+                
+                if (error) {
+                    console.error("❌ [Monetization] Plan Unlock Failed:", error);
+                    window.Toast.error("Erro no plano: " + error.message);
+                    throw error;
+                }
+                
                 this.userProfile.monthly_unlocks_used = (this.userProfile.monthly_unlocks_used || 0) + 1;
                 window.Toast.success(`Ficha liberada! (${this.userProfile.monthly_unlocks_used}/${limit} do plano usada)`);
             } else {
-                // Consome créditos pagos
+                console.log("💳 [Monetization] Using Paid Credits (RPC: unlock_lote_with_credits)");
                 const { error } = await window.supabaseApp.rpc('unlock_lote_with_credits', {
                     target_lote: loteInscricao,
                     credit_cost: price
                 });
-                if (error) throw error;
+
+                if (error) {
+                    console.error("❌ [Monetization] Credit Unlock Failed:", error);
+                    window.Toast.error("Erro ao debitar créditos: " + error.message);
+                    throw error;
+                }
+                
                 this.userProfile.credits -= price;
                 window.Toast.success(`Ficha liberada usando créditos!`);
             }
             
-            const clean = (id) => id ? String(id).replace(/\D/g, '') : '';
-            this.unlockedLots.add(clean(loteInscricao));
-            if (unitId) this.unlockedLots.add(clean(unitId)); // Garante que ambos sejam reconhecidos
-            this.updateBalanceUI();
+            const cleanId = (val) => String(val).replace(/\D/g, '');
+            console.log("✅ [Monetization] SUCCESS! Updating local memory...");
+            
+            this.unlockedLots.add(cleanId(loteInscricao));
+            if (unitId) this.unlockedLots.add(cleanId(unitId));
+            
+            await this.updateBalanceUI();
             this.renderPlanWidget();
             
             window.Toast.success("Ficha desbloqueada com sucesso! Informações liberadas.");
@@ -781,17 +794,7 @@ window.Monetization = {
         this.promptUnlockLote(loteInscricao, unitInscricao, 1);
     },
 
-    isUnlocked: function(id) {
-        if (!id) return true;
-        if (this.userRole === 'master' || this.userRole === 'admin') return true;
-        
-        const cleanId = String(id).replace(/\D/g, '');
-        // O sistema de "Minha Carteira" salva o lote (8 dígitos)
-        // Se recebermos uma unidade (11+ dígitos), pegamos os primeiros 8
-        const loteInscricao = cleanId.length >= 8 ? cleanId.substring(0, 8) : cleanId;
-        
-        return this.unlockedLots.has(loteInscricao) || this.unlockedLots.has(cleanId);
-    },
+    // Duplicate isUnlocked removed - moved to line 207
 
     loadWallet: async function() {
         const listEl = document.getElementById('wallet-list');
