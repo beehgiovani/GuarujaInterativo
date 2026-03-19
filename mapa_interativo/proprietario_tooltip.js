@@ -347,16 +347,16 @@ window.ProprietarioTooltip = {
                         <i class="fas ${window.Monetization.canAccess('mapear_patrimonio') ? 'fa-map-marked-alt' : 'fa-lock'}"></i> Mapear Patrimônio
                     </button>
 
-                    <button onclick="window.ProprietarioTooltip.analiseIA(${prop.id})" 
+                    <button onclick="${window.Monetization.canAccess('advanced_ai') ? `window.ProprietarioTooltip.analiseIA(${prop.id})` : `window.Monetization.showSubscriptionPlans()`}" 
                         style="background: #7c3aed; border: 1px solid #6d28d9; color: white; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3); transition: all 0.2s;"
                         onmouseover="this.style.background='#6d28d9'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#7c3aed'; this.style.transform='none';">
-                        <i class="fas fa-brain"></i> Análise Farol
+                        <i class="fas ${window.Monetization.canAccess('advanced_ai') ? 'fa-brain' : 'fa-lock'}"></i> Análise Farol
                     </button>
 
-                    <button onclick="window.ProprietarioTooltip.adicionarComoLead(${prop.id})" 
+                    <button onclick="${window.Monetization.canAccess('crm_history') ? `window.ProprietarioTooltip.adicionarComoLead(${prop.id})` : `window.Monetization.showSubscriptionPlans()`}" 
                         style="background: #3b82f6; border: 1px solid #2563eb; color: white; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); transition: all 0.2s;"
                         onmouseover="this.style.background='#2563eb'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#3b82f6'; this.style.transform='none';">
-                        <i class="fas fa-user-plus"></i> Virar Lead
+                        <i class="fas ${window.Monetization.canAccess('crm_history') ? 'fa-user-plus' : 'fa-lock'}"></i> Virar Lead
                     </button>
                 </div>
             </div>
@@ -377,7 +377,7 @@ window.ProprietarioTooltip = {
                                     <div style="font-weight: 900; font-size: 14px; letter-spacing: 0.5px;">ALERTA DE OPORTUNIDADE PLATINUM</div>
                                     <div style="font-size: 11px; opacity: 0.9; font-weight: 500;">Este proprietário possui score ${pred.score}%. Alta probabilidade de liquidez ou interesse em desinvestimento.</div>
                                 </div>
-                                <button onclick="window.ProprietarioTooltip.analiseIA(${prop.id})" 
+                                <button onclick="${window.Monetization.canAccess('advanced_ai') ? `window.ProprietarioTooltip.analiseIA(${prop.id})` : `window.Monetization.showSubscriptionPlans()`}" 
                                     style="background: white; color: #7c3aed; border: none; padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;">
                                     Ver Detalhes IA
                                 </button>
@@ -495,7 +495,7 @@ window.ProprietarioTooltip = {
             return '';
         }
 
-        const isUnlocked = window.Monetization.isEliteOrAbove() || window.Monetization.isUnlockedPerson(cpf_cnpj);
+        const isUnlocked = window.Monetization.isUnlockedPerson(cpf_cnpj);
 
         let html = `<div class="section" style="margin-bottom: 24px;">
             <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
@@ -559,7 +559,7 @@ window.ProprietarioTooltip = {
         const enderecos = dados.addresses || [];
         if (enderecos.length === 0) return '';
 
-        const isUnlocked = window.Monetization.isEliteOrAbove() || window.Monetization.isUnlockedPerson(cpf_cnpj);
+        const isUnlocked = window.Monetization.isUnlockedPerson(cpf_cnpj);
 
         let html = `<div class="section" style="margin-bottom: 24px;">
             <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
@@ -599,7 +599,7 @@ window.ProprietarioTooltip = {
         const empresas = dados.related_companies || [];
         if (empresas.length === 0) return '';
 
-        const isUnlocked = window.Monetization.isEliteOrAbove() || window.Monetization.isUnlockedPerson(cpf_cnpj);
+        const isUnlocked = window.Monetization.isUnlockedPerson(cpf_cnpj);
 
         let html = `<div class="section" style="margin-bottom: 24px;">
             <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
@@ -645,7 +645,7 @@ window.ProprietarioTooltip = {
         const familia = dados.family_persons || [];
         if (familia.length === 0) return '';
 
-        const isUnlocked = window.Monetization.isEliteOrAbove() || window.Monetization.isUnlockedPerson(cpf_cnpj);
+        const isUnlocked = window.Monetization.isUnlockedPerson(cpf_cnpj);
 
         let html = `<div class="section" style="margin-bottom: 24px;">
             <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
@@ -1184,7 +1184,7 @@ window.ProprietarioTooltip = {
                 }
                 else {
                     // Full (DB Real)
-                    const isUnlocked = window.Monetization?.isUnlockedPerson(s.cpf);
+                    const isUnlocked = window.Monetization.isUnlockedPerson(s.cpf);
                     cpfDisplay = window.formatDocument(s.cpf, isUnlocked); 
                     
                     if (isUnlocked) {

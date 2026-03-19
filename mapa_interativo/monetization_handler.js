@@ -119,7 +119,7 @@ window.Monetization = {
 
     // Limites mensais por tier (calculados para ROI > 2x com custo de R$ 2.00/ficha)
     getTierLimits: function() {
-        const limits = { user: 0, pro: 30, elite: 80, master: Infinity, admin: Infinity };
+        const limits = { user: 0, pro: 30, elite: 80, master: 110, admin: Infinity };
         const labels = { user: 'Gratuito', pro: 'Pro', elite: 'Elite', master: 'Master', admin: 'Master' };
         const colors = { user: '#64748b', pro: '#2563eb', elite: '#7c3aed', master: '#b45309', admin: '#b45309' };
         const role = this.userRole || 'user';
