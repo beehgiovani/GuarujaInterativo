@@ -376,13 +376,28 @@ Profissional, direto, focado em fechar negócios. Use emojis imobiliários (🏢
 
             const { data, error } = await query.limit(5);
 
+            const isElite = window.Monetization ? window.Monetization.isEliteOrAbove() : false;
+
             if (error) {
                 console.error("❌ Search Properties Error:", error);
                 return { error: error.message };
             }
 
+            // MASKING: Ensure privacy in AI results
+            const maskedData = (data || []).map(unit => {
+                const isMaster = window.Monetization && (window.Monetization.userRole === 'admin' || window.Monetization.userRole === 'master');
+                const isUnlocked = isMaster || (window.Monetization && window.Monetization.isUnlocked(unit.inscricao, unit.lote_inscricao));
+                
+                return {
+                    ...unit,
+                    nome_proprietario: window.maskName(unit.nome_proprietario, isUnlocked),
+                    contato_proprietario: isUnlocked ? unit.contato_proprietario : '********',
+                    cpf_cnpj: window.formatDocument(unit.cpf_cnpj, isUnlocked)
+                };
+            });
+
             // FALLBACK LOGIC: If no specific units found, try finding the BUILDINGS (Lotes) in that neighborhood
-            if (!data || data.length === 0) {
+            if (!maskedData || maskedData.length === 0) {
                 console.warn("⚠️ No detailed units found. Searching for Buildings in neighborhood...");
                 const { data: lotesData } = await window.supabaseApp
                     .from('lotes')
@@ -399,17 +414,30 @@ Profissional, direto, focado em fechar negócios. Use emojis imobiliários (🏢
                 }
             }
 
-            console.log(`📊 Found ${data.length} properties for query.`);
-            return { count: data.length, results: data };
+            console.log(`📊 Found ${maskedData.length} properties for query.`);
+            return { count: maskedData.length, results: maskedData };
         }
 
         if (toolName === 'search_owners') {
+            const isElite = window.Monetization ? window.Monetization.isEliteOrAbove() : false;
             let query = window.supabaseApp.from('proprietarios').select('*');
             if (args.name) query = query.ilike('nome_completo', `%${args.name}%`);
             if (args.doc) query = query.ilike('cpf_cnpj', `%${args.doc}%`);
 
             const { data, error } = await query.limit(5);
-            return error ? { error: error.message } : data;
+            if (error) return { error: error.message };
+
+            // MASKING
+            const isMaster = window.Monetization && (window.Monetization.userRole === 'admin' || window.Monetization.userRole === 'master');
+            
+            return (data || []).map(owner => {
+                const isUnlocked = isMaster || (window.Monetization && window.Monetization.isUnlockedPerson(owner.cpf_cnpj));
+                return {
+                    ...owner,
+                    nome_completo: window.maskName(owner.nome_completo, isUnlocked),
+                    cpf_cnpj: window.formatDocument(owner.cpf_cnpj, isUnlocked)
+                };
+            });
         }
 
         if (toolName === 'generate_contract') {

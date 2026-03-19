@@ -154,8 +154,11 @@ window.HistoryHandler = (function() {
 
         // Determine Name
         let buildingName = lote.building_name || lote.nome_edificio || '';
-        let ownerName = (unit ? unit.nome_proprietario : lote.nome_proprietario) || '';
-        if (ownerName === 'null' || ownerName.trim() === '') ownerName = '';
+        let rawOwnerName = (unit ? unit.nome_proprietario : lote.nome_proprietario) || '';
+        if (rawOwnerName === 'null' || rawOwnerName.trim() === '') rawOwnerName = '';
+
+        const isUnlocked = window.Monetization && (window.Monetization.isEliteOrAbove() || (isUnit ? window.Monetization.isUnlocked(unit.inscricao, lote.inscricao) : window.Monetization.isUnlocked(lote.inscricao)));
+        let ownerName = isUnlocked ? rawOwnerName : window.maskName(rawOwnerName);
 
         let displayName = buildingName;
         let subName = '';

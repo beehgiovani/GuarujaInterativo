@@ -163,7 +163,7 @@ window.PortfolioHandler = {
             if (this.activePortfolioMarkers.length === 1) window.map.setZoom(18);
 
             this.showPortfolioDashboard(prop, unidades.length, unidadesDesbloqueadas, valorMercadoTotal, areaTotalAgregada, bairros);
-            window.Toast.success(`Patrimônio de ${prop.nome_completo} mapeado com sucesso!`);
+            window.Toast.success(`Patrimônio de ${window.maskName(prop.nome_completo, window.Monetization?.isUnlockedPerson(prop.cpf_cnpj))} mapeado com sucesso!`);
         }
     },
 
@@ -204,7 +204,7 @@ window.PortfolioHandler = {
             <div style="display: flex; justify-content: space-between; align-items: start;">
                 <div>
                     <div style="font-size: 10px; text-transform: uppercase; color: #7c3aed; font-weight: 800; letter-spacing: 1px;">Visão Consolidada de Patrimônio</div>
-                    <div style="font-size: 22px; font-weight: 900; color: #0f172a; margin-top: 2px;">${prop.nome_completo}</div>
+                    <div style="font-size: 22px; font-weight: 900; color: #0f172a; margin-top: 2px;">${window.maskName(prop.nome_completo, window.Monetization?.isUnlockedPerson(prop.cpf_cnpj))}</div>
                     <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px;">${bairrosHtml}</div>
                 </div>
                 <div style="display: flex; gap: 10px;">

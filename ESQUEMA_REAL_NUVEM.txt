@@ -1,0 +1,421 @@
+-- ESQUEMA EXTRAÍDO DIRETAMENTE DA NUVEM (API REST) --
+
+Tabela: visitas
+-----------------
+  - id (string - format: uuid)
+  - lead_id (string - format: uuid)
+  - unidade_inscricao (string - format: character varying)
+  - data_visita (string - format: timestamp with time zone)
+  - feedback_cliente (string - format: text)
+  - created_at (string - format: timestamp with time zone)
+  - user_id (string - format: uuid)
+
+Tabela: unlocked_lots
+-----------------------
+  - id (string - format: uuid)
+  - user_id (string - format: uuid)
+  - lote_inscricao (string - format: character varying)
+  - unidade_inscricao (string - format: character varying)
+  - preco_creditos (integer - format: integer)
+  - desbloqueado_em (string - format: timestamp with time zone)
+
+Tabela: unit_files
+--------------------
+  - id (string - format: uuid)
+  - unit_inscricao (string - format: text)
+  - name (string - format: text)
+  - path (string - format: text)
+  - folder (string - format: text)
+  - type (string - format: text)
+  - size (integer - format: bigint)
+  - created_at (string - format: timestamp with time zone)
+
+Tabela: unlocked_persons
+--------------------------
+  - id (string - format: uuid)
+  - user_id (string - format: uuid)
+  - cpf_cnpj (string - format: character varying)
+  - unlocked_at (string - format: timestamp with time zone)
+
+Tabela: leads
+---------------
+  - id (string - format: uuid)
+  - nome (string - format: text)
+  - contato (string - format: text)
+  - status (string - format: text)
+  - corretor_responsavel_id (string - format: text)
+  - preferencias (unknown - format: jsonb)
+  - created_at (string - format: timestamp with time zone)
+  - telefone (string - format: character varying)
+  - email (string - format: text)
+  - cpf_cnpj (string - format: character varying)
+  - zonas_interesse (array - format: text[])
+  - setores_interesse (array - format: text[])
+  - tipo_imovel (string - format: character varying)
+  - quartos_min (integer - format: integer)
+  - quartos_max (integer - format: integer)
+  - metragem_min (number - format: numeric)
+  - metragem_max (number - format: numeric)
+  - valor_min (number - format: numeric)
+  - valor_max (number - format: numeric)
+  - observacoes (string - format: text)
+  - updated_at (string - format: timestamp with time zone)
+  - user_id (string - format: uuid)
+
+Tabela: unidades_proprietarios_historico
+------------------------------------------
+  - id (string - format: uuid)
+  - unidade_inscricao (string - format: character varying)
+  - proprietario_id (integer - format: bigint)
+  - nome_proprietario_manual (string - format: text)
+  - data_inicio (string - format: date)
+  - data_fim (string - format: date)
+  - obs (string - format: text)
+  - created_at (string - format: timestamp with time zone)
+  - proprietario_nome (string - format: text)
+  - proprietario_documento (string - format: text)
+  - detalhes (string - format: text)
+  - data_registro (string - format: date)
+
+Tabela: pending_plan_activations
+----------------------------------
+  - id (string - format: uuid)
+  - user_id (string - format: uuid)
+  - plano_solicitado (string - format: text)
+  - valor_pago (number - format: numeric)
+  - status (string - format: text)
+  - created_at (string - format: timestamp with time zone)
+
+Tabela: anuncios_notifications
+--------------------------------
+  - id (string - format: uuid)
+  - anuncio_id (string - format: uuid)
+  - tipo (string - format: text)
+  - mensagem (string - format: text)
+  - criado_em (string - format: timestamp with time zone)
+  - lido (boolean - format: boolean)
+
+Tabela: profiles
+------------------
+  - id (string - format: uuid)
+  - email (string - format: text)
+  - role (string - format: text)
+  - credits (integer - format: integer)
+  - is_active (boolean - format: boolean)
+  - created_at (string - format: timestamp with time zone)
+  - updated_at (string - format: timestamp with time zone)
+  - monthly_unlocks_used (integer - format: integer)
+  - subscription_period_start (string - format: timestamp with time zone)
+  - total_unlocked (integer - format: integer)
+
+Tabela: analytics_top_owners
+------------------------------
+  - owner_name (string - format: text)
+  - search_count (integer - format: bigint)
+
+Tabela: ai_history
+--------------------
+  - id (integer - format: bigint)
+  - created_at (string - format: timestamp with time zone)
+  - inscricao (string - format: text)
+  - type (string - format: text)
+  - content (string - format: text)
+  - metadata (unknown - format: jsonb)
+
+Tabela: bairros_ajustes
+-------------------------
+  - nome_bairro (string - format: text)
+  - lat (number - format: double precision)
+  - lng (number - format: double precision)
+  - visible (boolean - format: boolean)
+  - updated_at (string - format: timestamp with time zone)
+
+Tabela: notificacoes
+----------------------
+  - id (string - format: uuid)
+  - titulo (string - format: text)
+  - mensagem (string - format: text)
+  - link_url (string - format: text)
+  - tipo (string - format: text)
+  - lida (boolean - format: boolean)
+  - created_at (string - format: timestamp with time zone)
+
+Tabela: analytics_top_lots
+----------------------------
+  - inscricao (string - format: text)
+  - zona (string - format: text)
+  - bairro (string - format: text)
+  - view_count (integer - format: bigint)
+
+Tabela: referencias_geograficas
+---------------------------------
+  - id (string - format: uuid)
+  - created_at (string - format: timestamp with time zone)
+  - nome (string - format: text)
+  - tipo (string - format: text)
+  - subtipo (string - format: text)
+  - geometria (unknown - format: jsonb)
+  - cor (string - format: text)
+
+Tabela: cupons_desconto
+-------------------------
+  - id (string - format: uuid)
+  - codigo (string - format: text)
+  - tipo (string - format: text)
+  - valor (number - format: numeric)
+  - ativo (boolean - format: boolean)
+  - expira_em (string - format: timestamp with time zone)
+  - created_at (string - format: timestamp with time zone)
+
+Tabela: crm_atividades
+------------------------
+  - id (string - format: uuid)
+  - lead_id (string - format: uuid)
+  - user_id (string - format: uuid)
+  - tipo (string - format: text)
+  - conteudo (string - format: text)
+  - metadata (unknown - format: jsonb)
+  - created_at (string - format: timestamp with time zone)
+
+Tabela: analytics_events
+--------------------------
+  - id (integer - format: bigint)
+  - created_at (string - format: timestamp with time zone)
+  - event_type (string - format: character varying)
+  - event_data (unknown - format: jsonb)
+  - user_session (string - format: character varying)
+  - ip_address (string - format: character varying)
+  - user_agent (string - format: text)
+
+Tabela: pending_credit_releases
+---------------------------------
+  - id (string - format: uuid)
+  - user_id (string - format: uuid)
+  - quantidade (integer - format: integer)
+  - valor_pago (number - format: numeric)
+  - status (string - format: text)
+  - created_at (string - format: timestamp with time zone)
+
+Tabela: proprietarios
+-----------------------
+  - id (integer - format: bigint)
+  - cpf_cnpj (string - format: character varying)
+  - nome_completo (string - format: text)
+  - tipo (string - format: character varying)
+  - dados_enrichment (unknown - format: jsonb)
+  - rg (string - format: character varying)
+  - data_nascimento (string - format: date)
+  - idade (integer - format: integer)
+  - genero (string - format: character varying)
+  - nome_mae (string - format: text)
+  - situacao_cadastral (string - format: character varying)
+  - pep (boolean - format: boolean)
+  - aposentado (boolean - format: boolean)
+  - possivelmente_falecido (boolean - format: boolean)
+  - bolsa_familia (boolean - format: boolean)
+  - ocupacao (string - format: text)
+  - renda_estimada (string - format: text)
+  - total_propriedades (integer - format: integer)
+  - data_enriquecimento (string - format: timestamp with time zone)
+  - created_at (string - format: timestamp with time zone)
+  - updated_at (string - format: timestamp with time zone)
+  - nome_busca (string - format: text)
+
+Tabela: lotes
+---------------
+  - inscricao (string - format: character varying)
+  - zona (string - format: character varying)
+  - setor (string - format: character varying)
+  - lote_geo (string - format: character varying)
+  - quadra (string - format: character varying)
+  - loteamento (string - format: character varying)
+  - bairro (string - format: character varying)
+  - valor_m2 (number - format: numeric)
+  - minx (number - format: double precision)
+  - miny (number - format: double precision)
+  - maxx (number - format: double precision)
+  - maxy (number - format: double precision)
+  - created_at (string - format: timestamp with time zone)
+  - building_name (string - format: text)
+  - image_url (string - format: text)
+  - floors (string - format: character varying)
+  - build_year (string - format: character varying)
+  - manager_info (string - format: text)
+  - amenities (string - format: text)
+  - obs (string - format: text)
+  - gallery (array - format: text[])
+  - piscina (boolean - format: boolean)
+  - zelador_nome (string - format: text)
+  - zelador_contato (string - format: text)
+  - elevador (boolean - format: boolean)
+  - portaria_24h (boolean - format: boolean)
+  - churrasqueira (boolean - format: boolean)
+  - salao_jogos (boolean - format: boolean)
+  - servico_praia (boolean - format: boolean)
+  - zeladoria (boolean - format: boolean)
+  - academia (boolean - format: boolean)
+  - bicicletario (boolean - format: boolean)
+  - acesso_pcd (boolean - format: boolean)
+  - salao_festas (boolean - format: boolean)
+  - area_verde (boolean - format: boolean)
+  - valor_condominio (string - format: text)
+  - municipio (string - format: character varying)
+
+Tabela: credit_transactions
+-----------------------------
+  - id (string - format: uuid)
+  - user_id (string - format: uuid)
+  - amount (integer - format: integer)
+  - type (string - format: text)
+  - description (string - format: text)
+  - created_at (string - format: timestamp with time zone)
+  - status (string - format: text)
+
+Tabela: unidades
+------------------
+  - inscricao (string - format: character varying)
+  - lote_inscricao (string - format: character varying)
+  - nome_proprietario (string - format: text)
+  - cpf_cnpj (string - format: character varying)
+  - logradouro (string - format: text)
+  - numero (string - format: character varying)
+  - complemento (string - format: text)
+  - bairro_unidade (string - format: character varying)
+  - cep (string - format: character varying)
+  - endereco_completo (string - format: text)
+  - metragem (number - format: numeric)
+  - valor_venal (number - format: numeric)
+  - valor_venal_edificado (number - format: numeric)
+  - descricao_imovel (string - format: text)
+  - status_processamento (string - format: character varying)
+  - created_at (string - format: timestamp with time zone)
+  - cod_ref (string - format: text)
+  - link_url (string - format: text)
+  - quartos (integer - format: integer)
+  - suites (integer - format: integer)
+  - banheiros (integer - format: integer)
+  - vagas (integer - format: integer)
+  - area_util (number - format: numeric)
+  - area_total (number - format: numeric)
+  - caracteristicas (array - format: text[])
+  - status_venda (string - format: text)
+  - imagens (array - format: text[])
+  - documentos (unknown - format: jsonb)
+  - tipo (string - format: character varying)
+  - contato_proprietario (array - format: text[])
+  - dados_enrichment (unknown - format: jsonb)
+  - last_enrichment_at (string - format: timestamp with time zone)
+  - proprietario_id (integer - format: bigint)
+  - valor_real (number - format: numeric)
+  - valor_vendavel (number - format: numeric)
+  - matricula (string - format: text)
+  - rip (string - format: text)
+  - municipio (string - format: character varying)
+
+Tabela: user_lote_edits
+-------------------------
+  - id (string - format: uuid)
+  - user_id (string - format: uuid)
+  - lote_inscricao (string - format: text)
+  - field_name (string - format: text)
+  - old_value (string - format: text)
+  - new_value (string - format: text)
+  - is_approved (boolean - format: boolean)
+  - created_at (string - format: timestamp with time zone)
+
+Tabela: user_unit_edits
+-------------------------
+  - id (string - format: uuid)
+  - user_id (string - format: uuid)
+  - unit_inscricao (string - format: text)
+  - field_name (string - format: text)
+  - old_value (string - format: text)
+  - new_value (string - format: text)
+  - is_approved (boolean - format: boolean)
+  - created_at (string - format: timestamp with time zone)
+
+Tabela: mercado_historico
+---------------------------
+  - id (string - format: uuid)
+  - bairro (string - format: text)
+  - tipologia (string - format: text)
+  - preco_venda_real (number - format: numeric)
+  - data_venda (string - format: date)
+  - fonte (string - format: text)
+  - created_at (string - format: timestamp with time zone)
+
+Tabela: anuncios
+------------------
+  - id (string - format: uuid)
+  - inscricao (string - format: text)
+  - lote_id (string - format: character varying)
+  - titulo (string - format: text)
+  - descricao (string - format: text)
+  - url (string - format: text)
+  - source (string - format: text)
+  - preco (number - format: numeric)
+  - area_anunciada (number - format: numeric)
+  - quartos (integer - format: integer)
+  - suites (integer - format: integer)
+  - banheiros (integer - format: integer)
+  - vagas (integer - format: integer)
+  - endereco_anuncio (string - format: text)
+  - match_score (integer - format: integer)
+  - scraped_at (string - format: timestamp with time zone)
+  - is_active (boolean - format: boolean)
+  - last_seen (string - format: timestamp with time zone)
+  - created_at (string - format: timestamp with time zone)
+
+Tabela: proprietario_relacionamentos
+--------------------------------------
+  - id (integer - format: bigint)
+  - proprietario_origem_id (integer - format: bigint)
+  - proprietario_destino_id (integer - format: bigint)
+  - tipo_vinculo (string - format: character varying)
+  - metadata (unknown - format: jsonb)
+  - created_at (string - format: timestamp with time zone)
+
+Tabela: app_settings
+----------------------
+  - id (string - format: uuid)
+  - key (string - format: text)
+  - value (unknown - format: jsonb)
+  - updated_at (string - format: timestamp with time zone)
+
+Tabela: vw_bairros_centroids
+------------------------------
+  - nome (string - format: character varying)
+  - total_lotes (integer - format: bigint)
+  - utm_x (number - format: double precision)
+  - utm_y (number - format: double precision)
+
+Tabela: municipios
+--------------------
+  - id (integer - format: integer)
+  - nome (string - format: character varying)
+  - slug (string - format: character varying)
+  - lat_centro (number - format: double precision)
+  - lng_centro (number - format: double precision)
+  - zoom_padrao (integer - format: integer)
+  - created_at (string - format: timestamp with time zone)
+
+Tabela: audit_logs
+--------------------
+  - id (string - format: uuid)
+  - user_id (string - format: uuid)
+  - user_email (string - format: text)
+  - action (string - format: text)
+  - detail (string - format: text)
+  - created_at (string - format: timestamp with time zone)
+
+Tabela: analytics_stats_30d
+-----------------------------
+  - total_events (integer - format: bigint)
+  - unique_sessions (integer - format: bigint)
+  - total_searches (integer - format: bigint)
+  - total_lot_views (integer - format: bigint)
+  - total_unit_views (integer - format: bigint)
+  - total_crm_actions (integer - format: bigint)
+  - total_edits (integer - format: bigint)
+  - avg_events_per_session (number - format: numeric)
+

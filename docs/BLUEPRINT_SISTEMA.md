@@ -101,3 +101,5 @@ Para adicionar um novo filtro de busca:
 ---
 
 *Este Blueprint deve ser consultado antes de qualquer Pull Request ou alteração estrutural.*
+pelo contrario, reclamei a noite toda e minha esposa reclamou tanto quanto, porem preferi beber para não encher meu saco 
+ 

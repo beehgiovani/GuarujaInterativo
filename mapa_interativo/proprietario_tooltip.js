@@ -187,8 +187,8 @@ window.ProprietarioTooltip = {
             `;
         }
 
-        html += this.renderContatos(prop.dados_enrichment || {});
-        html += this.renderEnderecos(prop.dados_enrichment || {});
+        html += this.renderContatos(prop.dados_enrichment || {}, prop.cpf_cnpj);
+        html += this.renderEnderecos(prop.dados_enrichment || {}, prop.cpf_cnpj);
         html += this.renderDadosAdicionais(prop);
         html += '</div>';
 
@@ -211,8 +211,8 @@ window.ProprietarioTooltip = {
 
         // ABA: OUTRAS INFORMAÇÕES (Empresas + Família)
         html += '<div id="prop-tab-outras" class="tab-content-pane" style="display:none;">';
-        html += this.renderEmpresas(prop.dados_enrichment || {});
-        html += this.renderFamilia(prop.dados_enrichment || {});
+        html += this.renderEmpresas(prop.dados_enrichment || {}, prop.cpf_cnpj);
+        html += this.renderFamilia(prop.dados_enrichment || {}, prop.cpf_cnpj);
         html += '</div>';
 
         // ABA: CONEXÕES
@@ -303,7 +303,7 @@ window.ProprietarioTooltip = {
                     </div>
                     <div style="flex: 1;">
                         <div style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px;">
-                            ${window.Monetization.isEliteOrAbove() ? prop.nome_completo : window.maskName(prop.nome_completo)}
+                            ${window.maskName(prop.nome_completo, window.Monetization.isUnlockedPerson(prop.cpf_cnpj))}
                             ${(() => {
                                 const pred = window.PredictiveHandler.calculateScore(prop);
                                 return `
@@ -317,8 +317,8 @@ window.ProprietarioTooltip = {
                             <span style="background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 4px; font-weight: 600;">${tipoPessoa}</span>
                             <span>
                                 CPF/CNPJ: 
-                                <span class="doc-value" style="font-family: monospace; font-weight: 700;">${window.formatDocument(prop.cpf_cnpj, window.Monetization.canAccess('advanced_ai'))}</span>
-                                <i class="fas ${window.Monetization.canAccess('advanced_ai') ? 'fa-eye' : 'fa-lock'}" style="cursor: pointer; margin-left: 6px; opacity: 0.8;" 
+                                <span class="doc-value" style="font-family: monospace; font-weight: 700;">${window.formatDocument(prop.cpf_cnpj, window.Monetization.isUnlockedPerson(prop.cpf_cnpj))}</span>
+                                <i class="fas ${window.Monetization.isUnlockedPerson(prop.cpf_cnpj) ? 'fa-eye' : 'fa-lock'}" style="cursor: pointer; margin-left: 6px; opacity: 0.8;" 
                                    onclick="window.toggleCpfVisibility(this, '${prop.cpf_cnpj}')" title="Mostrar/Ocultar"></i>
                             </span>
                         </div>
@@ -486,7 +486,7 @@ window.ProprietarioTooltip = {
         }
     },
 
-    renderContatos(dados) {
+    renderContatos(dados, cpf_cnpj) {
         const moveis = dados.mobile_phones || [];
         const fixos = dados.land_lines || [];
         const emails = dados.emails || [];
@@ -495,11 +495,24 @@ window.ProprietarioTooltip = {
             return '';
         }
 
+        const isUnlocked = window.Monetization.isEliteOrAbove() || window.Monetization.isUnlockedPerson(cpf_cnpj);
+
         let html = `<div class="section" style="margin-bottom: 24px;">
             <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
                 <i class="fas fa-phone" style="color: #667eea;"></i>
-                Contatos
+                Contatos ${!isUnlocked ? '<i class="fas fa-lock" style="font-size: 12px; margin-left: 8px; opacity: 0.5;"></i>' : ''}
             </h3>`;
+
+        if (!isUnlocked) {
+            html += `
+                <div style="background: #f1f5f9; padding: 20px; border-radius: 12px; text-align: center; border: 1px dashed #cbd5e1;">
+                    <i class="fas fa-shield-alt" style="font-size: 24px; color: #94a3b8; margin-bottom: 12px;"></i>
+                    <p style="font-size: 13px; color: #475569; margin: 0;">Contatos ocultos. Realize o <strong>Enriquecimento Platinum</strong> para liberar.</p>
+                </div>
+                </div>
+            `;
+            return html;
+        }
 
         // Telefones Móveis
         if (moveis.length > 0) {
@@ -542,16 +555,29 @@ window.ProprietarioTooltip = {
         return html;
     },
 
-    renderEnderecos(dados) {
+    renderEnderecos(dados, cpf_cnpj) {
         const enderecos = dados.addresses || [];
         if (enderecos.length === 0) return '';
+
+        const isUnlocked = window.Monetization.isEliteOrAbove() || window.Monetization.isUnlockedPerson(cpf_cnpj);
 
         let html = `<div class="section" style="margin-bottom: 24px;">
             <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
                 <i class="fas fa-map-marker-alt" style="color: #667eea;"></i>
-                Endereços (${enderecos.length})
-            </h3>
-            <div style="display: grid; gap: 12px;">`;
+                Endereços (${enderecos.length}) ${!isUnlocked ? '<i class="fas fa-lock" style="font-size: 12px; margin-left: 8px; opacity: 0.5;"></i>' : ''}
+            </h3>`;
+
+        if (!isUnlocked) {
+            html += `
+                <div style="background: #f8fafc; padding: 16px; border-radius: 8px; text-align: center; border: 1px dashed #e2e8f0;">
+                    <p style="font-size: 12px; color: #64748b; margin: 0;">Endereços protegidos. Realize o enriquecimento para visualizar.</p>
+                </div>
+                </div>
+            `;
+            return html;
+        }
+
+        html += '<div style="display: grid; gap: 12px;">';
 
         enderecos.forEach((end, i) => {
             html += `<div style="padding: 12px; background: #f8fafc; border-radius: 8px; border-left: 3px solid #667eea;">
@@ -569,16 +595,29 @@ window.ProprietarioTooltip = {
         return html;
     },
 
-    renderEmpresas(dados) {
+    renderEmpresas(dados, cpf_cnpj) {
         const empresas = dados.related_companies || [];
         if (empresas.length === 0) return '';
+
+        const isUnlocked = window.Monetization.isEliteOrAbove() || window.Monetization.isUnlockedPerson(cpf_cnpj);
 
         let html = `<div class="section" style="margin-bottom: 24px;">
             <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
                 <i class="fas fa-briefcase" style="color: #667eea;"></i>
-                Empresas Relacionadas (${empresas.length})
-            </h3>
-            <div style="display: grid; gap: 10px;">`;
+                Empresas Relacionadas (${empresas.length}) ${!isUnlocked ? '<i class="fas fa-lock" style="font-size: 12px; margin-left: 8px; opacity: 0.5;"></i>' : ''}
+            </h3>`;
+
+        if (!isUnlocked) {
+            html += `
+                <div style="background: #f8fafc; padding: 16px; border-radius: 8px; text-align: center; border: 1px dashed #e2e8f0;">
+                    <p style="font-size: 12px; color: #64748b; margin: 0;">Vínculos empresariais protegidos.</p>
+                </div>
+                </div>
+            `;
+            return html;
+        }
+
+        html += '<div style="display: grid; gap: 10px;">';
 
         empresas.forEach(emp => {
             const ativa = emp.registry_situation === 'ATIVA';
@@ -602,16 +641,29 @@ window.ProprietarioTooltip = {
         return html;
     },
 
-    renderFamilia(dados) {
+    renderFamilia(dados, cpf_cnpj) {
         const familia = dados.family_persons || [];
         if (familia.length === 0) return '';
+
+        const isUnlocked = window.Monetization.isEliteOrAbove() || window.Monetization.isUnlockedPerson(cpf_cnpj);
 
         let html = `<div class="section" style="margin-bottom: 24px;">
             <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
                 <i class="fas fa-users" style="color: #667eea;"></i>
-                Família (${familia.length})
-            </h3>
-            <div style="display: grid; gap: 8px;">`;
+                Família (${familia.length}) ${!isUnlocked ? '<i class="fas fa-lock" style="font-size: 12px; margin-left: 8px; opacity: 0.5;"></i>' : ''}
+            </h3>`;
+
+        if (!isUnlocked) {
+            html += `
+                <div style="background: #f8fafc; padding: 16px; border-radius: 8px; text-align: center; border: 1px dashed #e2e8f0;">
+                    <p style="font-size: 12px; color: #64748b; margin: 0;">Vínculos familiares protegidos.</p>
+                </div>
+                </div>
+            `;
+            return html;
+        }
+
+        html += '<div style="display: grid; gap: 8px;">';
 
         familia.forEach(f => {
             html += `<div style="padding: 10px; background: #f8fafc; border-radius: 6px; display: flex; justify-content: space-between;">
@@ -1132,17 +1184,14 @@ window.ProprietarioTooltip = {
                 }
                 else {
                     // Full (DB Real)
-                    cpfDisplay = window.formatDocument(s.cpf, true); // Mascara padrão
-                    // Mas queremos mostrar MASCARADO por padrão?
-                    // Sim, o request do user foi "liberar ou restringir".
-                    // Então mostramos ***... e o olho libera.
-                    // Vamos mascarar visualmente agora
-                    const clean = s.cpf.replace(/\D/g, '');
-                    if (clean.length === 11) {
-                        cpfDisplay = `***.${clean.substr(3, 3)}.${clean.substr(6, 3)}-**`;
+                    const isUnlocked = window.Monetization?.isUnlockedPerson(s.cpf);
+                    cpfDisplay = window.formatDocument(s.cpf, isUnlocked); 
+                    
+                    if (isUnlocked) {
                         showEye = true;
                     } else {
-                        cpfDisplay = window.formatDocument(s.cpf, true);
+                        cpfDisplay = window.formatDocument(s.cpf, false);
+                        showEye = false; 
                     }
                 }
             }
@@ -1332,13 +1381,14 @@ window.ProprietarioTooltip = {
             `;
 
             connections.forEach(c => {
+                const isItemUnlocked = c.doc ? (window.Monetization?.isUnlockedPerson(c.doc)) : false;
                 html += `
                     <div style="background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <div style="font-weight: 700; color: #1e293b; font-size: 13px;">${c.nome}</div>
+                            <div style="font-weight: 700; color: #1e293b; font-size: 13px;">${window.maskName(c.nome, isItemUnlocked)}</div>
                             <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
                                 <span style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: 700; color: #2563eb;">${c.type}</span>
-                                <span style="margin-left: 8px;">${c.doc ? window.formatDocument(c.doc, true) : 'Doc. Indisponível'}</span>
+                                <span style="margin-left: 8px;">${c.doc ? window.formatDocument(c.doc, isItemUnlocked) : 'Doc. Indisponível'}</span>
                             </div>
                         </div>
                         ${c.id ? `

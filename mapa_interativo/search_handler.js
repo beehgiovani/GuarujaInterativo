@@ -84,91 +84,139 @@ window.setupSearchAndFilters = function () {
                 }
             }, 600);
         };
-        // --- GOOGLE PLACES INTEGRATION (MODERN GMP-PLACE-AUTOCOMPLETE) ---
+        // --- CUSTOM GOOGLE PLACES INTEGRATION ---
         window.initSearchAutocomplete = async function() {
             if (!window.google || !window.google.maps) return;
             
             try {
-                // Carrega a biblioteca moderna de Lugares
-                await google.maps.importLibrary("places");
+                const { AutocompleteService, PlacesService } = await google.maps.importLibrary("places");
+                const autocompleteService = new AutocompleteService();
+                const placesService = new PlacesService(document.createElement('div'));
                 
-                const autocompleteElement = document.getElementById('searchInput');
-                if (!autocompleteElement) return;
+                const input = document.getElementById('searchInput');
+                const suggestionsBox = document.getElementById('googleSuggestions');
+                if (!input || !suggestionsBox) return;
 
-                // Restrições de Localização (Guarujá)
-                const guarujaBounds = {
-                    north: -23.85, 
-                    south: -24.03, 
-                    east: -46.10, 
-                    west: -46.33
-                };
+                const guarujaBounds = new google.maps.LatLngBounds(
+                    { lat: -24.03, lng: -46.33 }, // South West
+                    { lat: -23.85, lng: -46.10 }  // North East
+                );
 
-                // No componente moderno, passamos o objeto de restrição diretamente
-                autocompleteElement.locationRestriction = guarujaBounds;
+                let googleTimeout;
+                input.addEventListener('input', (e) => {
+                    const query = e.target.value;
+                    clearTimeout(googleTimeout);
 
-                // Evento disparado quando o usuário escolhe um endereço da lista
-                autocompleteElement.addEventListener('gmp-placeselect', async (event) => {
-                    const place = event.detail.place;
-
-                    if (!place.location) {
-                        try {
-                            await place.fetchFields({ fields: ['location', 'formattedAddress', 'addressComponents'] });
-                        } catch (err) {
-                            console.warn("Details fetch failed", err);
-                        }
-                    }
-
-                    if (!place.location) {
-                        window.Toast.info("Não foi possível obter a localização exata.");
+                    if (!query || query.length < 3) {
+                        suggestionsBox.innerHTML = '';
+                        suggestionsBox.classList.add('hidden');
                         return;
                     }
-                    // Get street and coords
-                    const lat = place.location.lat();
-                    const lng = place.location.lng();
 
-                    const streetNameFromDisplayName = place.displayName || "";
-                    // Sincronizar campo com o endereço formatado
-                    // autocompleteElement.value = place.formattedAddress; // gmp-place-autocomplete gerencia isso
+                    googleTimeout = setTimeout(() => {
+                        autocompleteService.getPlacePredictions({
+                            input: query,
+                            locationBias: guarujaBounds,
+                            origin: guarujaBounds.getCenter(),
+                            componentRestrictions: { country: 'br' }
+                        }, (predictions, status) => {
+                            if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) {
+                                suggestionsBox.innerHTML = '';
+                                suggestionsBox.classList.add('hidden');
+                                return;
+                            }
 
-                    // 1. EXTRACTION: Busca pela rua
-                    let streetName = "";
-                    if (place.addressComponents) {
-                        const route = place.addressComponents.find(c => c.types.includes("route"));
-                        if (route) streetName = route.longName;
-                    }
-                    if (!streetName && place.displayName) streetName = place.displayName;
+                            // Filtro extra manual para garantir que o resultado seja no Guarujá
+                            const filtered = predictions.filter(p => 
+                                p.description.toLowerCase().includes('guaruja') || 
+                                p.description.toLowerCase().includes('guarujá')
+                            );
 
-                    if (streetName) {
-                        window.performSearch(streetName);
-                    }
-
-                    // 2. VINCULAÇÃO DE LOTE
-                    const nearestLot = window.findNearestLot(lat, lng);
-                    if (nearestLot) {
-                        window.Toast.success("Lote identificado!");
-                        window.navigateToInscricao(nearestLot.inscricao);
-                    } else {
-                        window.cinematicFlight({ lat, lng }, 19, 45);
-                    }
+                            if (filtered.length > 0) {
+                                renderGoogleSuggestions(filtered);
+                            } else {
+                                suggestionsBox.innerHTML = '';
+                                suggestionsBox.classList.add('hidden');
+                            }
+                        });
+                    }, 300);
                 });
 
-                // Suporte para busca manual (ao digitar sem selecionar sugestão)
-                autocompleteElement.addEventListener('input', (e) => {
-                    const query = e.target.value || "";
-                    if (clearBtn) clearBtn.style.display = query ? 'flex' : 'none';
-                });
+                function renderGoogleSuggestions(predictions) {
+                    suggestionsBox.innerHTML = '';
+                    
+                    predictions.forEach(prediction => {
+                        const item = document.createElement('div');
+                        item.className = 'suggestion-item';
+                        item.innerHTML = `
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div class="suggestion-text">
+                                <span class="suggestion-main">${prediction.structured_formatting.main_text}</span>
+                                <span class="suggestion-sub">${prediction.structured_formatting.secondary_text}</span>
+                            </div>
+                        `;
+                        item.onclick = () => selectGoogleSuggestion(prediction);
+                        suggestionsBox.appendChild(item);
+                    });
 
-                autocompleteElement.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        const query = e.target.value;
-                        if (query && query.length >= 3) {
-                            window.performSearch(query);
+                    suggestionsBox.classList.remove('hidden');
+                }
+
+                async function selectGoogleSuggestion(prediction) {
+                    input.value = prediction.description;
+                    suggestionsBox.innerHTML = '';
+                    suggestionsBox.classList.add('hidden');
+
+                    placesService.getDetails({
+                        placeId: prediction.place_id,
+                        fields: ['geometry', 'address_components']
+                    }, (place, status) => {
+                        if (status === google.maps.places.PlacesServiceStatus.OK && place.geometry && place.geometry.location) {
+                            const lat = place.geometry.location.lat();
+                            const lng = place.geometry.location.lng();
+
+                            // EXTRA VALIDATION: Check if address is actually in Guarujá
+                            const isGuaruja = place.address_components.some(c => 
+                                (c.types.includes("locality") || c.types.includes("administrative_area_level_2")) &&
+                                (c.long_name.toLowerCase().includes("guaruja") || c.long_name.toLowerCase().includes("guarujá"))
+                            );
+
+                            if (!isGuaruja) {
+                                window.Toast.warning("Este endereço está fora do Guarujá.", "Localização Externa");
+                                return;
+                            }
+
+                            // 1. Cross-reference with our DB FIRST
+                            const nearestLot = window.findNearestLot(lat, lng);
+                            
+                            if (nearestLot) {
+                                window.Toast.success("Lote identificado no banco de dados!", "Sincronização Farol");
+                                // 2. Use internal navigation (handles flight + tooltip)
+                                window.navigateToInscricao(nearestLot.inscricao);
+                            } else {
+                                // Fallback: fly to Google point if lot not found
+                                window.Toast.info("Endereço encontrado (Google Maps).");
+                                window.cinematicFlight({ lat, lng }, 19, 45);
+                            }
+
+                            // 3. Trigger local search for the street too
+                            const route = place.address_components.find(c => c.types.includes("route"));
+                            if (route) {
+                                window.performSearch(route.long_name);
+                            }
                         }
+                    });
+                }
+
+                // Close suggestions on outside click
+                document.addEventListener('click', (e) => {
+                    if (!input.contains(e.target) && !suggestionsBox.contains(e.target)) {
+                        suggestionsBox.classList.add('hidden');
                     }
                 });
 
             } catch (e) {
-                console.error("Modern Autocomplete failed", e);
+                console.error("Custom Autocomplete failed", e);
             }
         };
     }
@@ -177,6 +225,30 @@ window.setupSearchAndFilters = function () {
         clearBtn.onclick = () => {
             window.clearSearchResults();
         };
+    }
+
+    const searchBtn = document.getElementById('searchBtn');
+    if (searchBtn) {
+        searchBtn.onclick = () => {
+            const query = searchInput.value;
+            if (query && query.length >= 3) {
+                window.performSearch(query);
+            }
+        };
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const query = e.target.value;
+                if (query && query.length >= 3) {
+                    window.performSearch(query);
+                    // Hide google suggestions if open
+                    const suggestionsBox = document.getElementById('googleSuggestions');
+                    if (suggestionsBox) suggestionsBox.classList.add('hidden');
+                }
+            }
+        });
     }
 };
 
@@ -330,10 +402,12 @@ window.performSearch = async function (query) {
                         const hasName = item.nome_proprietario && String(item.nome_proprietario).toLowerCase() !== 'null' && item.nome_proprietario.trim() !== '';
                         const hasAddress = item.endereco_completo && String(item.endereco_completo).toLowerCase() !== 'null' && item.endereco_completo.trim() !== '';
                         
+                        const isUnlocked = window.Monetization && (window.Monetization.isEliteOrAbove() || window.Monetization.isUnlocked(item.inscricao, item.lote_inscricao));
+                        
                         return {
                             ...item,
                             type: 'Imóvel',
-                            label: hasName ? item.nome_proprietario : (hasAddress ? item.endereco_completo : `Unidade ${item.complemento || 's/n'}`),
+                            label: hasName ? (isUnlocked ? item.nome_proprietario : window.maskName(item.nome_proprietario)) : (hasAddress ? item.endereco_completo : `Unidade ${item.complemento || 's/n'}`),
                             sub: hasName ? `${item.tipo || ''} ${item.complemento || ''} - ${hasAddress ? item.endereco_completo : (item.lote_inscricao || '-')}` : `Ref: ${item.lote_inscricao || item.inscricao}`,
                             isUnit: true,
                             loteInscricao: item.lote_inscricao
@@ -362,14 +436,17 @@ window.performSearch = async function (query) {
             // but for now they are global or matched via units.
 
             if (owners && owners.length > 0) {
-                results = results.concat(owners.map(owner => ({
-                    type: 'Proprietário',
-                    label: (owner.nome_completo &&   owner.nome_completo !== 'null') ? owner.nome_completo : 'Sem Nome',
-                    sub: `${owner.total_propriedades > 0 ? owner.total_propriedades + ' imóveis • ' : ''}CPF: ${window.formatDocument ? window.formatDocument(owner.cpf_cnpj, false) : owner.cpf_cnpj}`,
-                    isOwner: true,
-                    proprietarioId: owner.id,
-                    inscricao: 'P-' + owner.id
-                })));
+                results = results.concat(owners.map(owner => {
+                    const isUnlocked = window.Monetization && (window.Monetization.isEliteOrAbove() || window.Monetization.isUnlockedPerson(owner.cpf_cnpj));
+                    return {
+                        type: 'Proprietário',
+                        label: (owner.nome_completo && owner.nome_completo !== 'null') ? (isUnlocked ? owner.nome_completo : window.maskName(owner.nome_completo)) : 'Sem Nome',
+                        sub: `${owner.total_propriedades > 0 ? owner.total_propriedades + ' imóveis • ' : ''}CPF: ${window.formatDocument ? window.formatDocument(owner.cpf_cnpj, false) : owner.cpf_cnpj}`,
+                        isOwner: true,
+                        proprietarioId: owner.id,
+                        inscricao: 'P-' + owner.id
+                    };
+                }));
             }
         }
 
@@ -570,13 +647,12 @@ window.displaySearchResults = function (results) {
                     background: white;
                 `;
                 
-                const isElite = window.Monetization.isEliteOrAbove();
-                const displayLabel = (item.isOwner && !isElite) ? window.maskName(item.label) : item.label;
+                const displayLabel = item.label;
 
                 div.innerHTML = `
                     <div class="result-title" style="font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 2px;">
                         ${displayLabel}
-                        ${(item.isOwner && !isElite) ? '<i class="fas fa-lock" style="font-size: 10px; margin-left: 4px; opacity: 0.5;"></i>' : ''}
+                        ${(item.isOwner && !window.Monetization.isEliteOrAbove() && !window.Monetization.isUnlockedPerson(item.cpf_cnpj)) ? '<i class="fas fa-lock" style="font-size: 10px; margin-left: 4px; opacity: 0.5;"></i>' : ''}
                     </div>
                     <div class="result-subtitle" style="font-size: 11px; color: #64748b; display: flex; align-items: center; justify-content: space-between;">
                         <span>${item.sub || ''}</span>

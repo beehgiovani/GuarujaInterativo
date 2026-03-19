@@ -243,7 +243,28 @@ window.Enrichment = {
 
                 await Promise.all([syncByCPF, syncByName]);
 
-                await window.Monetization.consumeCredits(1, `Ficha Avançada Proprietário ${cpfLimpo}`);
+                // Consumir créditos
+                const consumeResult = await window.Monetization.consumeCredits(1, `Ficha Avançada Proprietário ${cpfLimpo}`);
+
+                if (consumeResult && consumeResult.success) {
+                    // Registrar persistência do desbloqueio para este usuário
+                    try {
+                        const { data: { user } } = await window.supabaseApp.auth.getUser();
+                        if (user) {
+                            await window.supabaseApp.from('unlocked_persons').insert({
+                                user_id: user.id,
+                                cpf_cnpj: String(cpf_cnpj).replace(/\D/g, '')
+                            });
+                            // Atualizar estado local
+                            if (window.Monetization.unlockedPersons) {
+                                window.Monetization.unlockedPersons.add(String(cpf_cnpj).replace(/\D/g, ''));
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Erro ao registrar persistência do desbloqueio de proprietário:", e);
+                    }
+                }
+
                 window.Toast.success(`Dados de ${proprietario.nome_completo} desbloqueados e salvos!`);
 
                 // Efeito Radar: destacar todos os imóveis deste proprietário
@@ -751,6 +772,15 @@ window.Enrichment = {
                 .single();
 
             if (error || !prop) throw error || new Error('Proprietário não encontrado');
+
+            // SECURITY GUARD: Ensure user has unlocked this person or is Elite
+            const isUnlocked = window.Monetization && (window.Monetization.isEliteOrAbove() || window.Monetization.isUnlockedPerson(prop.cpf_cnpj));
+            if (!isUnlocked) {
+                window.Loading.hide();
+                window.Monetization.showSubscriptionPlans();
+                window.Toast.error("Você precisa desbloquear este proprietário para ver a ficha completa.");
+                return;
+            }
 
             const data = prop.dados_enrichment || {};
 

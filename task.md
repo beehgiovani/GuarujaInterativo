@@ -40,10 +40,25 @@
 
 ### 5. Estética e Branding
 
-- [x] **Refinamento Premium**:
-  - [x] Integrar logotipos no Sidebar e Login.
-  - [x] Melhorar sombras e efeitos de glassmorphism (Layout).
-  - [x] Polir transições e estados de hover.
+- [x] Analyze existing plan definitions and permission logic
+- [x] Verify plan-based restrictions
+- [x] Verify individual credit purchase logic
+- [x] Fix logout functionality
+- [x] Audit and Fix Owner Privacy Leaks (Data Masking)
+    - [x] `search_handler.js`: Mask owner names in search results
+    - [x] `gemini_chat_handler.js`: Mask owner data in AI tool results
+    - [x] `streetview_handler.js`: Mask owner info in Street View infobox
+    - [x] `history_handler.js`: Mask owner names in "Recently Viewed" history
+    - [x] `enrichment_handler.js`: Secure `showFullDetails` with permission check
+    - [x] `portfolio_handler.js`: Verify Elite-only restriction
+    - [x] `proprietario_tooltip.js`: Audit visibility logic
+- [x] Implement persistence for owner enrichment
+- [ ] Final Codebase-wide Privacy Scan
+- [ ] Create application preview
+    - [ ] Start local server and capture recordings
+    - [ ] Generate GIFs and update `walkthrough.md`
+    - [ ] Capture "User" flow (Restricted)
+    - [ ] Capture "Master" flow (Professional/Clean)
 
 ---
 

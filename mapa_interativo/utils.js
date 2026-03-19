@@ -139,17 +139,20 @@ const MobileSidebar = {
 // ========================================
 // NAME MASKING FUNCTION
 // ========================================
-window.maskName = function(name) {
-    if (!name) return 'Nome Reservado';
+window.maskName = function(name, showsFull = false) {
+    if (!name || name === 'null') return 'Nome Reservado';
     
-    // Admin/Master/Elite see full names
-    if (window.Monetization && window.Monetization.isEliteOrAbove()) {
+    // Master/Admin see everything unmasked
+    const role = String(window.Monetization?.userRole || 'user').toLowerCase();
+    const isMaster = role === 'admin' || role === 'master';
+    
+    if (showsFull || isMaster) {
         return name;
     }
 
     const parts = name.trim().split(' ');
     if (parts.length === 1) {
-        return parts[0].substring(0, 2) + '*'.repeat(parts[0].length - 2);
+        return parts[0].substring(0, 2) + '*'.repeat(Math.max(2, parts[0].length - 2));
     }
     const first = parts[0];
     const last = parts[parts.length - 1];
@@ -160,11 +163,14 @@ window.maskName = function(name) {
 // CPF/CNPJ FORMATTING
 // ========================================
 window.formatDocument = function(doc, visible = false) {
-    if (!doc) return '-';
+    if (!doc || doc === 'null') return '-';
     const clean = doc.toString().replace(/\D/g, '');
-    const isEliteOrAbove = window.Monetization && window.Monetization.isEliteOrAbove();
+    
+    const role = String(window.Monetization?.userRole || 'user').toLowerCase();
+    const isMaster = role === 'admin' || role === 'master';
 
-    if (visible && isEliteOrAbove) {
+    // If it's the Master role or it has been explicitly unlocked (visible)
+    if (isMaster || visible) {
         if (clean.length === 11) {
             return clean.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
         } else if (clean.length === 14) {
@@ -180,7 +186,7 @@ window.formatDocument = function(doc, visible = false) {
         }
         return '***.***.***-**';
     }
-}
+};
 
 function formatPhone(phone) {
     if (!phone) return '';

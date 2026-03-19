@@ -163,10 +163,14 @@ function setupAppListeners() {
     };
 
     // Logout
-    window.logout = function () {
+    window.logout = async function () {
         if (confirm('Deseja realmente sair?')) {
-            localStorage.removeItem('guaruja_auth');
-            location.reload();
+            if (window.Auth && window.Auth.logout) {
+                await window.Auth.logout();
+            } else {
+                localStorage.removeItem('guaruja_auth');
+                location.reload();
+            }
         }
     };
 

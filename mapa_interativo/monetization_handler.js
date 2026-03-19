@@ -7,12 +7,13 @@ window.Monetization = {
     userProfile: null,
     userRole: 'user',
     unlockedLots: new Set(),
+    unlockedPersons: new Set(), // Persistent set for CPFs/CNPJs unlocked by this user
     pixConfig: null,
 
     init: async function() {
-        console.log("💳 Monetization Handler Initializing...");
+        console.log("💰 Monetization Handler Initializing...");
         await this.loadUserProfile();
-        await this.loadUnlockedLots();
+        await this.loadUnlocks();
         await this.loadPixConfig();
         this.updateBalanceUI();
         
@@ -28,7 +29,8 @@ window.Monetization = {
 
         switch (feature) {
             case 'radar_mercado': return isPro;
-            case 'dossier_pdf': return isElite;
+            case 'dossier_pdf': 
+            case 'pdf_dossier': return isElite;
             case 'mapear_patrimonio': return isElite;
             case 'link_cliente': return isPro;
             case 'crm_history': return isPro;
@@ -36,8 +38,15 @@ window.Monetization = {
             case 'legal_checkup': return isElite; // Due Diligence logic
             case 'marketing_tools': return isPro;
             case 'regional_insights': return isElite;
+            case 'owner_history': return isElite;
+            case 'edit_private': return isPro;
             default: return true;
         }
+    },
+
+    // Alias for backward compatibility
+    checkFeatureAccess: function(feature) {
+        return this.canAccess(feature);
     },
 
     loadPixConfig: async function() {
@@ -153,86 +162,62 @@ window.Monetization = {
         `;
     },
 
-    loadUnlockedLots: async function() {
+    loadUnlocks: async function() {
         try {
-             const { data: { user } } = await window.supabaseApp.auth.getUser();
-             if (!user) return;
-             
-             // 1. Lotes desbloqueados via créditos/plano
-             const { data: unlocks, error } = await window.supabaseApp.from('unlocked_lots').select('lote_inscricao').eq('user_id', user.id);
-             if (error) throw error;
-             
-             // 2. Lotes editados pelo usuário (também contam como liberados para ele)
-             const { data: edits } = await window.supabaseApp.from('user_lote_edits').select('lote_inscricao').eq('user_id', user.id);
-             const { data: unitEdits } = await window.supabaseApp.from('user_unit_edits').select('unit_inscricao').eq('user_id', user.id);
+            const { data: { user } } = await window.supabaseApp.auth.getUser();
+            if (!user) return;
 
-             const clean = (id) => id ? String(id).replace(/\D/g, '') : '';
-             
-             this.unlockedLots = new Set();
-             
-             (unlocks || []).forEach(row => this.unlockedLots.add(clean(row.lote_inscricao)));
-             (edits || []).forEach(row => this.unlockedLots.add(clean(row.lote_inscricao)));
-             (unitEdits || []).forEach(row => {
-                 const uId = clean(row.unit_inscricao);
-                 this.unlockedLots.add(uId);
-                 if (uId.length >= 11) this.unlockedLots.add(uId.substring(0, 8)); // Adiciona o lote pai
-             });
+            // 1. Load unlocked LOTS (Credits, Plan, Edits)
+            const { data: lotUnlocks, error: lotError } = await window.supabaseApp.from('unlocked_lots').select('lote_inscricao').eq('user_id', user.id);
+            const { data: edits } = await window.supabaseApp.from('user_lote_edits').select('lote_inscricao').eq('user_id', user.id);
+            const { data: unitEdits } = await window.supabaseApp.from('user_unit_edits').select('unit_inscricao').eq('user_id', user.id);
 
-             console.log(`🔑 Carteira sincronizada: ${this.unlockedLots.size} itens (Unlocks + Edits).`);
-             
-             // Avisar ao mapa para renderizar a camada persistente
-             if (window.renderHierarchy) window.renderHierarchy();
-        } catch(e) {
-             console.error("Error loading unlocked lots:", e);
+            const clean = (id) => id ? String(id).replace(/\D/g, '') : '';
+            this.unlockedLots = new Set();
+            
+            (lotUnlocks || []).forEach(row => this.unlockedLots.add(clean(row.lote_inscricao)));
+            (edits || []).forEach(row => this.unlockedLots.add(clean(row.lote_inscricao)));
+            (unitEdits || []).forEach(row => {
+                const uId = clean(row.unit_inscricao);
+                this.unlockedLots.add(uId);
+                if (uId.length >= 11) this.unlockedLots.add(uId.substring(0, 8));
+            });
+
+            // 2. Load unlocked PERSONS (CPF/CNPJ)
+            const { data: personUnlocks, error: personError } = await window.supabaseApp
+                .from('unlocked_persons')
+                .select('cpf_cnpj')
+                .eq('user_id', user.id);
+
+            if (!personError && personUnlocks) {
+                this.unlockedPersons = new Set(personUnlocks.map(u => clean(u.cpf_cnpj)));
+                console.log(`👤 ${this.unlockedPersons.size} proprietários desbloqueados carregados.`);
+            } else if (personError) {
+                console.warn("⚠️ Tabela 'unlocked_persons' não encontrada ou erro. Ignorando por enquanto.");
+            }
+
+            console.log(`🔑 Carteira sincronizada: ${this.unlockedLots.size} lotes.`);
+            
+            if (window.renderHierarchy) window.renderHierarchy();
+        } catch (e) {
+            console.error("Error loading unlocks:", e);
         }
-    },
-
-    checkFeatureAccess: function(featureId) {
-        const role = this.userRole || 'user';
-        const rules = {
-            'search_building': ['pro', 'elite', 'master', 'admin'],
-            'search_owner': ['pro', 'elite', 'master', 'admin'],
-            'search_property': ['pro', 'elite', 'master', 'admin'],
-            'search_opportunity': ['pro', 'elite', 'master', 'admin'],
-            'owner_history': ['elite', 'master', 'admin'],
-            'pdf_dossier': ['elite', 'master', 'admin'],
-            'edit_global': ['master', 'admin'],
-            'edit_private': ['pro', 'elite', 'master', 'admin']
-        };
-
-        if (rules[featureId]) {
-            return rules[featureId].includes(role);
-        }
-        return true; // Default allow
     },
 
     isUnlocked: function(inscricao, lotInscricao = null) {
-        // Master/Admin see everything. Elite also sees regular unlocks but usually has unlimited for common units.
         if (this.userRole === 'admin' || this.userRole === 'master') return true;
-        
-        // Elite can see unlocked data without credits if they are within their context? 
-        // Actually, Elite is defined as having "unlimited" access to core data in the Plan, 
-        // but we still want to track it or limit to their tier. 
-        // Let's stick to: Master/Admin = GOD MODE. Others need unlock or tier access.
         
         const clean = (id) => id ? String(id).replace(/\D/g, '') : '';
         const cInsc = clean(inscricao);
         const cLot = clean(lotInscricao);
 
-        // 1. Cheque o ID do lote pai explicito
+        // Check lots
         if (cLot && this.unlockedLots.has(cLot)) return true;
-        
-        // 2. Cheque a inscrição direta
         if (cInsc && this.unlockedLots.has(cInsc)) return true;
         
-        // 3. Fallback inteligente: se a inscrição da unidade tem prefixo do lote
-        if (cInsc && cInsc.length >= 11) {
-            const prefix8 = cInsc.substring(0, 8);
-            if (this.unlockedLots.has(prefix8)) return true;
-        }
+        // Check persons (fallback search in unlockedLots set just in case, or direct clean)
+        if (this.unlockedPersons.has(cInsc)) return true;
 
-        // 4. Última tentativa: percorrer o set e ver se algum item é prefixo do que buscamos 
-        // ou se o que buscamos é prefixo de algo no set
         for (let unlocked of this.unlockedLots) {
             const cUnlocked = clean(unlocked);
             if (!cUnlocked) continue;
@@ -240,6 +225,13 @@ window.Monetization = {
         }
         
         return false;
+    },
+
+    isUnlockedPerson: function(cpf_cnpj) {
+        if (this.userRole === 'admin' || this.userRole === 'master') return true;
+        if (!cpf_cnpj) return false;
+        const clean = String(cpf_cnpj).replace(/\D/g, '');
+        return this.unlockedPersons.has(clean);
     },
 
     isEliteOrAbove: function() {
@@ -886,6 +878,97 @@ window.Monetization = {
         } catch (e) {
             console.error("Error loading wallet:", e);
             listEl.innerHTML = '<div style="padding: 20px; color: #ef4444; font-size:12px;">Erro ao carregar carteira. Tente novamente.</div>';
+        }
+    },
+
+    unlockPerson: async function(cpf_cnpj, name = "Proprietário", price = 1) {
+        if (this.isUnlockedPerson(cpf_cnpj)) return true;
+        
+        const modal = document.createElement('div');
+        modal.className = 'custom-modal-overlay active';
+        modal.style.zIndex = '10020';
+        modal.innerHTML = `
+            <div class="custom-modal" style="max-width: 400px; text-align: center;">
+                <div class="custom-modal-header" style="background: #1e293b; color: white;">
+                    <div class="custom-modal-title"><i class="fas fa-user-lock"></i> Desbloquear Proprietário</div>
+                    <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()">&times;</button>
+                </div>
+                <div class="custom-modal-body" style="padding: 30px;">
+                    <div style="font-size: 40px; margin-bottom: 15px; color: #7c3aed;"><i class="fas fa-id-card"></i></div>
+                    <h3 style="margin-bottom: 10px; color: #1e293b;">${name}</h3>
+                    <p style="color: #475569; font-size: 14px; margin-bottom: 20px;">
+                        Para acessar o nome completo, CPF/CNPJ e contatos deste proprietário em todo o sistema, você precisa usar 1 crédito.
+                    </p>
+                    <p style="font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 15px;">Custo: ${price} Crédito(s)</p>
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 25px; background: #f1f5f9; padding: 10px; border-radius: 8px;">
+                        <i class="fas fa-info-circle"></i> Uma vez desbloqueado, este proprietário ficará disponível na sua carteira permanentemente.
+                    </div>
+                    
+                    <button id="btnConfirmUnlockPerson" class="btn-primary-rich" style="width: 100%; padding: 12px; background: #7c3aed; margin-bottom: 10px;">
+                        <i class="fas fa-unlock"></i> Desbloquear Agora
+                    </button>
+                    ${this.userProfile?.credits < price ? `<p style="color:#ef4444; font-size:11px; margin-top:5px; font-weight:bold;">Saldo insuficiente!</p>` : ''}
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        modal.querySelector('#btnConfirmUnlockPerson').onclick = async () => {
+            if ((this.userProfile?.credits || 0) < price && this.userRole !== 'master' && this.userRole !== 'admin') {
+                window.Toast.warning("Saldo insuficiente. Adquira mais no Painel Financeiro.");
+                return;
+            }
+            modal.remove();
+            await this.executeUnlockPerson(cpf_cnpj, price);
+        };
+    },
+
+    executeUnlockPerson: async function(cpf_cnpj, price = 1) {
+        window.Loading.show("Desbloqueando proprietário...", "Sincronizando com sua carteira...");
+        
+        try {
+            const { error } = await window.supabaseApp.rpc('unlock_person_with_credits', {
+                target_cpf_cnpj: cpf_cnpj,
+                credit_cost: price
+            });
+
+            if (error) {
+                // Se a função RPC ainda não existe, tentamos via insert direto (fallback temporário se as permissões permitirem)
+                console.warn("RPC unlock_person_with_credits failed, trying direct insert fallback:", error);
+                
+                // Spend credits first
+                const spent = await this.consumeCredits(price, `Desbloqueio de Proprietário: ${cpf_cnpj}`);
+                if (!spent) throw new Error("Não foi possível debitar os créditos.");
+
+                // Then insert to unlocked_persons
+                const { data: { user } } = await window.supabaseApp.auth.getUser();
+                const { error: insertError } = await window.supabaseApp.from('unlocked_persons').insert({
+                    user_id: user.id,
+                    cpf_cnpj: cpf_cnpj
+                });
+                
+                if (insertError) throw insertError;
+            }
+
+            const clean = String(cpf_cnpj).replace(/\D/g, '');
+            this.unlockedPersons.add(clean);
+            this.updateBalanceUI();
+            
+            window.Toast.success("Proprietário desbloqueado com sucesso!");
+            
+            // Re-render tooltip 
+            if (window.ProprietarioTooltip && window.ProprietarioTooltip.currentCpfCnpj === cpf_cnpj) {
+                window.ProprietarioTooltip.show(cpf_cnpj);
+            }
+            
+            // Dispatch event for other modules
+            window.dispatchEvent(new CustomEvent('personUnlocked', { detail: { cpf_cnpj } }));
+
+        } catch(e) {
+             console.error("Unlock Person Error:", e);
+             window.Toast.error("Erro ao desbloquear proprietário: " + e.message);
+        } finally {
+             window.Loading.hide();
         }
     },
 

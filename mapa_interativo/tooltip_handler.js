@@ -1362,11 +1362,11 @@ async function showUnitTooltip(unit, parentLote, x, y) {
                         ${ownerHistory.map(h => `
                             <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; font-size: 13px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                    <span style="font-weight: 700; color: #1e293b;">${h.proprietario_nome}</span>
+                                    <span style="font-weight: 700; color: #1e293b;">${window.maskName(h.proprietario_nome, true)}</span>
                                     <span style="font-size: 10px; color: #94a3b8; font-weight: 600;">${new Date(h.created_at).toLocaleDateString('pt-BR')}</span>
                                 </div>
                                 <div style="display: flex; gap: 10px; align-items: center;">
-                                    <span style="font-size: 11px; color: #64748b;">${window.formatDocument(h.proprietario_documento || 'N/A')}</span>
+                                    <span style="font-size: 11px; color: #64748b;">${window.formatDocument(h.proprietario_documento || 'N/A', true)}</span>
                                     <span style="font-size: 10px; color: #94a3b8; font-style: italic;">• ${h.detalhes || 'Transferência'}</span>
                                 </div>
                             </div>

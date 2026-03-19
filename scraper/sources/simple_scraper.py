@@ -29,7 +29,7 @@ def search_property_simple(logradouro: str, numero: str, bairro: str, inscricao:
         'description': f'Propriedade localizada em {logradouro}, número {numero}, bairro {bairro}, Guarujá/SP',
         'price': None,
         'area': None,
-        'bedrooms': None,
+        'bedrooms': None,                   
         'bathrooms': None,
         'parking': None,
         'images': [],

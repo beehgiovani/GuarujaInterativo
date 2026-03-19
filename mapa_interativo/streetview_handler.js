@@ -137,8 +137,9 @@ window.StreetViewHandler = (function() {
         const content = document.getElementById('sv-info-content');
         if (!infobox || !content) return;
 
-        const ownerInfo = lote.nome_proprietario || 'Proprietário Não Identificado';
-        const docInfo = lote.cpf_cnpj ? `DOC: ${lote.cpf_cnpj}` : '';
+        const isUnlocked = window.Monetization && (window.Monetization.isEliteOrAbove() || window.Monetization.isUnlocked(lote.inscricao));
+        const ownerInfo = lote.nome_proprietario ? (isUnlocked ? lote.nome_proprietario : window.maskName(lote.nome_proprietario)) : 'Proprietário Não Identificado';
+        const docInfo = lote.cpf_cnpj ? `DOC: ${window.formatDocument ? window.formatDocument(lote.cpf_cnpj, isUnlocked) : (isUnlocked ? lote.cpf_cnpj : '***.***.***-**')}` : '';
 
         content.innerHTML = `
             <div style="font-weight: 900; font-size: 15px; margin-bottom: 2px; color: #1e293b; text-transform: uppercase;">
@@ -148,7 +149,7 @@ window.StreetViewHandler = (function() {
                 ID: ${lote.inscricao}
             </div>
             <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 12px;">
-                <div style="font-size: 10px; color: #94a3b8; font-weight: 800; text-transform: uppercase;">Proprietário Base</div>
+                <div style="font-size: 10px; color: #94a3b8; font-weight: 800; text-transform: uppercase;">Proprietário Base ${!isUnlocked ? '<i class="fas fa-lock" style="font-size: 8px; margin-left: 4px; opacity: 0.5;"></i>' : ''}</div>
                 <div style="font-size: 13px; color: #1e293b; font-weight: 700;">${ownerInfo}</div>
                 <div style="font-size: 10px; color: #64748b;">${docInfo}</div>
             </div>

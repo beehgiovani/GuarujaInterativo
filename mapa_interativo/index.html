@@ -278,9 +278,10 @@
                 </div>
                 
                 <div class="search-box">
-                    <gmp-place-autocomplete id="searchInput" placeholder="O que você busca no Guarujá?" title="Buscar ruas, imóveis ou edifícios" aria-label="Campo de busca" style="width: 100%; border-radius: 14px; overflow: hidden; height: 48px; border: 2px solid #f1f5f9;"></gmp-place-autocomplete>
-                    <button type="button" id="searchBtn" aria-label="Pesquisar" title="Pesquisar" style="position: absolute; right: 0; height: 100%; width: 48px; background: var(--primary-color); color: white; border: none; border-radius: 0 14px 14px 0; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2;">🔍</button>
-                    <button type="button" id="searchClearBtn" class="search-clear-btn" aria-label="Limpar busca" title="Limpar" style="position: absolute; right: 52px; top: 50%; transform: translateY(-50%); z-index: 2; display: none;">×</button>
+                    <input type="text" id="searchInput" placeholder="O que você busca no Guarujá?" title="Buscar ruas, imóveis ou edifícios" aria-label="Campo de busca" autocomplete="off">
+                    <div id="googleSuggestions" class="google-suggestions-box hidden"></div>
+                    <button type="button" id="searchBtn" aria-label="Pesquisar" title="Pesquisar">🔍</button>
+                    <button type="button" id="searchClearBtn" class="search-clear-btn" aria-label="Limpar busca" title="Limpar" style="display: none;">×</button>
                 </div>
 
                 <!-- Abas de Navegação -->

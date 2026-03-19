@@ -90,7 +90,7 @@ window.RegionalHandler = {
                 <div style="display: flex; align-items: center; gap: 15px;">
                     <span style="font-weight: 900; color: ${idx < 3 ? '#f59e0b' : '#94a3b8'}; font-size: 14px; width: 20px;">#${idx + 1}</span>
                     <div>
-                        <div style="font-weight: 700; color: white; font-size: 13px;">${inv.name || inv.nome_completo || 'Proprietário'}</div>
+                        <div style="font-weight: 700; color: white; font-size: 13px;">${window.maskName(inv.name || inv.nome_completo)}</div>
                         <div style="font-size: 10px; color: #94a3b8;">${inv.count || 0} propriedades nesta zona</div>
                     </div>
                 </div>

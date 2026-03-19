@@ -502,13 +502,26 @@ window.initMap = async function () {
     window.findNearestLot = function(lat, lng) {
         if (!window.allLotes || window.allLotes.length === 0) return null;
         
-        console.log(`Searching nearest lot for: ${lat}, ${lng}`);
+        console.log(`[Spatial] Cross-referencing: ${lat}, ${lng}`);
         
-        let nearest = null;
-        let minDistance = 100; // Máximo 100 metros
+        // Convert to UTM for bounding box check
+        const utm = window.latLonToUtm(lat, lng);
         const center = new google.maps.LatLng(lat, lng);
+        
+        // 1. Precise Bound Check (UTM)
+        for (const lote of window.allLotes) {
+            if (lote.bounds_utm && 
+                utm.x >= lote.bounds_utm.minx && utm.x <= lote.bounds_utm.maxx &&
+                utm.y >= lote.bounds_utm.miny && utm.y <= lote.bounds_utm.maxy) {
+                console.log(`[Spatial] Precise Match Found: ${lote.inscricao}`);
+                return lote;
+            }
+        }
 
-        // 1. Precise Match (Within 50m)
+        // 2. Proximity Fallback (within 50m)
+        let nearest = null;
+        let minDistance = 50; 
+
         for (const lote of window.allLotes) {
             if (!lote._lat) continue;
             const dist = google.maps.geometry.spherical.computeDistanceBetween(
@@ -523,7 +536,9 @@ window.initMap = async function () {
         }
         
         if (nearest) {
-            console.log(`Found nearest lot: ${nearest.inscricao} at ${minDistance.toFixed(1)}m`);
+            console.log(`[Spatial] Proximity Match: ${nearest.inscricao} at ${minDistance.toFixed(1)}m`);
+        } else {
+            console.log(`[Spatial] No local match found.`);
         }
         return nearest;
     };
@@ -800,6 +815,8 @@ window.initMap = async function () {
             window.Toast.warning("Algumas unidades podem estar faltando no arquivo.");
         }
 
+        const isElite = window.Monetization && window.Monetization.isEliteOrAbove();
+
         const exportData = [];
         insideLotes.forEach(lote => {
             let addr = (lote.logradouro || lote.endereco || '').trim();
@@ -812,21 +829,23 @@ window.initMap = async function () {
             const lotUnits = allUnits.filter(u => u.lote_inscricao === lote.inscricao);
 
             if (lotUnits.length === 0) {
+                const isUnlocked = isElite || (window.Monetization && window.Monetization.isUnlockedPerson(lote.cpf_cnpj));
                 exportData.push({
                     inscricao: lote.inscricao,
                     endereco: fullAddr,
                     unidade: 'Terreno/Privativo',
-                    proprietario: lote.nome_proprietario || 'N/D',
-                    doc: lote.cpf_cnpj || 'N/D'
+                    proprietario: window.maskName(lote.nome_proprietario || 'N/D', isUnlocked),
+                    doc: window.formatDocument(lote.cpf_cnpj || 'N/D', isUnlocked)
                 });
             } else {
                 lotUnits.forEach(u => {
+                    const isUnlocked = isElite || (window.Monetization && window.Monetization.isUnlockedPerson(u.cpf_cnpj));
                     exportData.push({
                         inscricao: u.inscricao,
                         endereco: fullAddr,
                         unidade: (u.complemento && u.complemento.trim().length > 1) ? u.complemento : `Unidade ${u.inscricao.slice(-3)}`,
-                        proprietario: u.nome_proprietario || lote.nome_proprietario || 'N/D',
-                        doc: u.cpf_cnpj || lote.cpf_cnpj || 'N/D'
+                        proprietario: window.maskName(u.nome_proprietario || lote.nome_proprietario || 'N/D', isUnlocked),
+                        doc: window.formatDocument(u.cpf_cnpj || lote.cpf_cnpj || 'N/D', isUnlocked)
                     });
                 });
             }

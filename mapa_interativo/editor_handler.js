@@ -421,17 +421,44 @@ window.editUnitFromTooltip = function (unitInscricao) {
 
             <div style="margin-bottom: 12px; border-top: 1px solid #eee; padding-top: 10px;">
                 <div style="font-weight: 600; font-size: 12px; color: #333; margin-bottom: 8px;">Dados do Proprietário</div>
-                <input type="text" id="edit-unit-owner" placeholder="Nome" value="${existingEdits.nome_proprietario || targetUnit.nome_proprietario || ''}" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px;">
                 
-                <div style="margin-bottom: 8px; position: relative;">
-                    <input type="password" id="edit-unit-cpf" placeholder="CPF/CNPJ (Somente números)" value="${existingEdits.cpf_cnpj || targetUnit.cpf_cnpj || ''}" 
-                        style="width: 100%; padding: 6px; padding-right: 30px; border: 1px solid #ddd; border-radius: 4px;" autocomplete="off" data-lpignore="true">
-                    <button onclick="window.toggleInputType('edit-unit-cpf', this)" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b;">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                </div>
+                ${(function() {
+                    const isUnlocked = window.Monetization && (window.Monetization.isEliteOrAbove() || window.Monetization.isUnlocked(unitInscricao, window.currentLoteForUnit?.inscricao) || window.Monetization.isUnlockedPerson(targetUnit.cpf_cnpj));
+                    const canEdit = window.Monetization && (window.Monetization.isEliteOrAbove() || window.Monetization.isUnlocked(unitInscricao, window.currentLoteForUnit?.inscricao));
+                    
+                    return `
+                        <div style="margin-bottom: 8px;">
+                            <label style="display: block; font-size: 11px; color: #666; margin-bottom: 2px;">Nome</label>
+                            <input type="text" id="edit-unit-owner" placeholder="Nome" 
+                                value="${isUnlocked ? (targetUnit.nome_proprietario || '') : window.maskName(targetUnit.nome_proprietario)}" 
+                                ${canEdit ? '' : 'readonly'}
+                                style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; ${canEdit ? '' : 'background: #f8fafc; cursor: not-allowed;'}">
+                        </div>
+                        
+                        <div style="margin-bottom: 8px;">
+                            <label style="display: block; font-size: 11px; color: #666; margin-bottom: 2px;">CPF/CNPJ</label>
+                            <div style="position: relative;">
+                                <input type="password" id="edit-unit-cpf" placeholder="CPF/CNPJ (Somente números)" 
+                                    value="${isUnlocked ? (targetUnit.cpf_cnpj || '') : '************'}" 
+                                    ${canEdit ? '' : 'readonly'}
+                                    style="width: 100%; padding: 6px; padding-right: 30px; border: 1px solid #ddd; border-radius: 4px; ${canEdit ? '' : 'background: #f8fafc; cursor: not-allowed;'}" 
+                                    autocomplete="off" data-lpignore="true">
+                                <button onclick="${isUnlocked ? "window.toggleInputType('edit-unit-cpf', this)" : "window.Monetization.showSubscriptionPlans()"}" 
+                                    style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b;">
+                                    <i class="fas ${isUnlocked ? 'fa-eye' : 'fa-lock'}"></i>
+                                </button>
+                            </div>
+                        </div>
 
-                <input type="text" id="edit-unit-contact" placeholder="Contato" value="${existingEdits.contato_proprietario || targetUnit.contato_proprietario || ''}" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px;">
+                        <div style="margin-bottom: 8px;">
+                            <label style="display: block; font-size: 11px; color: #666; margin-bottom: 2px;">Contato</label>
+                            <input type="text" id="edit-unit-contact" placeholder="Contato" 
+                                value="${isUnlocked ? (targetUnit.contato_proprietario || '') : window.maskName(targetUnit.contato_proprietario)}" 
+                                ${canEdit ? '' : 'readonly'}
+                                style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; ${canEdit ? '' : 'background: #f8fafc; cursor: not-allowed;'}">
+                        </div>
+                    `;
+                })()}
                 
                 <div style="display: flex; gap: 8px;">
                     <input type="text" id="edit-unit-cod-ref" placeholder="Cód Ref." value="${existingEdits.cod_ref || targetUnit.cod_ref || ''}" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
@@ -570,13 +597,25 @@ window.saveUnitEdit = async function (unitInscricao) {
             valor_vendavel: getNumber('edit-unit-valor-vendavel'),
 
             imagens: JSON.parse(document.getElementById('edit-unit-gallery-json')?.value || '[]'),
-
-            nome_proprietario: getText('edit-unit-owner'),
             cod_ref: getText('edit-unit-cod-ref'),
-            link_url: getText('edit-unit-link'),
-            cpf_cnpj: getText('edit-unit-cpf'),
-            contato_proprietario: getText('edit-unit-contact')
+            link_url: getText('edit-unit-link')
         };
+
+        // Security check: Only include owner data if it was editable (not masked/readonly)
+        const nameInput = document.getElementById('edit-unit-owner');
+        if (nameInput && !nameInput.readOnly) {
+            edits.nome_proprietario = nameInput.value.trim();
+        }
+        
+        const cpfInput = document.getElementById('edit-unit-cpf');
+        if (cpfInput && !cpfInput.readOnly) {
+            edits.cpf_cnpj = cpfInput.value.trim();
+        }
+
+        const contactInput = document.getElementById('edit-unit-contact');
+        if (contactInput && !contactInput.readOnly) {
+            edits.contato_proprietario = contactInput.value.trim();
+        }
 
         const isAdmin = window.Monetization && (window.Monetization.userRole === 'admin' || window.Monetization.userRole === 'master');
 

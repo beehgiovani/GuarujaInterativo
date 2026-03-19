@@ -82,6 +82,7 @@ window.Auth = {
             }
             if (event === 'SIGNED_OUT') {
                 console.log("🔕 User Logged Out");
+                localStorage.removeItem('guaruja_auth');
                 this._appInitialized = false;
                 window.location.reload();
             }
@@ -213,6 +214,7 @@ window.Auth = {
     },
 
     logout: async function() {
+        localStorage.removeItem('guaruja_auth');
         await window.supabaseApp.auth.signOut();
     },
 
