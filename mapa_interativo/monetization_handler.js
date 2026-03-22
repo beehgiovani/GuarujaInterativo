@@ -579,13 +579,14 @@ window.Monetization = {
                 console.log("💎 [Monetization] Using Plan Allowance (RPC: unlock_lote_with_plan)");
                 rpcResponse = await window.supabaseApp.rpc('unlock_lote_with_plan', {
                     target_lote: cleanLote,
-                    target_unidade: cleanUnit // Unidade específica ou NULL para o lote todo
+                    target_unidade: cleanUnit,
+                    token_weight: price // Consome 1 ou 5 conforme o peso
                 });
             } else {
                 console.log("💳 [Monetization] Using Paid Credits (RPC: unlock_lote_with_credits)");
                 rpcResponse = await window.supabaseApp.rpc('unlock_lote_with_credits', {
                     target_lote: cleanLote,
-                    target_unidade: cleanUnit, // Unidade específica ou NULL para o lote todo
+                    target_unidade: cleanUnit,
                     credit_cost: price
                 });
             }
@@ -607,7 +608,8 @@ window.Monetization = {
 
             // SUCCESS!
             if (hasMonthlyAllowance) {
-                this.userProfile.monthly_unlocks_used = (this.userProfile.monthly_unlocks_used || 0) + 1;
+                // Incrementa localmente conforme o peso (1 ou 5)
+                this.userProfile.monthly_unlocks_used = (this.userProfile.monthly_unlocks_used || 0) + price;
                 window.Toast.success(`Ficha liberada pelo plano! (${this.userProfile.monthly_unlocks_used}/${limit})`);
             } else {
                 this.userProfile.credits -= price;

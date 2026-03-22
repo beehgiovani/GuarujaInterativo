@@ -9,6 +9,8 @@ DROP FUNCTION IF EXISTS public.unlock_lote_with_plan(VARCHAR);
 DROP FUNCTION IF EXISTS public.unlock_lote_with_plan(TEXT);
 DROP FUNCTION IF EXISTS public.unlock_lote_with_plan(VARCHAR, VARCHAR);
 DROP FUNCTION IF EXISTS public.unlock_lote_with_plan(TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.unlock_lote_with_plan(VARCHAR, VARCHAR, INTEGER);
+DROP FUNCTION IF EXISTS public.unlock_lote_with_plan(TEXT, TEXT, INTEGER);
 
 DROP FUNCTION IF EXISTS public.unlock_lote_with_credits(VARCHAR);
 DROP FUNCTION IF EXISTS public.unlock_lote_with_credits(TEXT);
@@ -30,7 +32,8 @@ ADD CONSTRAINT unlocked_lots_unique_selection UNIQUE NULLS NOT DISTINCT (user_id
 -- --------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.unlock_lote_with_plan(
     target_lote VARCHAR(20), 
-    target_unidade VARCHAR(20) DEFAULT NULL
+    target_unidade VARCHAR(20) DEFAULT NULL,
+    token_weight INTEGER DEFAULT 1
 )
 RETURNS BOOLEAN AS $$
 DECLARE
@@ -52,8 +55,8 @@ BEGIN
     END;
 
     -- Verificar limite (Masters ignoram limite)
-    IF used_val >= limit_val AND user_role NOT IN ('master', 'admin') THEN 
-        RAISE EXCEPTION 'Limite mensal do plano atingido.'; 
+    IF (used_val + token_weight) > limit_val AND user_role NOT IN ('master', 'admin') THEN 
+        RAISE EXCEPTION 'Limite mensal do plano insuficiente para esta operação (% fichas necessárias).', token_weight; 
     END IF;
 
     -- Registrar desbloqueio (ON CONFLICT garante idempotência)
@@ -61,8 +64,8 @@ BEGIN
     VALUES (current_uid, target_lote, target_unidade, 0) 
     ON CONFLICT DO NOTHING;
 
-    -- Incrementar uso
-    UPDATE public.profiles SET monthly_unlocks_used = monthly_unlocks_used + 1 WHERE id = current_uid;
+    -- Incrementar uso proporcional ao peso (Ex: 1 para unidade, 5 para prédio)
+    UPDATE public.profiles SET monthly_unlocks_used = monthly_unlocks_used + token_weight WHERE id = current_uid;
     
     RETURN TRUE;
 END;
