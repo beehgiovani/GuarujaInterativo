@@ -79,11 +79,11 @@ window.Enrichment = {
             .maybeSingle();
 
         if (this._isCacheValid(cachedProp?.dados_enrichment, cachedProp?.data_enriquecimento)) {
-            // Servir do cache — cobra o crédito mas NÃO chama a API externa
-            window.Loading.show('Desbloqueando Ficha...', 'Recuperando dados cadastrais...');
+            // Servir do cache — NÃO cobra créditos se já existe no banco interno
+            window.Loading.show('Visualizando Ficha...', 'Recuperando do banco local (Gratuito)...');
             try {
-                await window.Monetization.consumeCredits(1, `Ficha Avançada (cache) ${unit.inscricao}`);
-                window.Toast.success(`Ficha de ${cachedProp.nome_completo} desbloqueada!`);
+                // await window.Monetization.consumeCredits(0, `Ficha Avançada (cache) ${unit.inscricao}`);
+                window.Toast.success(`Ficha de ${cachedProp.nome_completo} (Cache Local)`);
                 this.highlightOwnerPortfolio(doc, cachedProp.nome_completo);
                 if (window.ProprietarioTooltip && cachedProp.id) {
                     window.ProprietarioTooltip.show(cachedProp.id);
@@ -104,7 +104,7 @@ window.Enrichment = {
 
             if (result) {
                 const savedProp = await this.saveEnrichment(unit, result);
-                await window.Monetization.consumeCredits(1, `Ficha Avançada ${unit.inscricao}`);
+                await window.Monetization.consumeCredits(2, `Ficha Avançada ${unit.inscricao}`);
                 this.highlightOwnerPortfolio(doc, result.name || result.company_name);
                 if (savedProp && window.ProprietarioTooltip) {
                     window.ProprietarioTooltip.show(savedProp.id);
@@ -146,10 +146,10 @@ window.Enrichment = {
             .maybeSingle();
 
         if (this._isCacheValid(cachedProp?.dados_enrichment, cachedProp?.data_enriquecimento)) {
-            window.Loading.show('Desbloqueando Ficha...', 'Recuperando dados do banco interno...');
+            window.Loading.show('Visualizando Ficha...', 'Recuperando do banco local (Gratuito)...');
             try {
-                await window.Monetization.consumeCredits(1, `Ficha Avançada (cache) ${doc}`);
-                window.Toast.success(`Dados de ${cachedProp.nome_completo} desbloqueados!`);
+                // window.Monetization.consumeCredits(0, `Ficha Avançada (cache) ${doc}`);
+                window.Toast.success(`Dados de ${cachedProp.nome_completo} (Cache Local)`);
                 this.highlightOwnerPortfolio(doc, cachedProp.nome_completo);
                 if (window.ProprietarioTooltip && cachedProp.id) {
                     window.ProprietarioTooltip.show(cachedProp.id);
@@ -209,13 +209,13 @@ window.Enrichment = {
                 if (result.mobile_phones) {
                     result.mobile_phones.forEach(p => {
                         const ddd = String(p.ddd).padStart(2, '0');
-                        syncPhones.push(`(${ddd}) ${p.number.substring(0, 5)}-${p.number.substring(5)}`);
+                        syncPhones.push(window.formatPhone(ddd + p.number));
                     });
                 }
                 if (result.land_lines) {
                     result.land_lines.forEach(p => {
                         const ddd = String(p.ddd).padStart(2, '0');
-                        syncPhones.push(`(${ddd}) ${p.number.substring(0, 4)}-${p.number.substring(4)}`);
+                        syncPhones.push(window.formatPhone(ddd + p.number));
                     });
                 }
                 const uniqueSyncPhones = [...new Set(syncPhones)];
@@ -244,7 +244,7 @@ window.Enrichment = {
                 await Promise.all([syncByCPF, syncByName]);
 
                 // Consumir créditos
-                const consumeResult = await window.Monetization.consumeCredits(1, `Ficha Avançada Proprietário ${cpfLimpo}`);
+                const consumeResult = await window.Monetization.consumeCredits(2, `Ficha Avançada Proprietário ${cpfLimpo}`);
 
                 if (consumeResult && consumeResult.success) {
                     // Registrar persistência do desbloqueio para este usuário
@@ -347,8 +347,8 @@ window.Enrichment = {
                 if (p.ddd && p.number) {
                     // Garantir que DDD tenha sempre 2 dígitos (ex: 01, 13)
                     const ddd = String(p.ddd).padStart(2, '0');
-                    // Formatar como (13) 99124-8146
-                    const formatted = `(${ddd}) ${p.number.substring(0, 5)}-${p.number.substring(5)}`;
+                    // Formatar usando utilitário centralizado
+                    const formatted = window.formatPhone(ddd + p.number);
                     newPhones.push(formatted);
                 }
             });
@@ -360,8 +360,8 @@ window.Enrichment = {
                 if (p.ddd && p.number) {
                     // Garantir que DDD tenha sempre 2 dígitos (ex: 01, 13)
                     const ddd = String(p.ddd).padStart(2, '0');
-                    // Formatar como (13) 3024-8944
-                    const formatted = `(${ddd}) ${p.number.substring(0, 4)}-${p.number.substring(4)}`;
+                    // Formatar usando utilitário centralizado
+                    const formatted = window.formatPhone(ddd + p.number);
                     newPhones.push(formatted);
                 }
             });

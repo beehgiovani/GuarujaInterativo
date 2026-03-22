@@ -10,6 +10,14 @@ window.Monetization = {
     unlockedPersons: new Set(), // Persistent set for CPFs/CNPJs unlocked by this user
     pixConfig: null,
 
+    // Early declaration to avoid racing
+    isUnlockedPerson: function(cpf_cnpj) {
+        if (this.userRole === 'admin' || this.userRole === 'master') return true;
+        if (!cpf_cnpj) return false;
+        const clean = String(cpf_cnpj).replace(/\D/g, '');
+        return this.unlockedPersons.has(clean);
+    },
+
     init: async function() {
         console.log("💰 Monetization Handler Initializing...");
         await this.loadUserProfile();
@@ -24,20 +32,24 @@ window.Monetization = {
     canAccess: function(feature) {
         const role = String(this.userRole || 'user').toLowerCase();
         const isMaster = role === 'admin' || role === 'master';
-        const isElite = role === 'elite' || isMaster;
+        const isVip = role === 'vip' || isMaster;
+        const isElite = role === 'elite' || isVip;
         const isPro = role === 'pro' || isElite;
 
+        if (window.isGuest) return false;
+        
         switch (feature) {
-            case 'radar_mercado': return isPro;
+            case 'radar_mercado': return isPro; // Radar Farol (básico)
+            case 'search_owner': return isPro;  // Busca por proprietário
+            case 'crm_history': return isPro;   // CRM pessoal
+            case 'advanced_ai': return isElite; // Radar Farol completo
             case 'dossier_pdf': 
-            case 'pdf_dossier': return isElite;
+            case 'pdf_dossier': return isElite; // Dossiê PDF automático
+            case 'search_opportunity': return isElite; // Alertas de oportunidade
+            case 'regional_insights': return isElite; // Relatórios avançados
             case 'mapear_patrimonio': return isElite;
             case 'link_cliente': return isPro;
-            case 'crm_history': return isPro;
-            case 'advanced_ai': return isPro; // Farol IA
-            case 'legal_checkup': return isElite; // Due Diligence logic
             case 'marketing_tools': return isPro;
-            case 'regional_insights': return isElite;
             case 'owner_history': return isElite;
             case 'edit_private': return isPro;
             default: return true;
@@ -59,6 +71,13 @@ window.Monetization = {
     },
 
     loadUserProfile: async function() {
+        if (window.isGuest) {
+            this.userProfile = { credits: 0, role: 'guest', full_name: 'Visitante' };
+            this.userRole = 'guest';
+            console.log("👤 User Role: GUEST (Visitor Mode)");
+            return;
+        }
+
         try {
             const { data: { user } } = await window.supabaseApp.auth.getUser();
             if (!user) return;
@@ -73,6 +92,11 @@ window.Monetization = {
             this.userProfile = data;
             this.userRole = String(data.role || 'user').toLowerCase();
             console.log("👤 User Role Loaded:", this.userRole);
+
+            // Verificação de Perfil Completo (Nova Funcionalidade)
+            if (data.profile_completed === false && this.userRole !== 'admin') {
+                setTimeout(() => this.showProfileCompletionModal(), 2000);
+            }
 
             const isMaster = this.userRole === 'admin' || this.userRole === 'master';
             const isPro = this.canAccess('radar_mercado');
@@ -117,11 +141,211 @@ window.Monetization = {
         }
     },
 
+    generatePixPayload: function(refLabel, price) {
+        const config = this.pixConfig || { tipo: 'celular', chave: '39683283888', nome_beneficiario: 'BRUNO GIOVANI', cidade: 'GUARUJA' };
+        
+        // Função auxiliar para formatar campos [ID][TAMANHO][VALOR]
+        // Usa TextEncoder para garantir que o tamanho seja em BYTES (Requisito EMV)
+        const encoder = new TextEncoder();
+        const f = (id, val) => {
+            const v = String(val);
+            const vBytes = encoder.encode(v);
+            return id.toString().padStart(2, '0') + vBytes.length.toString().padStart(2, '0') + v;
+        };
+
+        // 00: Payload Format Indicator (Obrigatório)
+        const payloadFormat = f(0, "01");
+        
+        // 01: Point of Initiation Method (11 = Estático, 12 = Dinâmico)
+        const initiationMethod = f(1, "11");
+
+        // 26: Merchant Account Information
+        const gui = f(0, "BR.GOV.BCB.PIX");
+        const key = f(1, config.chave.replace(/[^0-9a-zA-Z]/g, ''));
+        const merchantAccount = f(26, gui + key);
+
+        // Campos obrigatórios
+        const mcc = f(52, "0000");   
+        const currency = f(53, "986"); 
+        const amount = f(54, price.toFixed(2)); 
+        const country = f(58, "BR"); 
+        
+        // Normalização rigorosa (Apenas ASCII)
+        const normalize = (str) => {
+            return str.normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, "")
+                .toUpperCase()
+                .replace(/[^A-Z0-9 ]/g, "")
+                .substring(0, 25);
+        };
+
+        const name = f(59, normalize(config.nome_beneficiario));
+        const city = f(60, normalize(config.cidade).substring(0, 15));
+
+        // 62: TXID (Para Pix Estático '***' é o mais compatível)
+        const txid = f(5, "***"); 
+        const additionalData = f(62, txid);
+
+        let payload = payloadFormat + initiationMethod + merchantAccount + mcc + currency + amount + country + name + city + additionalData + "6304";
+
+        // Cálculo do CRC16 CCITT-FALSE
+        let crc = 0xFFFF;
+        const payloadBytes = encoder.encode(payload);
+        for (let i = 0; i < payloadBytes.length; i++) {
+            crc ^= (payloadBytes[i] << 8);
+            for (let j = 0; j < 8; j++) {
+                if (crc & 0x8000) crc = (crc << 1) ^ 0x1021;
+                else crc = (crc << 1);
+                crc &= 0xFFFF;
+            }
+        }
+        const crcHex = crc.toString(16).toUpperCase().padStart(4, '0');
+        return payload + crcHex;
+    },
+
+    showProfileCompletionModal: function() {
+        // Evitar duplicatas
+        document.getElementById('profile-completion-modal')?.remove();
+
+        const modal = document.createElement('div');
+        modal.className = 'custom-modal-overlay active';
+        modal.id = 'profile-completion-modal';
+        modal.style.zIndex = '10025';
+        
+        modal.innerHTML = `
+            <div class="custom-modal" style="max-width: 450px; text-align: left; background: white; border-radius: 16px; overflow: hidden;">
+                <div class="custom-modal-header" style="background: #0f172a; color: white; padding: 20px;">
+                    <div class="custom-modal-title" style="font-size: 18px; font-weight: 700;">
+                        <i class="fas fa-user-edit"></i> Complete seu Perfil
+                    </div>
+                </div>
+                <div class="custom-modal-body" style="padding: 30px;">
+                    <p style="color: #475569; font-size: 14px; margin-bottom: 25px;">
+                        Para garantir a segurança das informações e personalizar suas mensagens automáticas, precisamos de alguns dados adicionais.
+                    </p>
+
+                    <form id="profile-complete-form">
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Tipo de Usuário</label>
+                            <div style="display: flex; gap: 10px;">
+                                <button type="button" class="type-btn active" data-type="PF" style="flex: 1; min-height: 44px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; font-weight: 700; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Pessoa Física</button>
+                                <button type="button" class="type-btn" data-type="PJ" style="flex: 1; min-height: 44px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; font-weight: 700; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Pessoa Jurídica</button>
+                            </div>
+                            <input type="hidden" id="p-person-type" value="PF">
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px;" id="doc-label">CPF</label>
+                            <input type="text" id="p-document" placeholder="000.000.000-00" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                        </div>
+
+                        <div style="margin-bottom: 25px;">
+                            <label style="display: block; font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Nome do Corretor / Imobiliária</label>
+                            <input type="text" id="p-broker" placeholder="Ex: João Silva ou Imobiliária Guarujá" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                            <small style="color: #94a3b8; font-size: 10px;">Este nome será usado em suas mensagens aos clientes.</small>
+                        </div>
+
+                        <button type="button" onclick="window.Monetization.saveProfileCompletion()" style="width: 100%; padding: 15px; background: #2563eb; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 14px; cursor: pointer; transition: all 0.2s;">
+                            SALVAR E CONTINUAR
+                        </button>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Lógica de alternância PF/PJ
+        const btns = modal.querySelectorAll('.type-btn');
+        btns.forEach(btn => {
+            btn.onclick = () => {
+                console.log('🔄 Alternando para tipo:', btn.dataset.type);
+                btns.forEach(b => {
+                    b.classList.remove('active');
+                    b.style.borderColor = '#cbd5e1';
+                    b.style.background = '#f8fafc';
+                    b.style.color = '#64748b';
+                    b.style.boxShadow = 'none';
+                });
+                btn.classList.add('active');
+                btn.style.borderColor = '#2563eb';
+                btn.style.background = '#2563eb';
+                btn.style.color = '#ffffff';
+                btn.style.boxShadow = '0 4px 6px -1px rgba(37, 99, 235, 0.2)';
+                
+                const type = btn.dataset.type;
+                modal.querySelector('#p-person-type').value = type;
+                modal.querySelector('#doc-label').innerText = type === 'PF' ? 'CPF' : 'CNPJ';
+                modal.querySelector('#p-document').placeholder = type === 'PF' ? '000.000.000-00' : '00.000.000/0000-00';
+                
+                // Limpar campo se mudar tipo para evitar validação errada
+                modal.querySelector('#p-document').value = '';
+            };
+        });
+        
+        // Ativar o primeiro por padrão com um pequeno delay para garantir renderização
+        setTimeout(() => {
+            if (btns[0]) btns[0].click();
+        }, 100);
+    },
+
+    saveProfileCompletion: async function() {
+        const personType = document.getElementById('p-person-type').value;
+        const documentRaw = document.getElementById('p-document').value;
+        const brokerName = document.getElementById('p-broker').value;
+
+        // Limpa documento para validar apenas números
+        const documentVal = documentRaw.replace(/\D/g, '');
+
+        if (!documentVal || (personType === 'PF' && documentVal.length !== 11) || (personType === 'PJ' && documentVal.length !== 14)) {
+            window.Toast.warning(`Preencha o ${personType === 'PF' ? 'CPF' : 'CNPJ'} corretamente.`);
+            return;
+        }
+        if (!brokerName || brokerName.length < 3) {
+            window.Toast.warning("Preencha o nome do corretor responsável.");
+            return;
+        }
+
+        window.Loading.show("Salvando...", "Atualizando seu perfil");
+
+        try {
+            const { data: { user } } = await window.supabaseApp.auth.getUser();
+            const { error } = await window.supabaseApp
+                .from('profiles')
+                .update({
+                    person_type: personType,
+                    cpf_cnpj: documentVal,
+                    broker_name: brokerName,
+                    profile_completed: true
+                })
+                .eq('id', user.id);
+
+            if (error) throw error;
+
+            window.Loading.hide();
+            window.Toast.success("Perfil atualizado com sucesso!");
+            document.getElementById('profile-completion-modal').remove();
+            
+            // Recarregar perfil na memória
+            if (this.userProfile) {
+                this.userProfile.person_type = personType;
+                this.userProfile.cpf_cnpj = documentVal;
+                this.userProfile.broker_name = brokerName;
+                this.userProfile.profile_completed = true;
+            }
+
+        } catch (e) {
+            window.Loading.hide();
+            console.error("Save Profile Error:", e);
+            window.Toast.error("Erro ao salvar perfil: " + e.message);
+        }
+    },
+
     // Limites mensais por tier (calculados para ROI > 2x com custo de R$ 2.00/ficha)
     getTierLimits: function() {
-        const limits = { user: 0, pro: 30, elite: 80, master: 110, admin: Infinity };
-        const labels = { user: 'Gratuito', pro: 'Pro', elite: 'Elite', master: 'Master', admin: 'Master' };
-        const colors = { user: '#64748b', pro: '#2563eb', elite: '#7c3aed', master: '#b45309', admin: '#b45309' };
+        const limits = { user: 0, pro: 30, elite: 80, vip: 110, master: 10000, admin: Infinity };
+        const labels = { user: 'Gratuito', pro: 'Pro', elite: 'Elite', vip: 'Anual VIP', master: 'Master', admin: 'Master' };
+        const colors = { user: '#64748b', pro: '#2563eb', elite: '#7c3aed', vip: '#1e293b', master: '#b45309', admin: '#b45309' };
         const role = this.userRole || 'user';
         return {
             limit: limits[role] ?? 0,
@@ -137,13 +361,27 @@ window.Monetization = {
 
         const { limit, label, color } = this.getTierLimits();
         const credits = this.userProfile?.credits || 0;
+        const used = this.userProfile?.monthly_unlocks_used || 0;
         const isFree = this.userRole === 'user';
         const isUnlimited = limit === Infinity;
+        const isGuest = window.isGuest;
 
-        // Fichas usadas no mês: calculado como créditos comprados menos saldo atual
-        // Simplificado: mostramos o saldo de créditos + badge do tier
+        if (isGuest) {
+            el.innerHTML = `
+                <span style="background: #64748b18; border: 1px solid #64748b40; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 800; color: #64748b;">
+                    👤 Visitante
+                </span>
+            `;
+            return;
+        }
+
+        const usageStr = (!isUnlimited && !isFree) ? `<span style="opacity: 0.7; font-size: 9px; margin-left: 4px;">(${used}/${limit})</span>` : '';
+        const tooltip = isUnlimited ? `Plano ${label} • Ilimitado` : 
+                        isFree ? `Plano ${label} • Use créditos para desbloquear` : 
+                        `Plano ${label} • ${used} de ${limit} fichas mensais usadas. Após o limite, usa seus créditos.`;
+
         el.onclick = () => window.Monetization.showSubscriptionPlans();
-        el.title = `Plano ${label} • Clique para ver planos`;
+        el.title = tooltip;
         el.innerHTML = `
             <span style="
                 display: inline-flex; align-items: center; gap: 5px;
@@ -153,9 +391,9 @@ window.Monetization = {
                 cursor: pointer; transition: all 0.2s;
             " onmouseover="this.style.background='${color}28'" onmouseout="this.style.background='${color}18'">
                 ${isUnlimited ? '👑' : isFree ? '🔐' : '⭐'}
-                ${label}
+                ${label} ${usageStr}
             </span>
-            <span style="font-size: 11px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 3px;">
+            <span style="font-size: 11px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 3px;" title="Saldo de Créditos (Fichas Extras)">
                 <i class="fas fa-coins" style="color: #f59e0b; font-size: 10px;"></i>
                 ${credits}
             </span>
@@ -168,19 +406,28 @@ window.Monetization = {
             if (!user) return;
 
             // 1. Load unlocked LOTS (Credits, Plan, Edits)
-            const { data: lotUnlocks, error: lotError } = await window.supabaseApp.from('unlocked_lots').select('lote_inscricao').eq('user_id', user.id);
+            const { data: lotUnlocks, error: lotError } = await window.supabaseApp.from('unlocked_lots').select('lote_inscricao, unidade_inscricao').eq('user_id', user.id);
             const { data: edits } = await window.supabaseApp.from('user_lote_edits').select('lote_inscricao').eq('user_id', user.id);
             const { data: unitEdits } = await window.supabaseApp.from('user_unit_edits').select('unit_inscricao').eq('user_id', user.id);
 
             const clean = (id) => id ? String(id).replace(/\D/g, '') : '';
             this.unlockedLots = new Set();
             
-            (lotUnlocks || []).forEach(row => this.unlockedLots.add(clean(row.lote_inscricao)));
-            (edits || []).forEach(row => this.unlockedLots.add(clean(row.lote_inscricao)));
-            (unitEdits || []).forEach(row => {
-                const uId = clean(row.unit_inscricao);
-                this.unlockedLots.add(uId);
-                if (uId.length >= 11) this.unlockedLots.add(uId.substring(0, 8));
+            // Combine all unlocks into a single array for processing
+            const allUnlocks = [
+                ...(lotUnlocks || []).map(row => ({ lote_inscricao: row.lote_inscricao, unidade_inscricao: row.unidade_inscricao })),
+                ...(edits || []).map(row => ({ lote_inscricao: row.lote_inscricao, unidade_inscricao: null })),
+                ...(unitEdits || []).map(row => ({ lote_inscricao: clean(row.unit_inscricao).substring(0,8), unidade_inscricao: row.unit_inscricao }))
+            ];
+
+            allUnlocks.forEach(item => {
+                // Se unidade_inscricao for nula no banco, item.lote_inscricao é o que vale (Lote Inteiro)
+                // Se unidade_inscricao existir, salvamos apenas a unidade.
+                if (item.unidade_inscricao) {
+                    this.unlockedLots.add(clean(item.unidade_inscricao));
+                } else {
+                    this.unlockedLots.add(clean(item.lote_inscricao));
+                }
             });
 
             // 2. Load unlocked PERSONS (CPF/CNPJ)
@@ -207,27 +454,18 @@ window.Monetization = {
     isUnlocked: function(id) {
         if (!id) return true;
         
-        // Fast-path bypass for Master/Admin
         const role = String(this.userRole || '').toLowerCase();
-        if (role === 'master' || role === 'admin') {
-            return true;
-        }
+        if (role === 'master' || role === 'admin') return true;
 
         const clean = (val) => String(val).replace(/\D/g, '');
         const cleanId = clean(id);
         
-        // O sistema de "Minha Carteira" salva o lote (8 dígitos)
-        // Se recebermos uma unidade (11+ dígitos), pegamos os primeiros 8
-        const loteInscricao = cleanId.length >= 8 ? cleanId.substring(0, 8) : cleanId;
-        
-        return this.unlockedLots.has(loteInscricao) || this.unlockedLots.has(cleanId);
-    },
-
-    isUnlockedPerson: function(cpf_cnpj) {
-        if (this.userRole === 'admin' || this.userRole === 'master') return true;
-        if (!cpf_cnpj) return false;
-        const clean = String(cpf_cnpj).replace(/\D/g, '');
-        return this.unlockedPersons.has(clean);
+        // Atencão: 
+        // 1. Se o set tem o Lote Inteiro (8 dig), está liberado.
+        // 2. Se o set tem a Unidade específica (11 dig), está liberado.
+        // 3. Se o ID é uma unidade (11 digitos) e o lote inteiro (8 digitos) está liberado, a unidade também está.
+        const lotePrefix = cleanId.substring(0, 8);
+        return this.unlockedLots.has(cleanId) || (cleanId.length >= 11 && this.unlockedLots.has(lotePrefix));
     },
 
     isEliteOrAbove: function() {
@@ -236,51 +474,89 @@ window.Monetization = {
     },
 
     promptUnlockLote: function(loteInscricao, unitId, price = 1) {
-        if (this.isUnlocked(loteInscricao)) return true;
+        console.warn("💎 [Monetization] promptUnlockLote Granular!", { loteInscricao, unitId, price });
+        const targetId = unitId || loteInscricao;
         
+        if (this.isUnlocked(targetId)) {
+            console.log("✅ Já está desbloqueado.");
+            return true;
+        }
+        
+        const isUnitQuery = unitId && String(unitId).replace(/\D/g, '').length >= 11;
         const modal = document.createElement('div');
         modal.className = 'custom-modal-overlay active';
         modal.style.zIndex = '10020';
+        
+        let subContent = '';
+        if (isUnitQuery) {
+            subContent = `
+                <p style="color: #475569; font-size: 13px; margin-bottom: 20px;">Escolha o nível de acesso desejado:</p>
+                <div style="display: grid; gap: 12px; margin-bottom: 20px;">
+                    <button id="btnUnlockUnit" class="btn-primary-rich" style="padding: 16px; background: #10b981; border: none; border-radius: 12px; text-align: left; position: relative; overflow: hidden; cursor: pointer;">
+                        <div style="font-weight: 800; font-size: 15px; color: white;">Apenas esta Unidade</div>
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.9);">Custo: 1 Crédito</div>
+                        <i class="fas fa-home" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); font-size: 28px; opacity: 0.2; color: white;"></i>
+                    </button>
+                    <button id="btnUnlockLot" class="btn-primary-rich" style="padding: 16px; background: #1e293b; border: none; border-radius: 12px; text-align: left; position: relative; overflow: hidden; cursor: pointer;">
+                        <div style="font-weight: 800; font-size: 15px; color: white;">Prédio Inteiro (Todas as Unidades)</div>
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.9);">Custo: 5 Créditos</div>
+                        <i class="fas fa-building" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); font-size: 28px; opacity: 0.2; color: white;"></i>
+                    </button>
+                </div>
+            `;
+        } else {
+            subContent = `
+                <p style="color: #475569; font-size: 14px; margin-bottom: 20px;">Deseja desbloquear o acesso total a todas as unidades deste prédio?</p>
+                <div style="font-size: 24px; font-weight: 800; color: #1e293b; margin-bottom: 25px;">5 Créditos</div>
+                <button id="btnUnlockLotOnly" class="btn-primary-rich" style="width: 100%; padding: 15px; background: #1e293b; color: white; border: none; border-radius: 8px; font-weight: 800; cursor: pointer;">
+                    <i class="fas fa-unlock"></i> Desbloquear Tudo
+                </button>
+            `;
+        }
+
         modal.innerHTML = `
-            <div class="custom-modal" style="max-width: 400px; text-align: center;">
-                <div class="custom-modal-header" style="background: #1e293b; color: white;">
-                    <div class="custom-modal-title"><i class="fas fa-lock-open"></i> Desbloquear Informações</div>
-                    <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()">&times;</button>
+            <div class="custom-modal" style="max-width: 450px; text-align: center;">
+                <div class="custom-modal-header" style="background: #1e293b; color: white; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px;">
+                    <div class="custom-modal-title" style="font-weight: 800;"><i class="fas fa-lock-open"></i> Desbloquear Dados</div>
+                    <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;">&times;</button>
                 </div>
                 <div class="custom-modal-body" style="padding: 30px;">
                     <div style="font-size: 40px; margin-bottom: 15px; color: #f59e0b;"><i class="fas fa-gem"></i></div>
-                    <p style="color: #475569; font-size: 14px; margin-bottom: 20px;">
-                        Para acessar os dados de contato completos, informações restritas e histórico, você precisa usar um crédito da sua carteira.
-                    </p>
-                    <p style="font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 25px;">Custo: ${price} Crédito(s)</p>
-                    
-                    <button id="btnConfirmUnlock" class="btn-primary-rich" style="width: 100%; padding: 12px; background: #10b981; margin-bottom: 10px;">
-                        <i class="fas fa-unlock"></i> Desbloquear Ficha
-                    </button>
-                    ${this.userProfile?.credits < price ? `<p style="color:#ef4444; font-size:11px; margin-top:5px; font-weight:bold;">Saldo insuficiente! Compre no botão abaixo.</p>` : ''}
-                    <button onclick="window.Monetization.showPixOptions(); this.closest('.custom-modal-overlay').remove();" class="btn-primary-rich" style="width: 100%; padding: 12px; background: #2563eb;">
-                        <i class="fas fa-shopping-cart"></i> Comprar Mais Créditos
-                    </button>
+                    ${subContent}
+                    <div style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
+                        <button onclick="window.Monetization.showPixOptions(); this.closest('.custom-modal-overlay').remove();" style="background:none; border:none; color:#2563eb; font-weight:700; cursor:pointer; font-size:12px;">
+                            <i class="fas fa-shopping-cart"></i> Reservar mais créditos
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
         document.body.appendChild(modal);
 
-        modal.querySelector('#btnConfirmUnlock').onclick = async () => {
+        const confirmUnlock = async (finalId, finalPrice) => {
             const { limit } = this.getTierLimits();
             const used = this.userProfile?.monthly_unlocks_used || 0;
-            const hasMonthlyAllowance = used < limit;
+            const hasAllowance = used < limit;
 
-            if (!hasMonthlyAllowance && (this.userProfile?.credits || 0) < price) {
-                window.Toast.warning("Você atingiu seu limite mensal e não tem créditos extras. Adquira mais no Painel Financeiro.");
+            if (!hasAllowance && (this.userProfile?.credits || 0) < finalPrice) {
+                window.Toast.warning(`Saldo insuficiente para esta ação (${finalPrice} créditos necessários).`);
                 return;
             }
+
             modal.remove();
-            await this.executeUnlockLote(loteInscricao, unitId, price);
+            await this.executeUnlockLote(loteInscricao, finalId === loteInscricao ? null : finalId, finalPrice);
         };
+
+        if (isUnitQuery) {
+            modal.querySelector('#btnUnlockUnit').onclick = () => confirmUnlock(unitId, 1);
+            modal.querySelector('#btnUnlockLot').onclick = () => confirmUnlock(loteInscricao, 5);
+        } else {
+            modal.querySelector('#btnUnlockLotOnly').onclick = () => confirmUnlock(loteInscricao, 5);
+        }
     },
 
     executeUnlockLote: async function(loteInscricao, unitId, price = 1) {
+        console.warn("🚀 [Monetization] executeUnlockLote INICIADO!", { loteInscricao, unitId, price });
         const { limit, label } = this.getTierLimits();
         const used = this.userProfile?.monthly_unlocks_used || 0;
         const hasMonthlyAllowance = used < limit;
@@ -292,67 +568,64 @@ window.Monetization = {
         window.Loading.show("Desbloqueando...", loadingMsg);
         
         try {
-            // 🛑 SAFETY CHECK: No Information Lot?
-            if (window.allLotes) {
-                const localLote = window.allLotes.find(l => l.inscricao === loteInscricao);
-                if (localLote) {
-                    const hasOwner = localLote.nome_proprietario && localLote.nome_proprietario !== 'null' && localLote.nome_proprietario.trim() !== '';
-                    const hasUnits = localLote.unidades && localLote.unidades.length > 0;
-                    
-                    if (!hasOwner && !hasUnits) {
-                        window.Toast.info("Este lote não possui proprietário ou unidades vinculadas. Dado insuficiente para cobrança.");
-                        window.Loading.hide();
-                        // Pre-unlock locally anyway so user can see the empty state without prompt again
-                        this.unlockedLots.add(loteInscricao);
-                        if (window.currentLoteForUnit) window.showLotTooltip(window.currentLoteForUnit, 0, 0);
-                        return;
-                    }
-                }
-            }
+            const cleanLote = String(loteInscricao || '').replace(/\D/g, '').substring(0, 8);
+            const cleanUnit = unitId ? String(unitId).replace(/\D/g, '') : null;
+            console.warn("🛰️ [Monetization] Preparando chamada RPC para:", { cleanLote, cleanUnit });
 
-            console.log("💰 [Monetization] Starting Unlock Flow for:", { loteInscricao, unitId, price, role: this.userRole });
+            console.log("💰 [Monetization] Starting Unlock Flow for:", { cleanLote, cleanUnit, price, role: this.userRole });
 
+            let rpcResponse;
             if (hasMonthlyAllowance) {
                 console.log("💎 [Monetization] Using Plan Allowance (RPC: unlock_lote_with_plan)");
-                const { error } = await window.supabaseApp.rpc('unlock_lote_with_plan', {
-                    target_lote: loteInscricao
+                rpcResponse = await window.supabaseApp.rpc('unlock_lote_with_plan', {
+                    target_lote: cleanLote,
+                    target_unidade: cleanUnit // Unidade específica ou NULL para o lote todo
                 });
-                
-                if (error) {
-                    console.error("❌ [Monetization] Plan Unlock Failed:", error);
-                    window.Toast.error("Erro no plano: " + error.message);
-                    throw error;
-                }
-                
-                this.userProfile.monthly_unlocks_used = (this.userProfile.monthly_unlocks_used || 0) + 1;
-                window.Toast.success(`Ficha liberada! (${this.userProfile.monthly_unlocks_used}/${limit} do plano usada)`);
             } else {
                 console.log("💳 [Monetization] Using Paid Credits (RPC: unlock_lote_with_credits)");
-                const { error } = await window.supabaseApp.rpc('unlock_lote_with_credits', {
-                    target_lote: loteInscricao,
+                rpcResponse = await window.supabaseApp.rpc('unlock_lote_with_credits', {
+                    target_lote: cleanLote,
+                    target_unidade: cleanUnit, // Unidade específica ou NULL para o lote todo
                     credit_cost: price
                 });
+            }
 
-                if (error) {
-                    console.error("❌ [Monetization] Credit Unlock Failed:", error);
-                    window.Toast.error("Erro ao debitar créditos: " + error.message);
-                    throw error;
-                }
-                
+            const { data, error } = rpcResponse;
+            console.log("🛰️ [Monetization] RPC Response:", { data, error });
+
+            if (error) {
+                console.error("❌ [Monetization] RPC Error:", error);
+                window.Toast.error("Erro no servidor: " + (error.message || "Falha ao registrar desbloqueio"));
+                throw error;
+            }
+
+            if (data === false) {
+                console.warn("⚠️ [Monetization] RPC returned FALSE (Unknown failure)");
+                window.Toast.error("O servidor não pôde processar o desbloqueio. Verifique seu saldo ou limite.");
+                return;
+            }
+
+            // SUCCESS!
+            if (hasMonthlyAllowance) {
+                this.userProfile.monthly_unlocks_used = (this.userProfile.monthly_unlocks_used || 0) + 1;
+                window.Toast.success(`Ficha liberada pelo plano! (${this.userProfile.monthly_unlocks_used}/${limit})`);
+            } else {
                 this.userProfile.credits -= price;
                 window.Toast.success(`Ficha liberada usando créditos!`);
             }
             
-            const cleanId = (val) => String(val).replace(/\D/g, '');
-            console.log("✅ [Monetization] SUCCESS! Updating local memory...");
-            
-            this.unlockedLots.add(cleanId(loteInscricao));
-            if (unitId) this.unlockedLots.add(cleanId(unitId));
+            const cleanIdStr = (val) => String(val).replace(/\D/g, '');
+            // Se o alvo for de 8 dígitos, é um LOTE INTEIRO.
+            // Se for de 11+, é uma UNIDADE.
+            const targetId = cleanIdStr(unitId || loteInscricao);
+            const isLoteInteiro = targetId.length === 8;
+
+            this.unlockedLots.add(targetId);
             
             await this.updateBalanceUI();
             this.renderPlanWidget();
             
-            window.Toast.success("Ficha desbloqueada com sucesso! Informações liberadas.");
+            window.Toast.success(isLoteInteiro ? "Prédio inteiro desbloqueado!" : "Unidade desbloqueada com sucesso!");
             
             // Re-render tooltip since it's now unlocked
             if (window.currentTooltip) {
@@ -411,12 +684,15 @@ window.Monetization = {
     },
 
     consumeCredits: async function(amount, serviceName) {
+        console.warn("💳 [Monetization] consumeCredits CHAMADA!", { amount, serviceName });
         // Roles privilegiadas não gastam créditos
         if (this.userRole === 'master' || this.userRole === 'admin') {
+            console.log("👑 [Monetization] Role privilegiada - Ignorando débito.");
             return true;
         }
 
         try {
+            console.log("🛰️ [Monetization] Enviando RPC spend_credits...");
             const { data, error } = await window.supabaseApp.rpc('spend_credits', {
                 amount_to_spend: amount,
                 detail: serviceName
@@ -468,7 +744,7 @@ window.Monetization = {
     showSubscriptionPlans: function() {
         const currentRole = this.userRole || 'user';
         const credits = this.userProfile?.credits || 0;
-        const isCurrentPlan = (r) => currentRole === r || (r === 'master' && currentRole === 'admin');
+        const isCurrentPlan = (r) => currentRole === r;
         const currentBadge = (r) => isCurrentPlan(r) ?
             `<div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 800; white-space: nowrap;">✓ SEU PLANO</div>` : '';
 
@@ -539,8 +815,8 @@ window.Monetization = {
                         </div>
 
                         <!-- Anual VIP -->
-                        <div style="background: #1e293b; border: ${isCurrentPlan('master') ? '2px solid #10b981' : '1px solid #334155'}; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; color: white; position: relative; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                            ${currentBadge('master')}
+                        <div style="background: #1e293b; border: ${isCurrentPlan('vip') ? '2px solid #10b981' : '1px solid #334155'}; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; color: white; position: relative; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                            ${currentBadge('vip')}
                             <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Anual VIP</div>
                             <div style="font-size: 24px; font-weight: 800; color: white; margin: 10px 0;">R$ 4.990<small style="font-size: 13px; font-weight: 400;">/ano</small></div>
                             <ul style="list-style: none; padding: 0; margin: 16px 0; font-size: 12px; opacity: 0.9; flex: 1; line-height: 1.8;">
@@ -596,9 +872,7 @@ window.Monetization = {
 
     renderPlanPixCheckout: function(plan, price) {
         const body = document.getElementById('plan-checkout-body');
-        const config = this.pixConfig || { tipo: 'celular', chave: '+5513991234567', nome_beneficiario: 'OMEGA IMOVEIS', cidade: 'GUARUJA' };
-        const cleanPrice = price.toFixed(2).replace('.', '');
-        const pixPayload = `00020126360014BR.GOV.BCB.PIX0114${config.chave.replace(/[^0-9a-zA-Z]/g, '')}52040000530398654${cleanPrice.padStart(2, '0')}5802BR5913${config.nome_beneficiario.substring(0, 13)}6009${config.cidade.substring(0, 9)}62070503***6304`;
+        const pixPayload = this.generatePixPayload(`PLAN_${plan.toUpperCase()}`, price);
 
         body.innerHTML = `
             <div style="text-align: center; padding: 25px;">
@@ -693,16 +967,7 @@ window.Monetization = {
         const modal = document.querySelector('.custom-modal-overlay[style*="z-index: 10020"]');
         if (!modal) return;
 
-        const config = this.pixConfig || {
-            tipo: 'celular',
-            chave: '+5513991234567',
-            nome_beneficiario: 'OMEGA IMOVEIS',
-            cidade: 'GUARUJA'
-        };
-
-        // Simplified dynamic BRCode generation
-        const cleanPrice = price.toFixed(2).replace('.', '');
-        const pixPayload = `00020126360014BR.GOV.BCB.PIX0114${config.chave.replace(/[^0-9a-zA-Z]/g, '')}52040000530398654${cleanPrice.padStart(2, '0')}5802BR5913${config.nome_beneficiario.substring(0, 13)}6009${config.cidade.substring(0, 9)}62070503***6304`;
+        const pixPayload = this.generatePixPayload(`${credits}F`, price);
         
         const body = modal.querySelector('.custom-modal-body');
         body.innerHTML = `
@@ -812,22 +1077,36 @@ window.Monetization = {
             const { data: { user } } = await window.supabaseApp.auth.getUser();
             if (!user) return;
 
-            // 1. Fetch LOTS
+            // 1. Fetch LOTS (Sem o join problemático que causava PGRST200)
             const { data: lotUnlocks, error: lotError } = await window.supabaseApp
                 .from('unlocked_lots')
-                .select('*, lotes(inscricao, building_name, bairro)')
+                .select('*')
                 .eq('user_id', user.id)
                 .order('desbloqueado_em', { ascending: false });
 
-            // 2. Fetch PERSONS
+            // 2. Fetch PERSONS with names
             const { data: personUnlocks, error: personError } = await window.supabaseApp
                 .from('unlocked_persons')
-                .select('*')
+                .select('*, proprietarios(nome_completo)')
                 .eq('user_id', user.id)
                 .order('unlocked_at', { ascending: false });
 
             if (lotError) console.warn("Lot unlock error:", lotError);
             if (personError) console.warn("Person unlock error:", personError);
+
+            // 3. SE existirem unidades desbloqueadas, buscar detalhes delas para Proprietário/Matricula/RIP
+            const unitInscricoes = lotUnlocks
+                .filter(item => item.unidade_inscricao)
+                .map(item => item.unidade_inscricao);
+            
+            let unitsData = [];
+            if (unitInscricoes.length > 0) {
+                const { data: units, error: uError } = await window.supabaseApp
+                    .from('unidades')
+                    .select('inscricao, matricula, rip, logradouro, numero, complemento, nome_proprietario, endereco_completo')
+                    .in('inscricao', unitInscricoes);
+                if (!uError) unitsData = units;
+            }
 
             const totalCount = (lotUnlocks?.length || 0) + (personUnlocks?.length || 0);
             if (statsEl) {
@@ -859,7 +1138,8 @@ window.Monetization = {
                 `;
                 
                 personUnlocks.forEach(item => {
-                    const p = { nome_completo: 'Proprietário Desbloqueado', cpf_cnpj: item.cpf_cnpj };
+                    const nome = item.proprietarios?.nome_completo || 'Proprietário Desbloqueado';
+                    const p = { nome_completo: nome, cpf_cnpj: item.cpf_cnpj };
                     const date = new Date(item.unlocked_at || item.created_at).toLocaleDateString('pt-BR');
                     
                     html += `
@@ -884,10 +1164,16 @@ window.Monetization = {
             if (lotUnlocks && lotUnlocks.length > 0) {
                 const groups = {};
                 lotUnlocks.forEach(item => {
-                    const lot = item.lotes || {};
+                    // Resolve metadata localmente (evita dependência de Foreing Key no banco)
+                    let lot = item.lotes; 
+                    if (!lot && window.allLotes) {
+                        lot = window.allLotes.find(l => l.inscricao === item.lote_inscricao);
+                    }
+                    if (!lot) lot = { inscricao: item.lote_inscricao };
+
                     const building = lot.building_name || "Lotes Avulsos / Terrenos";
                     if (!groups[building]) groups[building] = [];
-                    groups[building].push(item);
+                    groups[building].push({ ...item, resolved_lot: lot });
                 });
 
                 html += `
@@ -907,7 +1193,22 @@ window.Monetization = {
                             </div>
                             ${items.map(item => {
                                 const date = new Date(item.desbloqueado_em).toLocaleDateString('pt-BR');
-                                const lot = item.lotes || {};
+                                const lot = item.resolved_lot || {};
+                                const unitId = item.unidade_inscricao;
+                                const u = unitId ? unitsData.find(u => u.inscricao === unitId) : null;
+
+                                // Prioridade de Título:
+                                // 1. Se unidade: Nome do Proprietário
+                                // 2. Se prédio: Nome do Edifício (se não for o nome do grupo)
+                                // 3. Endereço Completo
+                                // 4. Inscrição
+                                let cardTitle = "";
+                                if (u) {
+                                    cardTitle = u.nome_proprietario || u.endereco_completo || (lot.logradouro ? `${lot.logradouro}, ${lot.numero_imovel || 'S/N'}` : unitId);
+                                } else {
+                                    cardTitle = (lot.building_name && lot.building_name !== buildingName) ? lot.building_name : 
+                                                (lot.logradouro ? `${lot.logradouro}, ${lot.numero_imovel || 'S/N'}` : item.lote_inscricao);
+                                }
 
                                 return `
                                     <div class="crm-lead-card" style="cursor: pointer; margin-bottom: 6px; transition: all 0.2s; border-left: 3px solid #10b981; padding: 10px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.01);"
@@ -916,8 +1217,22 @@ window.Monetization = {
                                          onmouseout="this.style.transform='none'">
                                         <div style="display: flex; justify-content: space-between; align-items: center;">
                                             <div>
-                                                <div style="font-weight: 700; color: #334155; font-size: 12px;">${lot.inscricao}</div>
-                                                <div style="font-size: 9px; color: #94a3b8;">Liberado em ${date}</div>
+                                                <div style="font-weight: 700; color: #334155; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;" title="${cardTitle}">
+                                                    ${cardTitle}
+                                                </div>
+                                                ${(function() {
+                                                    if (u) {
+                                                        let extra = `<div style="font-size: 9px; color: #64748b; font-weight: 600; margin-top: 2px;">`;
+                                                        if (u.matricula) extra += `<i class="fas fa-file-contract"></i> Matrícula: ${u.matricula} `;
+                                                        if (u.rip) extra += `<i class="fas fa-anchor"></i> RIP: ${u.rip}`;
+                                                        extra += `</div>`;
+                                                        return extra;
+                                                    }
+                                                    return '';
+                                                })()}
+                                                <div style="font-size: 9px; color: #94a3b8;">
+                                                    ${u ? `Unidade ${unitId.slice(-3)}` : (lot.building_name || 'Lote')} • Liberado em ${date}
+                                                </div>
                                             </div>
                                             <i class="fas fa-location-arrow" style="font-size: 9px; color: #10b981;"></i>
                                         </div>
@@ -937,7 +1252,7 @@ window.Monetization = {
         }
     },
 
-    unlockPerson: async function(cpf_cnpj, name = "Proprietário", price = 1) {
+    unlockPerson: async function(cpf_cnpj, name = "Proprietário", price = 3) {
         if (this.isUnlockedPerson(cpf_cnpj)) return true;
         
         const modal = document.createElement('div');

@@ -30,9 +30,12 @@ async function uploadToSupabase(file, inscricao) {
 // LOT EDITOR (TOOLTIP VERSION)
 // ========================================
 window.editFromTooltip = function (inscricao) {
-    if (!window.Monetization || !window.Monetization.checkFeatureAccess('edit_private')) {
-        window.Toast.info('Acesso restrito: Edição disponível para assinantes Pro/Elite.');
-        return;
+    // Allow everyone to suggest edits (Admin = Global, User = Private/Curatorship)
+    const isAdmin = window.Monetization && (window.Monetization.userRole === 'admin' || window.Monetization.userRole === 'master');
+    if (!isAdmin && (!window.Monetization || !window.Monetization.checkFeatureAccess('edit_private'))) {
+        // We still check for 'edit_private' if we want to restrict basic/guest users, 
+        // but the user said "demais usuarios" (other users) should be able to.
+        // Let's allow all authenticated users (Elite/Pro/Basic)
     }
     const lote = window.allLotes.find(l => l.inscricao === inscricao);
     if (!lote) return;
@@ -67,8 +70,7 @@ window.editFromTooltip = function (inscricao) {
                 </div>
                 <input type="hidden" id="edit-gallery-json" value='${JSON.stringify(existingEdits.gallery || lote.gallery || [])}'>
             </div>
-
-            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
                 <div style="flex: 1;">
                     <label style="display: block; font-weight: 600; font-size: 11px; color: #666;">Andares</label>
                     <input type="number" id="edit-floors" value="${existingEdits.floors || lote.floors || ''}" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
@@ -76,6 +78,47 @@ window.editFromTooltip = function (inscricao) {
                 <div style="flex: 1;">
                     <label style="display: block; font-weight: 600; font-size: 11px; color: #666;">Ano Const.</label>
                     <input type="number" id="edit-build-year" value="${existingEdits.build_year || lote.build_year || ''}" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+            </div>
+
+            <!-- Elevated Documentation Section -->
+            <div style="margin-bottom: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px;">
+                <div style="font-weight: 800; font-size: 13px; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #6366f1; padding-bottom: 5px; width: fit-content;">
+                    <i class="fas fa-file-signature" style="color: #6366f1;"></i> DOCUMENTAÇÃO MASTER
+                </div>
+                
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-weight: 700; font-size: 11px; color: #475569; margin-bottom: 5px; text-transform: uppercase;">Matrícula Mãe (Registro Geral)</label>
+                    <input type="text" id="edit-matricula-mae" value="${existingEdits.matricula_mae || lote.matricula_mae || ''}" 
+                        style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-weight: 600;" placeholder="Ex: 123.456">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-weight: 700; font-size: 11px; color: #475569; margin-bottom: 5px; text-transform: uppercase;">Plantas & Projetos</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 8px; align-items: center;">
+                        <label for="upload-plantas" class="lot-tooltip-btn primary" style="padding: 6px 12px; font-size: 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin:0; width: auto; background: #6366f1; border: none; box-shadow: 0 2px 4px rgba(99,102,241,0.2);">
+                            <i class="fas fa-plus"></i> Inserir Planta
+                        </label>
+                        <input type="file" id="upload-plantas" accept="image/*,application/pdf" style="display: none;" 
+                            onchange="window.handleAssetUpload(this.files[0], '${inscricao}', 'plantas')">
+                        <span id="status-plantas" style="font-size: 10px; color: #94a3b8;"></span>
+                    </div>
+                    <div id="preview-plantas" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 5px; min-height: 40px;"></div>
+                    <input type="hidden" id="json-plantas" value='${JSON.stringify(existingEdits.plantas || lote.plantas || [])}'>
+                </div>
+
+                <div style="margin-bottom: 5px;">
+                    <label style="display: block; font-weight: 700; font-size: 11px; color: #475569; margin-bottom: 5px; text-transform: uppercase;">Docs (Convenção, Habite-se, etc)</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 8px; align-items: center;">
+                        <label for="upload-documentos" class="lot-tooltip-btn primary" style="padding: 6px 12px; font-size: 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin:0; width: auto; background: #0891b2; border: none; box-shadow: 0 2px 4px rgba(8,145,178,0.2);">
+                            <i class="fas fa-plus"></i> Inserir Documento
+                        </label>
+                        <input type="file" id="upload-documentos" accept="image/*,application/pdf" style="display: none;" 
+                            onchange="window.handleAssetUpload(this.files[0], '${inscricao}', 'documentos')">
+                        <span id="status-documentos" style="font-size: 10px; color: #94a3b8;"></span>
+                    </div>
+                    <div id="preview-documentos" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 5px; min-height: 40px;"></div>
+                    <input type="hidden" id="json-documentos" value='${JSON.stringify(existingEdits.documentos || lote.documentos || [])}'>
                 </div>
             </div>
 
@@ -102,7 +145,7 @@ window.editFromTooltip = function (inscricao) {
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
                     ${['piscina', 'academia', 'churrasqueira', 'salao_jogos', 'salao_festas', 'area_verde', 'bicicletario', 'portaria_24h', 'acesso_pcd', 'elevador', 'servico_praia', 'zeladoria'].map(key => `
-                        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; background: #f8fafc; padding: 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; background: #f8fafc; padding: 6px; border-radius: 4px; border: 1px solid #e2e8f0; color: #1e293b;">
                             <input type="checkbox" id="edit-lote-${key}" ${(existingEdits[key] || lote[key]) ? 'checked' : ''}>
                             <span style="text-transform: capitalize;">${key.replace('_', ' ').replace('salao', 'salão').replace('servico', 'serviço').replace('acesso_pcd', 'Acessibilidade').replace('portaria_24h', 'Portaria 24h')}</span>
                         </label>
@@ -126,9 +169,11 @@ window.editFromTooltip = function (inscricao) {
         </div>
     `;
 
-    // Initialize gallery preview
+    // Initialize previews
     setTimeout(() => {
         window.renderGalleryPreview(existingEdits.gallery || lote.gallery || []);
+        window.renderAssetPreview(existingEdits.plantas || lote.plantas || [], 'plantas');
+        window.renderAssetPreview(existingEdits.documentos || lote.documentos || [], 'documentos');
     }, 0);
 };
 
@@ -176,7 +221,64 @@ window.handleGalleryUpload = async function (file, inscricao) {
     } catch (e) {
         console.error(e);
         if (statusEl) statusEl.innerText = 'Erro';
-        Toast.error('Erro upload: ' + e.message);
+        window.Toast.error('Erro upload: ' + e.message);
+    }
+};
+
+window.renderAssetPreview = function (assets, type) {
+    const container = document.getElementById(`preview-${type}`);
+    const input = document.getElementById(`json-${type}`);
+    if (!container || !input) return;
+
+    input.value = JSON.stringify(assets);
+    container.innerHTML = '';
+    assets.forEach((url, index) => {
+        const isPdf = url.toLowerCase().endsWith('.pdf');
+        const div = document.createElement('div');
+        div.style.position = 'relative';
+        div.style.flexShrink = '0';
+        div.innerHTML = `
+            ${isPdf ? 
+                `<div style="width: 50px; height: 50px; background: #fee2e2; border-radius: 4px; display: flex; align-items: center; justify-content: center; border: 1px solid #fecaca;">
+                    <i class="fas fa-file-pdf" style="color: #ef4444; font-size: 20px;"></i>
+                </div>` : 
+                `<img src="${url}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; border: 1px solid #e2e8f0;">`
+            }
+            <button onclick="removeAsset(${index}, '${type}')" style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">×</button>
+        `;
+        container.appendChild(div);
+    });
+};
+
+window.removeAsset = function (index, type) {
+    const input = document.getElementById(`json-${type}`);
+    if (!input) return;
+    const assets = JSON.parse(input.value || '[]');
+    assets.splice(index, 1);
+    window.renderAssetPreview(assets, type);
+};
+
+window.handleAssetUpload = async function (file, inscricao, type) {
+    if (!file) return;
+    const statusEl = document.getElementById(`status-${type}`);
+    const input = document.getElementById(`json-${type}`);
+    if (statusEl) statusEl.innerText = '⏳...';
+
+    try {
+        // We can reuse uploadToSupabase but maybe use a different folder logic if needed
+        // For now, let's keep it simple or specialized
+        const publicUrl = await uploadToSupabase(file, inscricao);
+        if (publicUrl) {
+            const assets = JSON.parse(input.value || '[]');
+            assets.push(publicUrl);
+            window.renderAssetPreview(assets, type);
+            if (statusEl) statusEl.innerText = '✅';
+            setTimeout(() => { if(statusEl) statusEl.innerText = ''; }, 2000);
+        }
+    } catch (e) {
+        console.error(e);
+        if (statusEl) statusEl.innerText = '❌';
+        window.Toast.error('Erro upload: ' + e.message);
     }
 };
 
@@ -230,7 +332,11 @@ window.saveEditFromTooltip = async function (inscricao) {
             acesso_pcd: document.getElementById('edit-lote-acesso_pcd')?.checked || false, // New
             elevador: document.getElementById('edit-lote-elevador')?.checked || false,
             servico_praia: document.getElementById('edit-lote-servico_praia')?.checked || false,
-            zeladoria: document.getElementById('edit-lote-zeladoria')?.checked || false
+            zeladoria: document.getElementById('edit-lote-zeladoria')?.checked || false,
+            // Building Docs
+            matricula_mae: document.getElementById('edit-matricula-mae')?.value || '',
+            plantas: JSON.parse(document.getElementById('json-plantas')?.value || '[]'),
+            documentos: JSON.parse(document.getElementById('json-documentos')?.value || '[]')
         };
 
         const isAdmin = window.Monetization && (window.Monetization.userRole === 'admin' || window.Monetization.userRole === 'master');
@@ -296,10 +402,7 @@ window.saveEditFromTooltip = async function (inscricao) {
 // UNIT EDITOR
 // ========================================
 window.editUnitFromTooltip = function (unitInscricao) {
-    if (!window.Monetization || !window.Monetization.checkFeatureAccess('edit_private')) {
-        window.Toast.info('Acesso restrito: Edição disponível para assinantes Pro/Elite.');
-        return;
-    }
+    // Allow everyone to suggest edits
     console.log('🔧 editUnitFromTooltip called with:', unitInscricao);
 
     if (!window.currentTooltip) {
@@ -598,7 +701,9 @@ window.saveUnitEdit = async function (unitInscricao) {
 
             imagens: JSON.parse(document.getElementById('edit-unit-gallery-json')?.value || '[]'),
             cod_ref: getText('edit-unit-cod-ref'),
-            link_url: getText('edit-unit-link')
+            link_url: getText('edit-unit-link'),
+            matricula: getText('edit-unit-matricula'),
+            rip: getText('edit-unit-rip')
         };
 
         // Security check: Only include owner data if it was editable (not masked/readonly)
@@ -609,12 +714,15 @@ window.saveUnitEdit = async function (unitInscricao) {
         
         const cpfInput = document.getElementById('edit-unit-cpf');
         if (cpfInput && !cpfInput.readOnly) {
-            edits.cpf_cnpj = cpfInput.value.trim();
+            // Normalizar CPF/CNPJ removendo pontuação para evitar erros de validação/busca
+            edits.cpf_cnpj = cpfInput.value.trim().replace(/\D/g, '');
         }
 
         const contactInput = document.getElementById('edit-unit-contact');
         if (contactInput && !contactInput.readOnly) {
-            edits.contato_proprietario = contactInput.value.trim();
+            const rawValue = contactInput.value.trim();
+            // Converter string separada por vírgula em Array para o Postgres (text[])
+            edits.contato_proprietario = rawValue ? rawValue.split(',').map(s => s.trim()).filter(s => s !== '') : [];
         }
 
         const isAdmin = window.Monetization && (window.Monetization.userRole === 'admin' || window.Monetization.userRole === 'master');
@@ -675,6 +783,54 @@ window.saveUnitEdit = async function (unitInscricao) {
         console.error(e);
         window.Loading.hide();
         window.Toast.error('Erro ao salvar unidade: ' + e.message);
+    }
+};
+
+window.updateUnitField = async function (unitInscricao, field, value) {
+    const isAdmin = window.Monetization && (window.Monetization.userRole === 'admin' || window.Monetization.userRole === 'master');
+    
+    try {
+        if (isAdmin) {
+            console.log(`📤 Atualizando campo único ${field} (Master):`, value);
+            const { error } = await window.supabaseApp
+                .from('unidades')
+                .update({ [field]: value })
+                .eq('inscricao', unitInscricao);
+            if (error) throw error;
+
+            // Sync local state
+            for (const lote of window.allLotes) {
+                if (lote.unidades) {
+                    const u = lote.unidades.find(u => u.inscricao === unitInscricao);
+                    if (u) { u[field] = value; break; }
+                }
+            }
+            window.Toast.success('Campo atualizado!');
+        } else {
+            // Fluxo de sugestão
+            console.log(`📤 Sugerindo campo único ${field}:`, value);
+            const { data: { user } } = await window.supabaseApp.auth.getUser();
+            const { error } = await window.supabaseApp
+                .from('user_unit_edits')
+                .upsert({
+                    user_id: user.id,
+                    unit_inscricao: unitInscricao,
+                    field_name: field,
+                    new_value: value,
+                    old_value: ''
+                }, { onConflict: 'user_id, unit_inscricao, field_name' });
+            
+            if (error) throw error;
+            window.Toast.info('Sugestão enviada para curadoria.');
+        }
+
+        // Refresh private cache if needed
+        if (window.loadUserPendingEdits) await window.loadUserPendingEdits();
+        
+        if (window.renderHierarchy) window.renderHierarchy();
+    } catch (e) {
+        console.error("Erro updateUnitField:", e);
+        window.Toast.error("Erro ao atualizar campo: " + e.message);
     }
 };
 
@@ -922,55 +1078,144 @@ window.mergeUserEdits = function(obj, type) {
     return obj;
 };
 
-window.openAddLoteModal = async function (latlng) {
-    const zona = prompt("Zona (0 a 6):", "1");
-    if (zona === null) return;
-    const setor = prompt("Setor (0000 a 9999):", "0000");
-    if (setor === null) return;
-    const loteNum = prompt("Lote (000 a 999):", "000");
-    if (loteNum === null) return;
+let currentCreateLotePos = null;
+let currentCreateUnitLote = null;
 
-    const inscricao = `${zona}${setor.padStart(4, '0')}${loteNum.padStart(3, '0')}000`;
-    const utm = window.latLonToUtm(latlng.lat, latlng.lng);
+window.updateLotPreview = function() {
+    const z = document.getElementById('new-lot-zona')?.value || '';
+    const s = document.getElementById('new-lot-setor')?.value || '';
+    const l = document.getElementById('new-lot-lote')?.value || '';
+    
+    let preview = '';
+    if (z || s || l) {
+        preview = z.padEnd(1, '-') + s.padStart(4, '0') + l.padStart(3, '0');
+    } else {
+        preview = '--------';
+    }
+    document.getElementById('lot-full-preview').innerText = preview;
+};
+
+window.openAddLoteModal = function (latlng) {
+    currentCreateLotePos = latlng;
+    const modal = document.getElementById('modal-lot-form-overlay');
+    if (modal) {
+        // Reset form
+        const zonaInput = document.getElementById('new-lot-zona');
+        const setorInput = document.getElementById('new-lot-setor');
+        const loteInput = document.getElementById('new-lot-lote');
+        
+        if (zonaInput) zonaInput.value = '';
+        if (setorInput) setorInput.value = '';
+        if (loteInput) loteInput.value = '';
+        
+        window.updateLotPreview();
+        
+        window.openModal('modal-lot-form-overlay');
+    }
+};
+
+window.submitNewLot = async function () {
+    const zonaInput = document.getElementById('new-lot-zona');
+    const setorInput = document.getElementById('new-lot-setor');
+    const loteInput = document.getElementById('new-lot-lote');
+
+    if (!zonaInput || !setorInput || !loteInput) return;
+
+    const zona = zonaInput.value.trim();
+    const setor = setorInput.value.trim().padStart(4, '0');
+    const loteNum = loteInput.value.trim().padStart(3, '0');
+
+    if (zona.length === 0 || setor.length === 0 || loteNum.length === 0) {
+        window.Toast.error('Preencha os campos Zona, Setor e Lote.');
+        return;
+    }
+
+    const inscricao = `${zona}${setor}${loteNum}`;
+
+    if (inscricao.length !== 8) {
+        window.Toast.error('A inscrição deve ter exatos 8 dígitos totais.');
+        return;
+    }
+
+    if (!currentCreateLotePos) {
+        window.Toast.error('Posição no mapa não identificada.');
+        return;
+    }
+
+    const utm = window.latLonToUtm(currentCreateLotePos.lat, currentCreateLotePos.lng);
 
     window.Loading.show('Criando...', 'Inserindo novo lote...');
     try {
         const { error } = await window.supabaseApp.from('lotes').insert({
             inscricao,
             minx: utm.x, miny: utm.y, maxx: utm.x, maxy: utm.y,
-            zona, setor: setor.padStart(4, '0'), lote_geo: loteNum.padStart(3, '0')
+            zona, setor, lote_geo: loteNum,
+            municipio: window.currentCity || 'Guarujá'
         });
         if (error) throw error;
-        window.Toast.success('Lote criado! Recarregando hierarchy...');
-        // Optimization: Normally we'd wait for realtime, but let's assume it works
+        
+        window.Toast.success('Lote criado com sucesso!');
+        window.closeModal('modal-lot-form-overlay');
     } catch (e) {
-        window.Toast.error(e.message);
+        window.Toast.error('Erro ao criar lote: ' + e.message);
     } finally {
         window.Loading.hide();
     }
 };
 
 window.openAddUnitModal = function (lote) {
-    let defaultId = lote.inscricao.endsWith('000') ? lote.inscricao.slice(0, -3) + '001' : lote.inscricao + '001';
-    const inscricao = prompt("Inscrição da Nova Unidade:", defaultId);
-    if (!inscricao) return;
-    const owner = prompt("Proprietário:");
-
-    window.addUnit(lote.inscricao, inscricao, owner);
+    currentCreateUnitLote = lote;
+    const modal = document.getElementById('modal-unit-form-overlay');
+    if (modal) {
+        document.getElementById('new-unit-lot-ref').value = lote.inscricao;
+        document.getElementById('unit-prefix-preview').innerText = lote.inscricao;
+        document.getElementById('new-unit-suffix').value = '';
+        document.getElementById('new-unit-owner').value = '';
+        document.getElementById('new-unit-address').value = '';
+        document.getElementById('unit-full-preview').innerText = lote.inscricao + '...';
+        
+        const suffixInput = document.getElementById('new-unit-suffix');
+        if (!suffixInput._hasListener) {
+            suffixInput.addEventListener('input', (e) => {
+                const val = e.target.value.padStart(3, '0').slice(-3);
+                document.getElementById('unit-full-preview').innerText = lote.inscricao + val;
+            });
+            suffixInput._hasListener = true;
+        }
+        
+        window.openModal('modal-unit-form-overlay');
+    }
 };
 
-window.addUnit = async function (loteInscricao, unitInscricao, owner) {
-    Loading.show('Criando...', 'Inserindo unidade...');
+window.submitNewUnit = async function () {
+    const suffix = document.getElementById('new-unit-suffix').value.trim();
+    const owner = document.getElementById('new-unit-owner').value.trim();
+    const address = document.getElementById('new-unit-address').value.trim();
+
+    if (!currentCreateUnitLote) return;
+    
+    if (suffix.length === 0) {
+        window.Toast.error('Informe os 3 dígitos finais da unidade.');
+        return;
+    }
+
+    const finalSuffix = suffix.padStart(3, '0');
+    const unitInscricao = currentCreateUnitLote.inscricao + finalSuffix;
+
+    window.Loading.show('Criando...', 'Inserindo unidade...');
     try {
-        const { error } = await supabaseApp.from('unidades').insert({
-            lote_inscricao: loteInscricao,
+        const { error } = await window.supabaseApp.from('unidades').insert({
+            lote_inscricao: currentCreateUnitLote.inscricao,
             inscricao: unitInscricao,
-            nome_proprietario: owner || ''
+            nome_proprietario: owner || '',
+            endereco_completo: address || ''
         });
         if (error) throw error;
-        Toast.success('Unidade criada!');
+        
+        window.Toast.success('Unidade criada com sucesso!');
+        window.closeModal('modal-unit-form-overlay');
     } catch (e) {
-        Toast.error(e.message);
+        window.Toast.error('Erro ao criar unidade: ' + e.message);
     } finally {
         window.Loading.hide();
     }
@@ -1096,3 +1341,160 @@ window.deleteUnit = async function (inscricao) {
 };
 
 console.log("✅ Editor Handler module loaded");
+// ========================================
+// MASS UNIT MANAGER (ADMIN ONLY)
+// ========================================
+let currentMassLoteId = null;
+
+window.openMassUnitManager = async function (loteInscricao) {
+    currentMassLoteId = loteInscricao;
+    const modal = document.getElementById('modal-mass-unit-manager');
+    const tableBody = document.getElementById('mass-unit-table-body');
+    const titleSpan = document.getElementById('mass-manager-lote-id');
+    
+    if (!modal || !tableBody) return;
+    
+    titleSpan.innerText = loteInscricao;
+    tableBody.innerHTML = '<tr><td colspan="6" style="padding: 40px; text-align: center; color: #64748b;"><i class="fas fa-spinner fa-spin"></i> Carregando unidades...</td></tr>';
+    window.openModal('modal-mass-unit-manager');
+    
+    try {
+        const { data: units, error } = await window.supabaseApp
+            .from('unidades')
+            .select('inscricao, nome_proprietario, endereco_completo, matricula, rip')
+            .eq('lote_inscricao', loteInscricao)
+            .order('inscricao', { ascending: true });
+            
+        if (error) throw error;
+        
+        tableBody.innerHTML = '';
+        if (units && units.length > 0) {
+            units.forEach(u => window.addMassUnitRow(u));
+        } else {
+            // Se não houver unidades, adiciona uma linha vazia padrão
+            window.addMassUnitRow();
+        }
+    } catch (e) {
+        console.error("Erro ao carregar unidades em massa:", e);
+        window.Toast.error("Erro ao carregar lista de unidades.");
+    }
+};
+
+window.addMassUnitRow = function (data = null) {
+    const tableBody = document.getElementById('mass-unit-table-body');
+    if (!tableBody) return;
+    
+    const row = document.createElement('tr');
+    row.className = 'mass-unit-row';
+    row.style.borderBottom = '1px solid #f1f5f9';
+    
+    const suffix = data ? data.inscricao.slice(-3) : '';
+    const owner = data ? (data.nome_proprietario || '') : '';
+    const address = data ? (data.endereco_completo || '') : '';
+    const matricula = data ? (data.matricula || '') : '';
+    const rip = data ? (data.rip || '') : '';
+    
+    row.innerHTML = `
+        <td style="padding: 10px;">
+            <input type="text" class="mass-input suffix" value="${suffix}" placeholder="001" maxlength="3" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-family: monospace; text-align: center;">
+        </td>
+        <td style="padding: 10px;">
+            <input type="text" class="mass-input owner" value="${owner}" placeholder="Nome do Proprietário" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+        </td>
+        <td style="padding: 10px;">
+            <input type="text" class="mass-input address" value="${address}" placeholder="Apto, Bloco, etc." style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+        </td>
+        <td style="padding: 10px;">
+            <input type="text" class="mass-input matricula" value="${matricula}" placeholder="Matrícula" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+        </td>
+        <td style="padding: 10px;">
+            <input type="text" class="mass-input rip" value="${rip}" placeholder="RIP" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+        </td>
+        <td style="padding: 10px; text-align: center;">
+            <button onclick="this.closest('tr').remove()" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px;" title="Remover da lista">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </td>
+    `;
+    tableBody.appendChild(row);
+};
+
+window.saveMassUnits = async function () {
+    if (!currentMassLoteId) return;
+    
+    const rows = document.querySelectorAll('.mass-unit-row');
+    const unitsToSave = [];
+    const errors = [];
+    
+    rows.forEach((row, index) => {
+        const suffix = row.querySelector('.suffix').value.trim().padStart(3, '0');
+        if (suffix === '000' && index > 0) {
+            // Ignorar avisos se for o registro base, mas validar formato
+        }
+        
+        const owner = row.querySelector('.owner').value.trim();
+        const address = row.querySelector('.address').value.trim();
+        const matricula = row.querySelector('.matricula').value.trim();
+        const rip = row.querySelector('.rip').value.trim();
+        
+        if (suffix.length === 3) {
+            unitsToSave.push({
+                lote_inscricao: currentMassLoteId,
+                inscricao: currentMassLoteId + suffix,
+                nome_proprietario: owner,
+                endereco_completo: address,
+                matricula: matricula,
+                rip: rip
+            });
+        } else {
+            errors.push(`Linha ${index + 1}: Sufixo inválido.`);
+        }
+    });
+    
+    if (errors.length > 0) {
+        window.Toast.error(errors[0]);
+        return;
+    }
+    
+    if (unitsToSave.length === 0) {
+        window.Toast.info("Nenhuma unidade para salvar.");
+        return;
+    }
+    
+    window.Loading.show('Salvando...', `Processando ${unitsToSave.length} unidades`);
+    
+    try {
+        const { error } = await window.supabaseApp
+            .from('unidades')
+            .upsert(unitsToSave, { onConflict: 'inscricao' });
+            
+        if (error) throw error;
+        
+        // Sincronizar estado local (window.allLotes)
+        const lote = window.allLotes.find(l => l.inscricao === currentMassLoteId);
+        if (lote) {
+            // Substituir a lista de unidades local pela nova (mantendo outros campos se existirem)
+            // Nota: Para um sync perfeito, idealmente faríamos um novo fetch das unidades completas
+            const { data: freshUnits } = await window.supabaseApp
+                .from('unidades')
+                .select('*')
+                .eq('lote_inscricao', currentMassLoteId);
+                
+            if (freshUnits) lote.unidades = freshUnits;
+        }
+        
+        window.Toast.success(`${unitsToSave.length} unidades salvas com sucesso!`);
+        window.closeModal('modal-mass-unit-manager');
+        
+        // Se estiver com o tooltip aberto, atualiza ele
+        if (window.currentTooltip && window.currentLoteForUnit?.inscricao === currentMassLoteId) {
+            window.showLotTooltip(lote, 0, 0, true);
+        }
+        
+    } catch (e) {
+        console.error("Erro ao salvar unidades em massa:", e);
+        window.Toast.error("Erro ao salvar: " + e.message);
+    } finally {
+        window.Loading.hide();
+    }
+};

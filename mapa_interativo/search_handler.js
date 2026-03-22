@@ -6,12 +6,7 @@ window.currentSearchType = 'all';
 
 // Initialize Search Listeners
 window.setupSearchAndFilters = function () {
-    window.searchByEnter = function () {
-        const query = document.getElementById('searchInput').value;
-        if (query && query.length >= 3) {
-            window.performSearch(query);
-        }
-    };
+// Search function removed
 
     console.log("Initializing Search Handler...");
 
@@ -285,6 +280,8 @@ window.performSearch = async function (query) {
     };
 
     const tsQuery = formatTsQuery(query);
+    const cleanDigits = query.replace(/\D/g, '');
+    const isNumeric = cleanDigits.length >= 3;
     const type = window.currentSearchType;
     let results = [];
 
@@ -377,13 +374,19 @@ window.performSearch = async function (query) {
             // Proprietários na tabela de UNIDADES (Busca Clássica "Imóveis de Fulano")
             // Acesso restrito
             if (isOwnerSearchAllowed && (type === 'property' || type === 'all')) {
-                promises.push(window.supabaseApp
+                let unitQuery = window.supabaseApp
                     .from('unidades')
-                    .select('inscricao, nome_proprietario, lote_inscricao, tipo, complemento, endereco_completo')
-                    .textSearch('nome_proprietario', tsQuery, { config: 'portuguese' })
+                    .select('inscricao, nome_proprietario, cpf_cnpj, lote_inscricao, tipo, complemento, endereco_completo')
                     .eq('municipio', window.currentCity || 'Guarujá')
-                    .limit(20)
-                    .then(r => ({ type: 'legacy_unit', data: r.data || [] })));
+                    .limit(20);
+
+                if (isNumeric) {
+                    unitQuery = unitQuery.or(`nome_proprietario.ilike.%${query.trim()}%,cpf_cnpj.ilike.%${cleanDigits}%`);
+                } else {
+                    unitQuery = unitQuery.textSearch('nome_proprietario', tsQuery, { config: 'portuguese' });
+                }
+
+                promises.push(unitQuery.then(r => ({ type: 'legacy_unit', data: r.data || [] })));
             }
 
             const resultsData = await Promise.all(promises);
@@ -422,15 +425,20 @@ window.performSearch = async function (query) {
         if (isOwnerSearchAllowed && (type === 'all' || type === 'owner')) {
             // Normaliza termo para bater com a coluna 'nome_busca' (que é lower + unaccent)
             // Atenção: Esta lógica depende da migration 12_fix_accents ter sido rodada no banco
-            let term = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-
-            // NEW: Ultra-permissive Owner Search
-
-            const { data: owners } = await window.supabaseApp
+            const term = query.trim();
+            let ownerQuery = window.supabaseApp
                 .from('proprietarios')
                 .select('id, nome_completo, cpf_cnpj, total_propriedades')
-                .ilike('nome_completo', `%${query.trim()}%`)
                 .limit(20);
+
+            if (isNumeric) {
+                // Se houver números, busca por CPF (limpo) ou Nome (parcial)
+                ownerQuery = ownerQuery.or(`cpf_cnpj.ilike.%${cleanDigits}%,nome_completo.ilike.%${term}%`);
+            } else {
+                ownerQuery = ownerQuery.ilike('nome_completo', `%${term}%`);
+            }
+
+            const { data: owners } = await ownerQuery;
             
             // Note: Proprietarios table might need a municipio link in the future 
             // but for now they are global or matched via units.

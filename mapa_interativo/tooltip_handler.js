@@ -67,12 +67,51 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
         isRefresh: isRefresh
     });
 
+    // Determine which tab should be active
+    let activeTab = 'geral'; 
+    if (isRefresh && window.currentTooltip) {
+        const btnDocs = window.currentTooltip.querySelector('#tab-btn-docs');
+        if (btnDocs && btnDocs.classList.contains('active')) {
+            activeTab = 'docs';
+        }
+    }
+
     window.currentTooltipType = 'lote';
     window.currentLoteForUnit = lote;
 
     // Role check for UI restrictions
     const role = window.Monetization ? window.Monetization.userRole : 'user';
     const isFree = role === 'user';
+
+    // Essential variables at top-level for all UI components to avoid ReferenceErrors
+    const meta = lote.metadata || {};
+    const headerGradient = 'linear-gradient(135deg, #1e293b, #0f172a)';
+    let lat, lng;
+    if (lote._lat && lote._lng) {
+        lat = lote._lat;
+        lng = lote._lng;
+    } else if (lote.minx) {
+        const cx = (parseFloat(lote.minx) + parseFloat(lote.maxx)) / 2;
+        const cy = (parseFloat(lote.miny) + parseFloat(lote.maxy)) / 2;
+        const ll = window.utmToLatLon(cx, cy);
+        lat = ll.lat;
+        lng = ll.lng;
+    }
+
+    // Title & Address Logic
+    const validOwner = (lote.nome_proprietario && lote.nome_proprietario !== 'null' && lote.nome_proprietario.trim() !== '');
+    const isEliteOrUnlocked = window.Monetization && (window.Monetization.isEliteOrAbove() || window.Monetization.isUnlocked(lote.inscricao));
+    const headerTitle = lote.building_name || (validOwner ? (isEliteOrUnlocked ? lote.nome_proprietario : window.maskName(lote.nome_proprietario)) : 'Lote sem Nome');
+
+    const lotHeaderAddress = (() => {
+        let addr = lote.logradouro || lote.endereco || '';
+        addr = addr.replace(/\s+N[°º]?\s*\d+$/i, '').trim();
+        let num = lote.numero ? String(lote.numero).replace(/^0+/, '') : '';
+        let bai = lote.bairro || '';
+        let final = addr ? (addr + (num ? ', ' + num : '')) : '';
+        if (bai) final += (final ? ' - ' : '') + bai;
+        return final || 'Endereço não informado';
+    })();
 
     // Apply private edits (Curation rule)
     if (window.mergeUserEdits) window.mergeUserEdits(lote, 'lote');
@@ -91,7 +130,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
         }
 
         lote._isRefreshing = true;
-        window.fetchLotDetails(lote.inscricao).then(freshData => {
+        window.fetchLotDetails(lote.inscricao, true).then(freshData => {
             lote._isRefreshing = false;
             
             if (freshData) {
@@ -142,7 +181,6 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
 
     // Track lot view
     if (window.Analytics) {
-        const meta = lote.metadata || {};
         window.Analytics.trackLotView(
             lote.inscricao,
             meta.zona || lote.zona,
@@ -150,10 +188,8 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
             lote.building_name || lote.nome_edificio
         );
     }
-
     if (window.currentTooltip) window.currentTooltip.remove();
 
-    const meta = lote.metadata || {};
     const hasUnits = lote.unidades && lote.unidades.length > 0;
 
     let residentialUnits = [];
@@ -275,29 +311,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
 
     let tooltipHTML = '';
 
-    const headerGradient = 'linear-gradient(135deg, #1e293b, #0f172a)';
-
-    // Preparar botão Street View para o header
-    let lat = null;
-    let lng = null;
-
-    if (lote.minx && lote.miny && lote.maxx && lote.maxy) {
-        const centerX = (parseFloat(lote.minx) + parseFloat(lote.maxx)) / 2;
-        const centerY = (parseFloat(lote.miny) + parseFloat(lote.maxy)) / 2;
-        const coords = window.utmToLatLon(centerX, centerY);
-        lat = coords.lat;
-        lng = coords.lng;
-    }
-
-    const navigateBtn = (lat && lng) ? `
-        <button onclick="window.showNavigationMenu(${lat}, ${lng}, '${lote.logradouro || ''}')" 
-           title="Navegar até o Imóvel"
-           style="background: #2563eb; border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px; text-decoration: none;"
-           onmouseover="this.style.background='#1d4ed8'"
-           onmouseout="this.style.background='#2563eb'">
-            <i class="fas fa-route"></i> Como Chegar
-        </button>
-    ` : '';
+    // Navigation button logic (using lat/lng defined at top)
 
     // Define Navigation Menu helper if not exists
     if (!window.showNavigationMenu) {
@@ -368,44 +382,8 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
         };
     }
 
-    const streetViewBtn = (lat && lng) ? `
-        <button onclick="window.StreetViewHandler.open(${lat}, ${lng}, window.currentLoteForUnit)" 
-           title="Ver no Google Street View com overlays"
-           style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 11px; text-decoration: none;"
-           onmouseover="this.style.background='rgba(255,255,255,0.2)'"
-           onmouseout="this.style.background='rgba(255,255,255,0.1)'">
-            <i class="fas fa-street-view"></i> Street View IQ
-        </button>
-    ` : '';
 
-    const cameraBtn = `
-        <button onclick="window.CameraHandler.takePhoto('${lote.inscricao}')" 
-           title="Adicionar Foto (Mobile)"
-           style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 11px;"
-           onmouseover="this.style.background='rgba(255,255,255,0.2)'"
-           onmouseout="this.style.background='rgba(255,255,255,0.1)'">
-            <i class="fas fa-camera"></i>
-        </button>
-    `;
 
-    const googleEarthBtn = (lat && lng && window.Monetization.canAccess('mapear_patrimonio')) ? `
-        <div style="display: flex; gap: 4px;">
-            <button onclick="window.GoogleEarthHandler.exportLotToKML(window.currentLote)" 
-               title="Exportar para Google Earth (KML)"
-               style="background: #10b981; border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 11px;"
-               onmouseover="this.style.background='#059669'"
-               onmouseout="this.style.background='#10b981'">
-                <i class="fas fa-globe-americas"></i> KML
-            </button>
-            <button onclick="window.GoogleEarthHandler.openInGoogleEarth(${lat}, ${lng})" 
-               title="Ver em 3D no Google Earth Web"
-               style="background: #3b82f6; border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 11px;"
-               onmouseover="this.style.background='#2563eb'"
-               onmouseout="this.style.background='#3b82f6'">
-                <i class="fas fa-cube"></i> 3D
-            </button>
-        </div>
-    ` : '';
 
     // Prepare Amenities (Building View)
     const amenitiesList = [
@@ -438,25 +416,52 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
          </div>
     ` : '';
 
-    // Title & Address Logic (Requested by USER)
-    const validOwner = (lote.nome_proprietario && lote.nome_proprietario !== 'null' && lote.nome_proprietario.trim() !== '');
-    const isEliteOrUnlocked = window.Monetization && (window.Monetization.isEliteOrAbove() || window.Monetization.isUnlocked(lote.inscricao));
-    const headerTitle = lote.building_name || (validOwner ? (isEliteOrUnlocked ? lote.nome_proprietario : window.maskName(lote.nome_proprietario)) : 'Lote sem Nome');
-
-    const lotHeaderAddress = (() => {
-        let addr = lote.logradouro || lote.endereco || '';
-        // Remove trailing "N° 00000" or similar from the base logradouro if present
-        addr = addr.replace(/\s+N[°º]?\s*\d+$/i, '').trim();
-
-        let num = lote.numero ? String(lote.numero).replace(/^0+/, '') : '';
-        let bai = lote.bairro || '';
-        let final = addr ? (addr + (num ? ', ' + num : '')) : '';
-        if (bai) final += (final ? ' - ' : '') + bai;
-        return final || 'Endereço não informado';
-    })();
-
     // Building Stats (Number of Apartments, Garages, etc)
     const totalUnitsCount = (residentialUnits.length + garageUnits.length + commercialUnits.length) || 0;
+
+    // Prepare Buttons
+    const navigateBtn = (lat && lng) ? `
+        <button onclick="window.showNavigationMenu(${lat}, ${lng}, '${lote.logradouro || ''}')" 
+           title="Navegar até o Imóvel"
+           style="background: #2563eb; border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px; text-decoration: none;"
+           onmouseover="this.style.background='#1d4ed8'"
+           onmouseout="this.style.background='#2563eb'">
+            <i class="fas fa-route"></i> <span class="btn-text">Como Chegar</span>
+        </button>
+    ` : '';
+
+    const cameraBtn = `
+        <button onclick="window.CameraHandler.takePhoto('${lote.inscricao}')" 
+           title="Adicionar Foto (Mobile)"
+           style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 11px;"
+           onmouseover="this.style.background='rgba(255,255,255,0.2)'"
+           onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+            <i class="fas fa-camera"></i>
+        </button>
+    `;
+
+    const streetViewBtn = (lat && lng) ? `
+        <button onclick="window.StreetViewHandler.open(${lat}, ${lng}, window.currentLoteForUnit)" 
+           title="Ver no Google Street View com overlays"
+           style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 11px; text-decoration: none;"
+           onmouseover="this.style.background='rgba(255,255,255,0.2)'"
+           onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+            <i class="fas fa-street-view"></i> <span class="btn-text">Street View IQ</span>
+        </button>
+    ` : '';
+
+    const googleEarthBtn = (lat && lng && window.Monetization.canAccess('mapear_patrimonio')) ? `
+        <div style="display: flex; gap: 4px;">
+            <button onclick="window.GoogleEarthHandler.exportLotToKML(window.currentLote)" 
+               title="Exportar para Google Earth (KML)"
+               style="background: #10b981; border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 11px;"
+               onmouseover="this.style.background='#059669'"
+               onmouseout="this.style.background='#10b981'">
+                <i class="fas fa-globe-americas"></i> <span class="btn-text">KML</span>
+            </button>
+
+        </div>
+    ` : '';
     const unitsStatsHtml = hasUnits && totalUnitsCount > 0 ? `
         <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
             <span style="background: rgba(96, 165, 250, 0.1); color: #93c5fd; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; border: 1px solid rgba(96, 165, 250, 0.2);">
@@ -491,11 +496,15 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
                     <i class="fas fa-building" style="color: #60a5fa;"></i> 
                     ${headerTitle}
                 </div>
-                <div style="font-size: 11px; opacity: 0.7; font-family: monospace;">${lote.inscricao}</div>
-                <div style="font-size: 11px; opacity: 0.9; margin-top: 4px; display: flex; align-items: start; gap: 4px; max-width: 300px;">
+                <div style="font-size: 11px; opacity: 0.7; font-family: monospace; margin-bottom: 4px;">${lote.inscricao}</div>
+                <div style="font-size: 12px; display: flex; align-items: flex-start; gap: 6px; margin-bottom: 4px;">
                     <i class="fas fa-map-marker-alt" style="margin-top: 2px;"></i>
                     <span>${lotHeaderAddress}</span>
                 </div>
+                ${lote.matricula_mae ? `
+                <div style="font-size: 11px; color: #fbbf24; margin-top: 4px; font-weight: 700;">
+                    <i class="fas fa-file-invoice"></i> Matrícula Mãe: ${lote.matricula_mae}
+                </div>` : ''}
                 ${unitsStatsHtml}
             </div>
             <div class="header-buttons-wrapper" style="display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; justify-content: flex-end; flex-shrink: 0;">
@@ -526,15 +535,16 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
                 </button>
                 ` : ''}
 
-                ${window.Monetization.canAccess('advanced_ai') ? `
-                <button onclick="window.AdvancedMaps.startDroneFlyover(${lat}, ${lng})"
+
+
+                ${(!isEliteOrUnlocked) ? `
+                <button onclick="window.Monetization.promptUnlockLote('${lote.inscricao}', null, 5)"
                     class="tooltip-action-btn"
-                    title="Voo de Drone 3D"
-                    style="background: #6366f1; border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px;"
-                    onmouseover="this.style.background='#4f46e5'"
-                    onmouseout="this.style.background='#6366f1'">
-                    <i class="fas fa-helicopter"></i> 
-                    <span class="btn-text">Drone 3D</span>
+                    title="Desbloquear todas as unidades deste lote (5 CR)"
+                    style="background: #f59e0b; border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 11px;"
+                    onmouseover="this.style.background='#d97706'"
+                    onmouseout="this.style.background='#f59e0b'">
+                    <i class="fas fa-unlock"></i> <span class="btn-text">Liberar Tudo (5 CR)</span>
                 </button>
                 ` : ''}
 
@@ -544,6 +554,16 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
                     style="background: ${isFree ? 'rgba(251, 191, 36, 0.2)' : 'rgba(255,255,255,0.1)'}; border: 1px solid ${isFree ? '#fbbf24' : 'rgba(255,255,255,0.2)'}; color: ${isFree ? '#fcd34d' : 'white'}; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 11px;">
                     <i class="fas ${isFree ? 'fa-lock' : 'fa-pen'}"></i> <span class="btn-text">${isFree ? 'Editar (Pro+)' : 'Editar'}</span>
                 </button>
+
+                ${(role === 'admin' || role === 'master') ? `
+                <button onclick="window.openMassUnitManager('${lote.inscricao}')"
+                    class="tooltip-action-btn"
+                    title="Gerenciar todas as unidades (Admin)"
+                    style="background: #ef4444; border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px;">
+                    <i class="fas fa-tasks"></i> <span class="btn-text">Gerenciar Unidades</span>
+                </button>
+                ` : ''}
+
                 <button class="lot-tooltip-close" style="background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0 4px; line-height: 1; margin-left: 4px;">×</button>
             </div>
         </div>
@@ -555,69 +575,56 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
             }, 500);
         </script>
 
-        <!-- AMENITIES BAR -->
-        <div style="width: 100%; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.6; margin-bottom: 6px; font-weight: 700;">Infraestrutura & Lazer</div>
-            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-                ${amenitiesHTML}
-            </div>
+        <!-- TAB BAR -->
+        <div class="lot-tooltip-tabs">
+            <button onclick="window.switchLotTab('geral')" id="tab-btn-geral" class="lot-tab-btn ${activeTab === 'geral' ? 'active' : ''}">
+                <i class="fas fa-info-circle"></i> Visão Geral
+            </button>
+            <button onclick="window.switchLotTab('docs')" id="tab-btn-docs" class="lot-tab-btn ${activeTab === 'docs' ? 'active' : ''}">
+                <i class="fas fa-file-invoice"></i> Documentação Profissional
+            </button>
         </div>
-    </div>
+
+        <div class="lot-tooltip-body">
     `;
 
-    tooltipHTML += `<div class="lot-tooltip-body" style="padding: 32px 40px; background: #f8fafc; overflow-y: auto; flex: 1 1 auto; min-height: 0; overscroll-behavior: contain; position: relative;">`;
+    // 1. TAB GERAL
+    tooltipHTML += `<div id="lot-tab-geral-content" class="lot-tab-content ${activeTab === 'geral' ? 'active' : ''}">`;
 
+    // Photo Carousel (Restored)
     tooltipHTML += (function () {
-        const internalImages = (lote.gallery && lote.gallery.length > 0) ? lote.gallery : (lote.image_url ? [lote.image_url] : []);
-        const externalImages = lote._googlePhotos || [];
-        
+        if (!lote) return '';
+        const gallery = Array.isArray(lote.gallery) ? lote.gallery : [];
+        const internalImages = (gallery.length > 0) ? gallery : (lote.image_url ? [lote.image_url] : []);
+        const externalImages = Array.isArray(lote._googlePhotos) ? lote._googlePhotos : [];
         const allImages = [...internalImages, ...externalImages];
+        
         if (allImages.length === 0) return '';
 
         const imagesJson = JSON.stringify(allImages).replace(/"/g, '&quot;');
-
-        if (allImages.length === 1) {
-            const isGoogle = externalImages.includes(allImages[0]);
-            return `
-            <div style="margin-bottom: 24px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-height: 380px; cursor: pointer; transition: transform 0.2s; position: relative; background: #f1f5f9;" 
-                 onmouseover="this.style.transform='scale(1.01)'" 
-                 onmouseout="this.style.transform='scale(1)'"
-                 onclick="window.openImageModal(0, ${imagesJson})">
-                <img src="${allImages[0]}" style="width: 100%; height: 380px; object-fit: contain; background: #0f172a;" onerror="this.src='/placeholder.png'">
-                ${isGoogle ? `<div style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);"><i class="fab fa-google"></i> Google Photos</div>` : ''}
-            </div>`;
-        }
-
-        // Bento Grid for 2+ images
-        const displayLimit = 5; // 1 large + 4 small
-        const mainImg = allImages[0];
-        const thumbs = allImages.slice(1, displayLimit);
-        const hasMore = allImages.length > displayLimit;
-
+        
         return `
-        <div class="bento-gallery" style="display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 110px); gap: 10px; margin-bottom: 24px;">
-            <!-- Main Highlight -->
-            <div style="grid-column: span 2; grid-row: span 2; border-radius: 12px; overflow: hidden; position: relative; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"
-                 onclick="window.openImageModal(0, ${imagesJson})">
-                <img src="${mainImg}" style="width: 100%; height: 100%; object-fit: cover;">
-                ${externalImages.includes(mainImg) ? `<div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.5); color: white; padding: 3px 6px; border-radius: 4px; font-size: 9px;"><i class="fab fa-google"></i></div>` : ''}
+        <div class="custom-carousel-wrapper" style="margin-bottom: 24px; position: relative;">
+            <div class="custom-carousel" style="display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 10px; border-radius: 12px; scrollbar-width: none; -ms-overflow-style: none;">
+                ${allImages.map((img, i) => `
+                    <div style="flex: 0 0 100%; scroll-snap-align: start; position: relative; height: 320px; border-radius: 12px; overflow: hidden; background: #0f172a; cursor: pointer;"
+                         onclick="window.openImageModal(${i}, ${imagesJson})">
+                        <img src="${img}" style="width: 100%; height: 100%; object-fit: contain;" onerror="this.src='/placeholder.png'">
+                        ${externalImages.includes(img) ? `<div style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.6); color: white; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1);"><i class="fab fa-google"></i> Google Photos</div>` : ''}
+                        ${internalImages.includes(img) ? `<div style="position: absolute; bottom: 12px; left: 12px; background: rgba(30,58,138,0.6); color: white; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1);"><i class="fas fa-camera"></i> Foto do Lote</div>` : ''}
+                    </div>
+                `).join('')}
             </div>
-            <!-- Thumbnails -->
-            ${thumbs.map((img, i) => {
-                const index = i + 1;
-                const isFinal = (index === displayLimit - 1) && hasMore;
-                return `
-                <div style="border-radius: 10px; overflow: hidden; position: relative; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1); transition: transform 0.2s;"
-                     onmouseover="this.style.transform='scale(1.03)'"
-                     onmouseout="this.style.transform='scale(1)'"
-                     onclick="window.openImageModal(${index}, ${imagesJson})">
-                    <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;">
-                    ${externalImages.includes(img) ? `<div style="position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,0.5); color: white; padding: 1px 4px; border-radius: 3px; font-size: 8px;"><i class="fab fa-google"></i></div>` : ''}
-                    ${isFinal ? `<div style="position: absolute; inset:0; background: rgba(0,0,0,0.7); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; letter-spacing: 1px;">+${allImages.length - displayLimit + 1}</div>` : ''}
-                </div>`;
-            }).join('')}
-            <!-- If 2 images, fill the gap -->
-            ${allImages.length === 2 ? `<div style="grid-column: span 2; grid-row: span 2; background: #f1f5f9; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 2px dashed #e2e8f0; color: #94a3b8; font-size: 11px; font-weight: 600;">Galeria</div>` : ''}
+            ${allImages.length > 1 ? `
+                <div style="position: absolute; bottom: -18px; left: 0; right: 0; display: flex; justify-content: center; gap: 4px;">
+                    ${allImages.slice(0, 8).map((_, i) => `<div style="width: 6px; height: 6px; border-radius: 50%; background: ${i === 0 ? '#3b82f6' : '#cbd5e1'};"></div>`).join('')}
+                    ${allImages.length > 8 ? `<span style="font-size: 8px; color: #94a3b8;">+${allImages.length - 8}</span>` : ''}
+                </div>
+                <div style="position: absolute; top: 50%; left: -10px; right: -10px; transform: translateY(-50%); display: flex; justify-content: space-between; pointer-events: none; padding: 0 5px;">
+                    <i class="fas fa-chevron-left" style="background: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #1e293b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); font-size: 12px; opacity: 0.8;"></i>
+                    <i class="fas fa-chevron-right" style="background: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #1e293b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); font-size: 12px; opacity: 0.8;"></i>
+                </div>
+            ` : ''}
         </div>`;
     })();
 
@@ -646,6 +653,39 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
         ${meta.endereco ? `<div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed #e2e8f0;"><div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Endereço</div><div style="font-size: 14px; color: #1e293b; line-height: 1.4; font-weight: 500;">${meta.endereco}</div></div>` : ''}
     `;
 
+    // ===== LAZER E INFRAESTRUTURA =====
+    const lazerKeys = ['piscina', 'academia', 'churrasqueira', 'salao_jogos', 'salao_festas', 'area_verde', 'bicicletario', 'portaria_24h', 'acesso_pcd', 'elevador', 'servico_praia', 'zeladoria'];
+    const activeLazer = lazerKeys.filter(k => lote[k] === true);
+    if (activeLazer.length > 0 || lote.amenities) {
+        let lazerHtml = `<div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed #e2e8f0;">`;
+        lazerHtml += `<div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;"><i class="fas fa-umbrella-beach"></i> Lazer & Infraestrutura</div>`;
+        lazerHtml += `<div style="display: flex; flex-wrap: wrap; gap: 6px;">`;
+        
+        activeLazer.forEach(key => {
+            const labelName = key.replace('_', ' ').replace('salao', 'salão').replace('servico', 'serviço').replace('acesso_pcd', 'Acessibilidade').replace('portaria_24h', 'Portaria 24h');
+            let icon = 'fa-check';
+            if(key === 'piscina') icon = 'fa-swimming-pool';
+            if(key === 'academia') icon = 'fa-dumbbell';
+            if(key === 'churrasqueira') icon = 'fa-fire';
+            if(key.includes('salao')) icon = 'fa-glass-cheers';
+            if(key === 'area_verde') icon = 'fa-leaf';
+            if(key === 'bicicletario') icon = 'fa-bicycle';
+            if(key === 'portaria_24h') icon = 'fa-user-shield';
+            if(key === 'acesso_pcd') icon = 'fa-wheelchair';
+            if(key === 'elevador') icon = 'fa-sort-numeric-up-alt';
+            if(key === 'servico_praia') icon = 'fa-umbrella-beach';
+            
+            lazerHtml += `<span style="background: #f8fafc; border: 1px solid #e2e8f0; color: #475569; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 6px; text-transform: capitalize;"><i class="fas ${icon}" style="color: #cbd5e1;"></i> ${labelName}</span>`;
+        });
+        lazerHtml += `</div>`;
+        
+        if (lote.amenities) {
+            lazerHtml += `<div style="margin-top: 10px; font-size: 12px; color: #64748b; font-style: italic; background: #f8fafc; padding: 8px; border-left: 3px solid #cbd5e1; border-radius: 4px;">"<span style="color: #475569;">${lote.amenities}</span>"</div>`;
+        }
+        lazerHtml += `</div>`;
+        tooltipHTML += lazerHtml;
+    }
+
     // Fetch and Inject Elevation Data Asynchronously
     if (window.AdvancedMaps && lat && lng) {
         window.AdvancedMaps.getElevation(lat, lng).then(elev => {
@@ -673,7 +713,8 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
     // ===== SOLAR ANALYSIS (V1.2) =====
     if (window.SolarHandler && lat && lng) {
         try {
-           tooltipHTML += window.SolarHandler.getSolarWidgetHTML(lat, lng, lote.inscricao);
+           const solarHTML = window.SolarHandler.getSolarWidgetHTML(lat, lng, lote.inscricao);
+           if (solarHTML) tooltipHTML += solarHTML;
         } catch(e) { console.error('Solar Error', e); }
     }
 
@@ -716,45 +757,11 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
                 });
             }
 
-            // 2. Process Drawn Items (Optional backward compatibility)
-            if (window.drawnItems && window.drawnItems.eachLayer) {
-                window.drawnItems.eachLayer(layer => {
-                    const props = layer.feature?.properties;
-                    if (!props) return;
-
-                    let d = null;
-                    const geojson = layer.toGeoJSON();
-                    if (props.tipo === 'MAR') {
-                        d = turf.pointToLineDistance(lotePoint, geojson, { units: 'meters' });
-                    } else {
-                        const target = (geojson.geometry.type === 'Point') ? geojson : turf.centroid(geojson);
-                        d = turf.distance(lotePoint, target, { units: 'meters' });
-                    }
-
-                    if (d !== null) {
-                        const distance = Math.round(d);
-                        const isBeach = props.tipo === 'PRAIA' || props.tipo === 'MAR';
-                        const maxDist = isBeach ? 3000 : 200;
-
-                        if (distance <= maxDist) {
-                            dists.push({ 
-                                name: props.nome || props.tipo, 
-                                type: props.tipo, 
-                                dist: distance,
-                                lat: (geojson.geometry.type === 'Point') ? geojson.geometry.coordinates[1] : turf.centroid(geojson).geometry.coordinates[1],
-                                lng: (geojson.geometry.type === 'Point') ? geojson.geometry.coordinates[0] : turf.centroid(geojson).geometry.coordinates[0]
-                            });
-                        }
-                    }
-                });
-            }
-
             if (dists.length > 0) {
-                // Deduplicate and group
                 dists.sort((a, b) => a.dist - b.dist);
-                const uniqueDists = dists.slice(0, 6); // Max 6 to avoid clutter
+                const uniqueDists = dists.slice(0, 6); 
 
-                tooltipHTML += `<div style="margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px dashed #e2e8f0;">
+                let distanceBlock = `<div style="margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px dashed #e2e8f0;">
                     <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Pontos de Interesse & Praia</div>
                     <div style="display:flex; gap:8px; flex-wrap:wrap;">`;
 
@@ -768,7 +775,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
                     let bg = '#f1f5f9';
                     if (item.type === 'PRAIA' || item.type === 'MAR') { color = '#0284c7'; bg = '#e0f2fe'; }
 
-                    tooltipHTML += `
+                    distanceBlock += `
                     <div class="poi-tag" 
                          onclick="window.flyToPOI(${item.lat}, ${item.lng}, '${item.name}')"
                          id="poi-tag-${lote.inscricao}-${i}"
@@ -781,7 +788,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
                         <i class="fas fa-external-link-alt" style="font-size: 8px; opacity: 0.5;"></i>
                     </div>
                     <script>
-                        if (window.AdvancedMaps && ${i} < 3) { // Top 3 to stay within free tier easily
+                        if (window.AdvancedMaps && ${i} < 3) {
                            window.AdvancedMaps.getWalkingInfo({lat: ${lat}, lng: ${lng}}, {lat: ${item.lat}, lng: ${item.lng}}).then(info => {
                                if (info) {
                                    const tag = document.querySelector('#poi-tag-${lote.inscricao}-${i} .walking-time');
@@ -791,7 +798,8 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
                         }
                     </script>`;
                 });
-                tooltipHTML += `</div></div>`;
+                distanceBlock += `</div></div>`;
+                tooltipHTML += distanceBlock;
             }
         } catch (e) {
             console.error("Dist Error:", e);
@@ -823,7 +831,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
             groupUnits.forEach(u => tooltipHTML += renderUnitItem(u));
             tooltipHTML += `</div></div>`;
         });
-        tooltipHTML += `</div>`;
+        tooltipHTML += `</div>`; // CLOSED RESIDENTIAL UNITS CONTAINER
     }
 
     // ===== COMMERCIAL SECTION =====
@@ -851,6 +859,155 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
         garageUnits.forEach(u => tooltipHTML += renderUnitItem(u, 'garagem'));
         tooltipHTML += `</div></div>`;
     }
+
+    // CLOSE TAB GERAL
+    tooltipHTML += `</div>`;
+
+    // 2. TAB DOCUMENTAÇÃO
+    const hasPlantas = Array.isArray(lote.plantas) && lote.plantas.length > 0;
+    const hasDocs = Array.isArray(lote.documentos) && lote.documentos.length > 0;
+    const plantasJson = JSON.stringify(lote.plantas || []).replace(/"/g, '&quot;');
+    const docsJson = JSON.stringify(lote.documentos || []).replace(/"/g, '&quot;');
+
+    tooltipHTML += `
+    <div id="lot-tab-docs-content" class="lot-tab-content ${activeTab === 'docs' ? 'active' : ''}" style="min-height: 400px;">
+        <div style="display: grid; grid-template-columns: 1fr; gap: 20px;">
+            
+            <!-- Matrícula Section -->
+            <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                <div style="font-weight: 800; color: #1e293b; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; font-size: 15px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-file-invoice" style="color: #6366f1;"></i> Matrícula do Imóvel
+                    </div>
+                    ${(role === 'admin' || role === 'master') ? `
+                        <button onclick="window.startEditMatricula('${lote.inscricao}')" id="btn-edit-matricula-${lote.inscricao}"
+                            style="background: #f1f5f9; border: none; padding: 4px 8px; border-radius: 4px; color: #64748b; cursor: pointer; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px;">
+                            <i class="fas fa-pen"></i> Editar
+                        </button>
+                    ` : ''}
+                </div>
+                
+                <div id="matricula-display-${lote.inscricao}" 
+                    style="padding: 15px; background: ${lote.matricula_mae ? '#f8fafc' : '#fff7ed'}; border-radius: 8px; border: 1px ${lote.matricula_mae ? 'solid #f1f5f9' : 'dashed #fdba74'}; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;">
+                    <div>
+                        <span style="font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">Matrícula Mãe (Registro Geral)</span>
+                        <span id="matricula-val-${lote.inscricao}" style="font-size: 20px; font-weight: 800; color: ${lote.matricula_mae ? '#0f172a' : '#94a3b8'}; letter-spacing: 0.5px;">
+                            ${lote.matricula_mae || 'Aguardando Cadastro...'}
+                        </span>
+                    </div>
+                    ${(!lote.matricula_mae && (role === 'admin' || role === 'master')) ? `<i class="fas fa-plus-circle" style="color: #f97316; font-size: 18px; cursor: pointer;" onclick="window.startEditMatricula('${lote.inscricao}')" title="Adicionar Matrícula"></i>` : ''}
+                </div>
+
+                <div id="matricula-edit-form-${lote.inscricao}" style="display: none; padding: 15px; background: #f0f7ff; border-radius: 8px; border: 1px solid #bae6fd;">
+                    <label style="display: block; font-size: 11px; font-weight: 700; color: #0369a1; margin-bottom: 8px; text-transform: uppercase;">Nova Matrícula</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="input-matricula-${lote.inscricao}" value="${lote.matricula_mae || ''}" 
+                            style="flex: 1; padding: 10px; border: 1px solid #7dd3fc; border-radius: 6px; font-size: 14px; font-weight: 700;">
+                        <button onclick="window.saveMatriculaInline('${lote.inscricao}')" 
+                            style="background: #0ea5e9; color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; font-weight: 800; font-size: 12px;">
+                            Salvar
+                        </button>
+                        <button onclick="window.cancelEditMatricula('${lote.inscricao}')" 
+                            style="background: white; color: #64748b; border: 1px solid #cbd5e1; padding: 0 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">
+                            X
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technical Files Section -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <!-- Plantas -->
+                <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; flex-direction: column;">
+                    <div style="font-weight: 700; color: #1e293b; margin-bottom: 12px; font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-draw-polygon" style="color: #10b981;"></i> Plantas & Projetos
+                        </div>
+                    </div>
+                    
+                    <div id="socket-plantas-${lote.inscricao}" 
+                        style="flex: 1; min-height: 80px; border: 2px dashed ${hasPlantas ? '#10b981' : '#e2e8f0'}; border-radius: 10px; background: ${hasPlantas ? '#f0fdf4' : '#f8fafc'}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 15px; transition: all 0.2s;">
+                        
+                        ${hasPlantas ? `
+                            <div style="text-align: center;">
+                                <div style="font-size: 24px; color: #10b981; margin-bottom: 5px;"><i class="fas fa-images"></i></div>
+                                <div style="font-weight: 700; color: #065f46; font-size: 12px;">${lote.plantas.length} Arquivos</div>
+                                <button onclick="window.showMediaGallery(${plantasJson}, 'Plantas do Prédio')" 
+                                    style="margin-top: 10px; padding: 6px 12px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">
+                                    Ver Todos
+                                </button>
+                            </div>
+                        ` : `
+                            <div style="text-align: center; color: #94a3b8;">
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 24px; margin-bottom: 5px;"></i>
+                                <div style="font-size: 11px; font-weight: 600;">Arraste ou clique para subir</div>
+                            </div>
+                        `}
+
+                        ${(role === 'admin' || role === 'master') ? `
+                            <label for="upload-plantas-quick-${lote.inscricao}" style="cursor: pointer; background: white; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 50px; font-size: 10px; font-weight: 700; color: #64748b; margin-top: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <i class="fas fa-plus"></i> Upload Planta
+                            </label>
+                            <input type="file" id="upload-plantas-quick-${lote.inscricao}" accept="image/*,application/pdf" style="display: none;" 
+                                onchange="window.handleQuickAssetUpload(this.files[0], '${lote.inscricao}', 'plantas')">
+                        ` : ''}
+                    </div>
+                </div>
+
+                <!-- Documentos -->
+                <div style="background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; flex-direction: column;">
+                    <div style="font-weight: 700; color: #1e293b; margin-bottom: 12px; font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <i class="fas fa-file-contract" style="color: #0891b2;"></i> Documentos Legais
+                        </div>
+                    </div>
+                    
+                    <div id="socket-docs-${lote.inscricao}" 
+                        style="flex: 1; min-height: 80px; border: 2px dashed ${hasDocs ? '#0891b2' : '#e2e8f0'}; border-radius: 10px; background: ${hasDocs ? '#ecfeff' : '#f8fafc'}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 15px; transition: all 0.2s;">
+                        
+                        ${hasDocs ? `
+                            <div style="text-align: center;">
+                                <div style="font-size: 24px; color: #0891b2; margin-bottom: 5px;"><i class="fas fa-folder-open"></i></div>
+                                <div style="font-weight: 700; color: #164e63; font-size: 12px;">${lote.documentos.length} Arquivos</div>
+                                <button onclick="window.showMediaGallery(${docsJson}, 'Documentos do Prédio')" 
+                                    style="margin-top: 10px; padding: 6px 12px; background: #0891b2; color: white; border: none; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">
+                                    Ver Todos
+                                </button>
+                            </div>
+                        ` : `
+                            <div style="text-align: center; color: #94a3b8;">
+                                <i class="fas fa-file-upload" style="font-size: 24px; margin-bottom: 5px;"></i>
+                                <div style="font-size: 11px; font-weight: 600;">Convenção, Habite-se, etc.</div>
+                            </div>
+                        `}
+
+                        ${(role === 'admin' || role === 'master') ? `
+                            <label for="upload-docs-quick-${lote.inscricao}" style="cursor: pointer; background: white; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 50px; font-size: 10px; font-weight: 700; color: #64748b; margin-top: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                                <i class="fas fa-plus"></i> Upload Doc
+                            </label>
+                            <input type="file" id="upload-docs-quick-${lote.inscricao}" accept="image/*,application/pdf" style="display: none;" 
+                                onchange="window.handleQuickAssetUpload(this.files[0], '${lote.inscricao}', 'documentos')">
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Action (General Context) -->
+            <div style="margin-top: 10px; border-top: 1px solid #e2e8f0; padding-top: 20px; text-align: center;">
+                <p style="font-size: 11px; color: #64748b; margin-bottom: 12px;">Deseja editar o lote por completo? (Nome, Lazer, Fotos, etc)</p>
+                <button onclick="window.editFromTooltip('${lote.inscricao}')" 
+                    style="width: 100%; padding: 12px; background: #1e293b; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                    <i class="fas fa-external-link-alt"></i> Acessar Painel de Edição Geral
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div style="font-size: 11px; color: #94a3b8; text-align: center; padding-top: 10px;">
+        <i class="fas fa-shield-alt"></i> Estas informações são de acesso restrito e para fins profissionais.
+    </div>
+    `;
 
     tooltipHTML += `</div>`; // Close Body
 
@@ -1182,6 +1339,12 @@ async function showUnitTooltip(unit, parentLote, x, y) {
                             <i class="fab fa-whatsapp" style="width: 16px;"></i> Enviar Ficha Zap
                         </button>
 
+                        <button onclick="window.showContractOptions('${unit.inscricao}'); document.getElementById('tooltip-tools-menu').style.display='none';" 
+                            style="width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid #f1f5f9; padding: 12px 15px; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
+                            onmouseover="this.style.background='#f8fafc';" onmouseout="this.style.background='none';">
+                            <i class="fas fa-file-contract" style="width: 16px;"></i> Gerador de Contrato
+                        </button>
+
                         ${window.Monetization?.checkFeatureAccess('pdf_dossier') ? `
                         <button onclick="window.ReportHandler.generateDossie('${unit.inscricao}')" 
                             style="width: 100%; text-align: left; background: #f0fdf4; border: none; padding: 12px 15px; font-size: 13px; font-weight: 700; color: #166534; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
@@ -1353,6 +1516,16 @@ async function showUnitTooltip(unit, parentLote, x, y) {
                     </button>
                 </div>
 
+                ${(role === 'admin' || role === 'master') ? `
+                <div style="margin-top: 10px;">
+                    <button onclick="if(confirm('ATENÇÃO ADMIN: Tem certeza que deseja DELETAR esta unidade permanentemente? Esta ação não pode ser desfeita.')) { window.deleteUnit('${unit.inscricao}'); this.closest('.unit-tooltip').remove(); window.backdrop && window.backdrop.remove(); }" 
+                            style="width: 100%; padding: 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #ef4444; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;"
+                            onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
+                        <i class="fas fa-trash-alt"></i> Excluir Unidade (Apenas Master)
+                    </button>
+                </div>
+                ` : ''}
+
                 ${(ownerHistory.length > 0 && window.Monetization?.checkFeatureAccess('owner_history')) ? `
                 <div style="margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 15px;">
                     <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
@@ -1403,74 +1576,13 @@ async function showUnitTooltip(unit, parentLote, x, y) {
                     <div style="padding: 10px; background: white; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                         <div id="explorer-breadcrumbs" style="font-size: 11px; font-weight: 600; color: #475569; flex-shrink: 0; min-width: 60px;">🏠 Início</div>
                         <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                             <!-- AI Tools Dropdown -->
-                             <div style="position: relative;">
-                                <button onclick="
-                                        const aiMenu = document.getElementById('docs-ai-menu'); 
-                                        aiMenu.style.display = aiMenu.style.display === 'none' ? 'block' : 'none';
-                                        document.getElementById('docs-mkt-menu').style.display='none';
-                                    " 
-                                    style="background: white; border: 1px solid #e2e8f0; color: #3b82f6; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;"
-                                    title="Inteligência Artificial">
-                                    <i class="fas fa-robot"></i> IA <i class="fas fa-chevron-down" style="font-size: 9px;"></i>
-                                </button>
-                                
-                                 <div id="docs-ai-menu" style="display: none; position: absolute; left: 0; top: 110%; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 160px; z-index: 1000; overflow: hidden;">
-                                    <button onclick="window.showContractOptions('${unit.inscricao}'); document.getElementById('docs-ai-menu').style.display='none';" 
-                                        style="width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid #f1f5f9; padding: 10px 12px; font-size: 11px; font-weight: 600; color: #3b82f6; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#eff6ff';" onmouseout="this.style.background='none';">
-                                        <i class="fas fa-file-contract" style="width: 14px;"></i> Contratos
-                                    </button>
-                                    <button onclick="window.showMatriculaAnalyzer('${unit.inscricao}'); document.getElementById('docs-ai-menu').style.display='none';" 
-                                        style="width: 100%; text-align: left; background: none; border: none; padding: 10px 12px; font-size: 11px; font-weight: 600; color: #8b5cf6; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#f3e8ff';" onmouseout="this.style.background='none';">
-                                        <i class="fas fa-search-plus" style="width: 14px;"></i> Analisar Matrícula
-                                    </button>
-                                </div>
-                             </div>
-                             
-                             <!-- Marketing Dropdown -->
-                             <div style="position: relative;">
-                                <button onclick="
-                                        const mktMenu = document.getElementById('docs-mkt-menu'); 
-                                        mktMenu.style.display = mktMenu.style.display === 'none' ? 'block' : 'none';
-                                        document.getElementById('docs-ai-menu').style.display='none';
-                                    " 
-                                    style="background: white; border: 1px solid #e2e8f0; color: #ec4899; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;"
-                                    title="Marketing">
-                                    <i class="fas fa-bullhorn"></i> Redes <i class="fas fa-chevron-down" style="font-size: 9px;"></i>
-                                </button>
-                                
-                                <div id="docs-mkt-menu" style="display: none; position: absolute; left: 0; top: 110%; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 180px; z-index: 1000; overflow: hidden;">
-                                    <button onclick="window.generateMarketing('${unit.inscricao}', 'Instagram'); document.getElementById('docs-mkt-menu').style.display='none';" 
-                                        style="width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid #f1f5f9; padding: 10px 12px; font-size: 11px; font-weight: 600; color: #db2777; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#fdf2f8';" onmouseout="this.style.background='none';">
-                                        <i class="fab fa-instagram" style="width: 14px;"></i> Post Instagram
-                                    </button>
-                                    <button onclick="window.generateMarketing('${unit.inscricao}', 'WhatsApp'); document.getElementById('docs-mkt-menu').style.display='none';" 
-                                        style="width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid #f1f5f9; padding: 10px 12px; font-size: 11px; font-weight: 600; color: #16a34a; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#f0fdf4';" onmouseout="this.style.background='none';">
-                                        <i class="fab fa-whatsapp" style="width: 14px;"></i> Mensagem Zap
-                                    </button>
-                                    <button onclick="window.generateMarketing('${unit.inscricao}', 'Script Captação'); document.getElementById('docs-mkt-menu').style.display='none';" 
-                                        style="width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid #f1f5f9; padding: 10px 12px; font-size: 11px; font-weight: 600; color: #0284c7; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#f0f9ff';" onmouseout="this.style.background='none';">
-                                        <i class="fas fa-phone-alt" style="width: 14px;"></i> Script Captação
-                                    </button>
-                                    <button onclick="window.generateMarketing('${unit.inscricao}', 'Exclusividade'); document.getElementById('docs-mkt-menu').style.display='none';" 
-                                        style="width: 100%; text-align: left; background: none; border: none; padding: 10px 12px; font-size: 11px; font-weight: 600; color: #ca8a04; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s;"
-                                        onmouseover="this.style.background='#fefce8';" onmouseout="this.style.background='none';">
-                                        <i class="fas fa-star" style="width: 14px;"></i> Argumentos
-                                    </button>
-                                </div>
-                             </div>
-
+                             <!-- Feature Buttons Removed per User Request -->
                              <div style="width: 1px; background: #e2e8f0; margin: 0 4px;"></div>
                              
                              <!-- Explorer Actions -->
                              <label style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 700; padding: 6px 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                                 <i class="fas fa-cloud-upload-alt"></i> Upload
-                                <input type="file" style="display: none;" onchange="window.uploadFile(this)">
+                                <input type="file" style="display: none;" onchange="window.handleUnitDocumentUpload(this, '${unit.inscricao}')">
                              </label>
                              <button onclick="window.createFolder()" style="background: white; border: 1px solid #e2e8f0; color: #64748b; font-size: 11px; font-weight: 700; padding: 6px 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                                 <i class="fas fa-folder-plus"></i> <span class="mobile-hide">Pasta</span>
@@ -1574,10 +1686,7 @@ async function checkAndConsolidateOwner(unit) {
             setTimeout(() => marker.setMap(null), 3000);
         };
 
-        window.flyToGeoRef = function(georef, name) {
-            if (!window.map || !georef || !georef.lat || !georef.lng) return;
-            window.flyToPOI(georef.lat, georef.lng, name || 'Localização');
-        };
+// flyToGeoRef removed
 
         // IMPORTANTE: NÃO usamos .select() aqui para evitar erro 406 (Not Acceptable) se o upsert for ignorado.
         const tipo = cpfLimpo.length > 11 ? 'PJ' : 'PF';
@@ -1677,6 +1786,7 @@ function closeLotTooltip() {
 }
 
 window.unlockUnitInfo = async function(inscricao) {
+    console.warn("🏢 [Tooltip] unlockUnitInfo CHAMADA!", { inscricao });
     if (!window.Monetization) return;
     
     // Agora usamos o sistema centralizado de confirmação/desbloqueio
@@ -1685,7 +1795,7 @@ window.unlockUnitInfo = async function(inscricao) {
 
     // promptUnlockLote em monetization_handler já cuida do modal de confirmação,
     // custo de créditos, limite do plano e feedback final.
-    await window.Monetization.promptUnlockLote(loteInscricao, inscricao, 1);
+    await window.Monetization.promptUnlockLote(loteInscricao, inscricao, 5);
     
     // Ouvimos pelo sucesso para atualizar a UI local
     // (Poderíamos usar um observer, mas um pequeno delay em tooltip refresh funciona)
@@ -1705,68 +1815,7 @@ window.showUnitTooltip = showUnitTooltip;
 window.closeLotTooltip = closeLotTooltip;
 window.moveCarousel = window.moveCarousel || function () { };
 
-// ===========================================
-// FERRAMENTA DE ADMIN: SINCRONIZAÇÃO EM MASSA
-// ===========================================
-window.runFullOwnerSync = async function () {
-    console.log("🚀 Iniciando Sincronização em Massa de Proprietários...");
-    window.Toast.info("Iniciando Sync de Proprietários (Ver Console)...");
-
-    // 1. Buscar unidades candidatas (Com CPF mas desvinculadas)
-    // REDUZIDO para 200 para evitar sobrecarga de recursos do navegador
-    const LIMIT = 200;
-    const { data: units, error } = await window.supabaseApp
-        .from('unidades')
-        .select('inscricao, cpf_cnpj, nome_proprietario, proprietario_id, dados_enrichment, contato_proprietario')
-        .not('cpf_cnpj', 'is', null)
-        .is('proprietario_id', null)
-        .limit(LIMIT);
-
-    if (error) {
-        console.error("Erro buscando unidades:", error);
-        window.Toast.error("Erro ao buscar dados.");
-        return;
-    }
-
-    if (units.length === 0) {
-        console.log("✅ Nada para processar. Tudo sincronizado!");
-        window.Toast.success("Tudo sincronizado!");
-        return;
-    }
-
-    console.log(`📋 Encontradas ${units.length} unidades pendentes.Processando em lotes...`);
-
-    let processed = 0;
-    let errors = 0;
-
-    for (const unit of units) {
-        // Pausa pequena ENTRE CADA ITEM para não engasgar o navegador
-        await new Promise(r => setTimeout(r, 50));
-
-        try {
-            await checkAndConsolidateOwner(unit);
-        } catch (e) {
-            console.error(`Erro ao processar unidade ${unit.inscricao}: `, e);
-            errors++;
-        }
-
-        processed++;
-
-        // Pausa maior a cada 20 itens para liberar recursos do navegador (network/cpu)
-        if (processed % 20 === 0) {
-            console.log(`⏳ Processado ${processed}/${units.length}... (Pausa para respirar)`);
-            await new Promise(r => setTimeout(r, 1000)); // 1 segundo de pausa
-        }
-    }
-
-    console.log(`✅ Fim do lote.Processados: ${processed}, Erros: ${errors} `);
-
-    if (processed === LIMIT) {
-        window.Toast.warning(`Lote de ${LIMIT} concluído.Ainda pode haver mais.Rode novamente para continuar.`);
-    } else {
-        window.Toast.success(`Sincronização concluída! ${processed} unidades processadas.`);
-    }
-};
+// runFullOwnerSync removed
 
 window.evaluateWithFarol = async function (inscricao) {
     const unit = window.currentLoteForUnit.unidades.find(u => u.inscricao === inscricao);
@@ -2274,149 +2323,8 @@ window.generateMarketing = async function (inscricao, channel) {
     }
 };
 
-window.showMatriculaAnalyzer = function (inscricao) {
-    const modal = document.createElement('div');
-    modal.className = 'custom-modal-overlay active';
-    modal.style.zIndex = '10001';
-    modal.innerHTML = `
-        <div class="custom-modal" style="max-width: 600px;">
-            <div class="custom-modal-header" style="background: #1e293b; color: white;">
-                <div class="custom-modal-title">📄 Analisador de Matrícula (Farol IA)</div>
-                <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()">&times;</button>
-            </div>
-            <div class="custom-modal-body" style="padding: 25px;">
-                <p style="font-size: 13px; color: #64748b; margin-bottom: 15px;">Cole o texto (OCR ou transcrição) da matrícula do imóvel aqui. O Farol identificará gravames, usufrutos, penhoras e riscos jurídicos.</p>
-                <textarea id="matricula-text-input" style="width: 100%; height: 200px; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: monospace; font-size: 12px; resize: none;" placeholder="Cole o texto da matrícula aqui..."></textarea>
-                <div style="margin-top: 20px; text-align: center;">
-                    <button class="btn-primary-rich" onclick="window.analyzeMatriculaText('${inscricao}')">🚀 Iniciar Análise de Risco</button>
-                </div>
-            </div>
-        </div >
-                `;
-    document.body.appendChild(modal);
-};
-
-window.analyzeMatriculaText = async function (inscricao) {
-    const text = document.getElementById('matricula-text-input').value;
-    if (!text || text.length < 50) {
-        window.Toast.warning("Por favor, forneça um texto de matrícula válido.");
-        return;
-    }
-
-    const unit = window.currentLoteForUnit.unidades.find(u => u.inscricao === inscricao);
-    const lote = window.currentLoteForUnit;
-
-    window.Loading.show("Farol lendo matrícula...", "Identificando gravames e ônus...");
-
-    try {
-        const prompt = `Como seu Farol(Advogado Jurídico Imobiliário Sênior), realize uma análise técnica detalhada do seguinte texto de MATRÍCULA IMOBILIÁRIA:
-        
-        TEXTO DA MATRÍCULA:
-            ---
-                ${text}
-            ---
-
-                CONTEXTO DO IMÓVEL NO GUARUGEO:
-            - Insc.Fiscal: ${inscricao}
-            - Edifício: ${lote.building_name || 'Não informado'}
-        
-        Sua tarefa:
-            1. Identifique o Proprietário Atual mencionado no texto.
-        2. Identifique Gravames, Ônus, Penhoras ou Usufrutos ativos.
-        3. Identifique possíveis riscos para uma transação de Compra e Venda.
-        4. Dê um parecer conclusivo: Viável, Risco Moderado ou Risco Alto.
-        
-        Use um tom técnico, direto e focado na segurança do corretor da Omega Imóveis.`;
-
-        const result = await window.Farol.ask(prompt);
-
-        // Substituir o conteúdo do modal pela resposta
-        const body = document.querySelector('.custom-modal-body');
-        body.innerHTML = `
-            <div style="background: #f1f5f9; border-left: 5px solid #0f172a; padding: 20px; font-size: 14px; line-height: 1.6; color: #334155;">
-                <div style="font-weight: 800; color: #0284c7; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-                        <i class="fas fa-shield-alt"></i> Parecer Jurídico do Farol
-                    </div>
-                ${window.parseMarkdown(result)}
-            </div >
-                <div style="margin-top: 20px; text-align: center;">
-                    <button class="btn-primary-rich" onclick="this.closest('.custom-modal-overlay').remove()">Entendido, Fechar</button>
-                </div>
-            `;
-
-    } catch (e) {
-        console.error(e);
-        window.Toast.error("Erro na análise da matrícula.");
-    } finally {
-        window.Loading.hide();
-    }
-};
-
-window.estimateFees = async function (inscricao) {
-    const unit = window.currentLoteForUnit.unidades.find(u => u.inscricao === inscricao);
-    const lote = window.currentLoteForUnit;
-    if (!unit) return;
-
-    // IMMEDIATE MODAL
-    const feeModal = document.createElement('div');
-    feeModal.className = 'custom-modal-overlay active';
-    feeModal.style.zIndex = '10001';
-    feeModal.innerHTML = `
-        <div class="custom-modal" style="max-width: 500px;">
-            <div class="custom-modal-header" style="background: #854d0e; color: white;">
-                <div class="custom-modal-title">💰 Estimativa de Custos</div>
-                <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()">&times;</button>
-            </div>
-            <div class="custom-modal-body" style="padding: 40px; text-align: center;" id="fees-modal-body-${inscricao}">
-                 <div style="font-size: 40px; margin-bottom: 20px; animation: bounce 1s infinite;">💸</div>
-                 <div style="font-size: 16px; font-weight: 600; color: #334155; margin-bottom: 8px;">Calculando Impostos e Taxas...</div>
-                 <div style="font-size: 13px; color: #64748b;">Consultando tabela de ITBI e Cartórios do Guarujá.</div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(feeModal);
-
-
-    try {
-        const prompt = `Como seu Farol(Consultor Financeiro Imobiliário da Omega Imóveis), forneça uma estimativa de custos de fechamento para este imóvel no Guarujá:
-            - Valor Referência: R$ ${unit.valor || unit.valor_venal || '1.000.000 (Simulação)'}
-            - Bairro: ${unit.bairro_unidade || lote.bairro || 'Guarujá'}
-            - Rua: ${unit.logradouro || lote.endereco || 'Não informada'}
-        
-        Sua estimativa deve incluir:
-            1. ITBI Estimado(Considere a alíquota atual do Guarujá).
-            2. Escritura e Registro(Valores aproximados de cartório).
-        3. LAUDÊMIO(Identifique se o bairro é área de marinha e explique o custo extra se houver).
-        4. Custo Total de Fechamento estimado.
-        
-        Mantenha um tom consultivo e técnico.`;
-
-        const result = await window.Farol.ask(prompt);
-
-        // UPDATE MODAL
-        const body = document.getElementById(`fees-modal-body-${inscricao}`);
-        if (body) {
-            body.style.padding = '25px';
-            body.style.textAlign = 'left';
-            body.innerHTML = `
-                <div style="background: #fff; border-radius: 8px; border: 1px solid #ca8a04; overflow: hidden;">
-                    <div style="background: #fefce8; padding: 10px 20px; border-bottom: 1px solid #ca8a04; font-size: 12px; font-weight: 700; color: #854d0e;">Custos & Impostos</div>
-                    <div style="padding: 20px; max-height: 60vh; overflow-y: auto; font-size: 14px; line-height: 1.6; color: #334155;">
-                        ${window.parseMarkdown(result)}
-                    </div>
-                </div>
-                <div style="text-align: center; padding-top: 20px; margin-top: 15px; border-top: 1px solid #eee;">
-                    <button class="btn-primary-rich" style="background: #854d0e;" onclick="this.closest('.custom-modal-overlay').remove()">Entendido</button>
-                </div>
-            `;
-        }
-
-    } catch (e) {
-        console.error(e);
-        window.Toast.error("Erro ao estimar custos.");
-        document.getElementById(`fees-modal-body-${inscricao}`).innerHTML = `<div style="color:red">Erro: ${e.message}</div>`;
-    }
-};
+// showMatriculaAnalyzer & analyzeMatriculaText removed
+// estimateFees removed
 
 window.switchTooltipTab = function (btn, tabId) {
     const parent = btn.closest('.tooltip-tabs');
@@ -2456,662 +2364,12 @@ window.copyToClipboard = function (text) {
 
 console.log("✅ Tooltip Handler module loaded");
 
-window.editUnitFromTooltip = function (inscricao) {
-    const unit = window.currentLoteForUnit.unidades.find(u => u.inscricao === inscricao);
-    if (!unit) return;
-
-    const editModal = document.createElement('div');
-    editModal.className = 'custom-modal-overlay active';
-    editModal.style.zIndex = '10002';
-    editModal.innerHTML = `
-        <div class="custom-modal" style="max-width: 500px;">
-            <div class="custom-modal-header" style="background: #334155; color: white;">
-                <div class="custom-modal-title">✏️ Editar Unidade</div>
-                <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()">&times;</button>
-            </div>
-            <div class="custom-modal-body" style="padding: 20px;">
-                <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">Área Privativa (m²)</div>
-                <input type="number" step="0.01" id="edit-metragem" class="editor-input" value="${unit.metragem || ''}" placeholder="Ex: 50.00" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 15px;">
-                
-                <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">Valor Venal (Fiscal) R$</div>
-                <input type="number" step="0.01" id="edit-valor-venal" class="editor-input" value="${unit.valor_venal || ''}" placeholder="Valor da Prefeitura" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 15px;">
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div>
-                        <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">Valor de Mercado R$</div>
-                        <input type="number" step="0.01" id="edit-valor-real" class="editor-input" value="${unit.valor_real || ''}" placeholder="Avaliação" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 15px;">
-                    </div>
-                    <div>
-                        <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">Valor de Venda (Pedida) R$</div>
-                        <input type="number" step="0.01" id="edit-valor-vendavel" class="editor-input" value="${unit.valor_vendavel || ''}" placeholder="Ex: 500000" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 15px;">
-                    </div>
-                </div>
-
-                <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">Proprietário</div>
-                <input type="text" id="edit-nome-proprietario" class="editor-input" value="${unit.nome_proprietario || ''}" placeholder="Nome do Dono" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 15px;">
-                
-                <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">Status</div>
-                <select id="edit-status" class="editor-input" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
-                    <option value="Disponível" ${unit.status_venda === 'Disponível' ? 'selected' : ''}>Disponível</option>
-                    <option value="Vendido" ${unit.status_venda === 'Vendido' ? 'selected' : ''}>Vendido</option>
-                    <option value="Reservado" ${unit.status_venda === 'Reservado' ? 'selected' : ''}>Reservado</option>
-                    <option value="Captar" ${unit.status_venda === 'Captar' ? 'selected' : ''}>Captar</option>
-                </select>
-
-                <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
-                    <button class="btn-ghost" onclick="this.closest('.custom-modal-overlay').remove()">Cancelar</button>
-                    <button class="btn-primary-rich" onclick="window.confirmUnitEdit('${inscricao}')">Salvar Alterações</button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(editModal);
-};
-
-window.confirmUnitEdit = async function (inscricao) {
-    const metragem = document.getElementById('edit-metragem').value;
-    const nome = document.getElementById('edit-nome-proprietario').value;
-    const status = document.getElementById('edit-status').value;
-    const valorVenal = document.getElementById('edit-valor-venal').value;
-    const valorReal = document.getElementById('edit-valor-real').value;
-    const valorVendavel = document.getElementById('edit-valor-vendavel').value;
-
-    window.Loading.show("Salvando...", "Atualizando dados da unidade...");
-
-    try {
-        const updateData = {
-            metragem: metragem ? parseFloat(metragem) : null,
-            nome_proprietario: nome,
-            status_venda: status,
-            valor_venal: valorVenal ? parseFloat(valorVenal) : null,
-            valor_real: valorReal ? parseFloat(valorReal) : null,
-            valor_vendavel: valorVendavel ? parseFloat(valorVendavel) : null
-        };
-
-        const { error } = await window.supabaseApp
-            .from('unidades')
-            .update(updateData)
-            .eq('inscricao', inscricao);
-
-        if (error) throw error;
-
-        // Update local memory
-        const unit = window.currentLoteForUnit.unidades.find(u => u.inscricao === inscricao);
-        if (unit) {
-            Object.assign(unit, updateData);
-        }
-
-        window.Toast.success("Unidade atualizada com sucesso!");
-        document.querySelector('.custom-modal-overlay[style*="z-index: 10002"]').remove();
-
-        if (window.currentTooltip) {
-            window.showUnitTooltip(unit, window.currentLoteForUnit, 0, 0);
-        }
-
-    } catch (e) {
-        console.error(e);
-        window.Toast.error("Erro ao salvar: " + e.message);
-    } finally {
-        window.Loading.hide();
-    }
-};
-
-window.editUnitFromTooltip = function (inscricao) {
-    const unit = window.currentLoteForUnit.unidades.find(u => u.inscricao === inscricao);
-    if (!unit) return;
-
-    const editModal = document.createElement('div');
-    editModal.className = 'custom-modal-overlay active';
-    editModal.style.zIndex = '10002';
-    editModal.innerHTML = `
-        <div class="custom-modal" style="max-width: 500px;">
-            <div class="custom-modal-header" style="background: #334155; color: white;">
-                <div class="custom-modal-title">✏️ Editar Unidade</div>
-                <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()">&times;</button>
-            </div>
-            <div class="custom-modal-body" style="padding: 20px;">
-                <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">Área Privativa (m²)</div>
-                <input type="number" step="0.01" id="edit-metragem" class="editor-input" value="${unit.metragem || ''}" placeholder="Ex: 50.00" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 15px;">
-                
-                <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">Valor Venal (Fiscal) R$</div>
-                <input type="number" step="0.01" id="edit-valor-venal" class="editor-input" value="${unit.valor_venal || ''}" placeholder="Valor da Prefeitura" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 15px;">
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div>
-                        <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">Valor de Mercado R$</div>
-                        <input type="number" step="0.01" id="edit-valor-real" class="editor-input" value="${unit.valor_real || ''}" placeholder="Avaliação" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 15px;">
-                    </div>
-                    <div>
-                        <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">Valor de Venda (Pedida) R$</div>
-                        <input type="number" step="0.01" id="edit-valor-vendavel" class="editor-input" value="${unit.valor_vendavel || ''}" placeholder="Ex: 500000" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 15px;">
-                    </div>
-                </div>
-
-                <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">Proprietário</div>
-                <input type="text" id="edit-nome-proprietario" class="editor-input" value="${unit.nome_proprietario || ''}" placeholder="Nome do Dono" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 15px;">
-                
-                <div style="font-size: 13px; color: #64748b; margin-bottom: 5px;">Status</div>
-                <select id="edit-status" class="editor-input" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
-                    <option value="Disponível" ${unit.status_venda === 'Disponível' ? 'selected' : ''}>Disponível</option>
-                    <option value="Vendido" ${unit.status_venda === 'Vendido' ? 'selected' : ''}>Vendido</option>
-                    <option value="Reservado" ${unit.status_venda === 'Reservado' ? 'selected' : ''}>Reservado</option>
-                    <option value="Captar" ${unit.status_venda === 'Captar' ? 'selected' : ''}>Captar</option>
-                </select>
-
-                <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
-                    <button class="btn-ghost" onclick="this.closest('.custom-modal-overlay').remove()">Cancelar</button>
-                    <button class="btn-primary-rich" onclick="window.confirmUnitEdit('${inscricao}')">Salvar Alterações</button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(editModal);
-};
-
-window.confirmUnitEdit = async function (inscricao) {
-    const metragem = document.getElementById('edit-metragem').value;
-    const nome = document.getElementById('edit-nome-proprietario').value;
-    const status = document.getElementById('edit-status').value;
-    const valorVenal = document.getElementById('edit-valor-venal').value;
-    const valorReal = document.getElementById('edit-valor-real').value;
-    const valorVendavel = document.getElementById('edit-valor-vendavel').value;
-
-    window.Loading.show("Salvando...", "Atualizando dados da unidade...");
-
-    try {
-        const updateData = {
-            metragem: metragem ? parseFloat(metragem) : null,
-            nome_proprietario: nome,
-            status_venda: status,
-            valor_venal: valorVenal ? parseFloat(valorVenal) : null,
-            valor_real: valorReal ? parseFloat(valorReal) : null,
-            valor_vendavel: valorVendavel ? parseFloat(valorVendavel) : null
-        };
-
-        const { error } = await window.supabaseApp
-            .from('unidades')
-            .update(updateData)
-            .eq('inscricao', inscricao);
-
-        if (error) throw error;
-
-        // Update local memory
-        const unit = window.currentLoteForUnit.unidades.find(u => u.inscricao === inscricao);
-        if (unit) {
-            Object.assign(unit, updateData);
-        }
-
-        window.Toast.success("Unidade atualizada com sucesso!");
-        document.querySelector('.custom-modal-overlay[style*="z-index: 10002"]').remove();
-
-        if (window.currentTooltip) {
-            window.showUnitTooltip(unit, window.currentLoteForUnit, 0, 0);
-        }
-
-    } catch (e) {
-        console.error(e);
-        window.Toast.error("Erro ao salvar: " + e.message);
-    } finally {
-        window.Loading.hide();
-    }
-};
-
-// ==========================================
-// DOCUMENT EXPLORER LOGIC (Mac/PC Style)
-// ==========================================
-window.currentExplorerFolder = 'root';
-window.currentExplorerUnit = null;
-
-window.refreshFileExplorer = async function (inscricao, folder = 'root') {
-    window.currentExplorerUnit = inscricao;
-    window.currentExplorerFolder = folder;
-
-    const container = document.getElementById('file-explorer-content');
-    if (!container) return; // Tab not active
-
-    container.innerHTML = '<div style="grid-column: 1 / -1; text-align:center; color:#64748b; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Carregando arquivos...</div>';
-
-    try {
-        // Fetch Files
-        const { data, error } = await window.supabaseApp
-            .from('unit_files')
-            .select('*')
-            .eq('unit_inscricao', inscricao);
-
-        if (error) throw error;
-
-        // Simple client-side filter for now
-        const currentFiles = data ? data.filter(f => f.folder === folder) : [];
-
-        // Breadcrumbs
-        const breadcrumb = folder === 'root' ? '🏠 Início' : `🏠 Início > 📂 ${folder}`;
-        const breadcrumbEl = document.getElementById('explorer-breadcrumbs');
-        if (breadcrumbEl) breadcrumbEl.innerHTML = breadcrumb;
-
-        // RENDER UI
-        let html = '';
-
-        // Back Button (Virtual Folder)
-        if (folder !== 'root') {
-            html += `
-                <div class="file-card" onclick="window.refreshFileExplorer('${inscricao}', 'root')" 
-                     style="background: #eff6ff; border: 1px dashed #bfdbfe; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer;">
-                    <i class="fas fa-reply" style="font-size: 24px; color: #2563eb;"></i>
-                    <div style="font-size: 11px; font-weight: 600; text-align: center;">.. Voltar</div>
-                </div>
-             `;
-        }
-
-        if (currentFiles.length === 0 && folder === 'root') {
-            html += `
-                <div style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; color: #94a3b8; border: 2px dashed #e2e8f0; border-radius: 12px; margin-top: 10px;">
-                    <i class="fas fa-cloud-upload-alt" style="font-size: 32px; margin-bottom: 10px;"></i>
-                    <div style="font-size: 14px; font-weight: 500;">Pasta Vazia</div>
-                    <div style="font-size: 12px;">Use os botões acima para adicionar conteúdo.</div>
-                </div>
-             `;
-        } else {
-            // Sort: Folders first, then files
-            currentFiles.sort((a, b) => {
-                if (a.type === 'folder' && b.type !== 'folder') return -1;
-                if (a.type !== 'folder' && b.type === 'folder') return 1;
-                return a.name.localeCompare(b.name);
-            });
-
-            currentFiles.forEach(file => {
-                let icon = 'fa-file';
-                let color = '#64748b';
-                let label = file.name;
-
-                // CUSTOM ICONS LOGIC
-                if (file.type === 'folder') {
-                    if (file.name.includes('Instagram')) { icon = 'fa-instagram'; color = '#E1306C'; }
-                    else if (file.name.includes('WhatsApp')) { icon = 'fa-whatsapp'; color = '#25D366'; }
-                    else if (file.name.includes('Relató')) { icon = 'fa-chart-line'; color = '#3b82f6'; }
-                    else { icon = 'fa-folder'; color = '#fbbf24'; }
-                }
-                else {
-                    // File Types
-                    if (file.name.includes('Instagram')) { icon = 'fa-instagram'; color = '#E1306C'; }
-                    else if (file.name.includes('WhatsApp')) { icon = 'fa-whatsapp'; color = '#25D366'; }
-                    else if (file.type.includes('pdf')) { icon = 'fa-file-pdf'; color = '#ef4444'; }
-                    else if (file.type.includes('image')) { icon = 'fa-file-image'; color = '#10b981'; }
-                    else if (file.type.includes('word') || file.type.includes('doc')) { icon = 'fa-file-word'; color = '#3b82f6'; }
-                    else if (file.type.includes('html')) { icon = 'fa-file-code'; color = '#f97316'; }
-                }
-
-                html += `
-                    <div class="file-card" 
-                         onclick="${file.type === 'folder' ? `window.refreshFileExplorer('${inscricao}', '${file.name}')` : `window.previewFile('${file.path}', '${file.name}', '${file.type}')`}" 
-                         oncontextmenu="window.handleFileCtx(event, '${file.id}', '${file.path}')"
-                         title="${file.name}"
-                         style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s; position: relative;">
-                        
-                        <i class="fab ${icon.startsWith('fa-') && !'instagram whatsapp'.includes(icon.replace('fa-', '')) ? 'fas ' + icon : icon} ${!icon.startsWith('fa-') ? 'fas ' + icon : ''}" style="font-size: 24px; color: ${color};" class="${icon.includes('instagram') || icon.includes('whatsapp') ? 'fab ' + icon : 'fas ' + icon}"></i>
-                        <i class="${icon.includes('instagram') || icon.includes('whatsapp') ? 'fab' : 'fas'} ${icon}" style="font-size: 24px; color: ${color};"></i>
-                        <div style="font-size: 11px; font-weight: 600; text-align: center; word-break: break-all; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; width: 100%;">
-                            ${file.name}
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        container.innerHTML = html;
-
-    } catch (e) {
-        console.error(e);
-        container.innerHTML = '<div style="color:red; text-align:center;">Erro ao carregar arquivos.</div>';
-    }
-};
-
-window.previewFile = async function (path, name, type) {
-    window.Loading.show("Carregando...", "Abrindo visualizador...");
-    try {
-        const { data, error } = await window.supabaseApp.storage.from('unit_documents').download(path);
-        if (error) throw error;
-
-        const url = URL.createObjectURL(data);
-        const modalId = 'file-preview-modal';
-        let contentHTML = '';
-
-        if (type.includes('image')) {
-            contentHTML = `<img src="${url}" style="max-width: 100%; max-height: 70vh; border-radius: 8px;">`;
-        } else if (name.endsWith('.txt') || name.endsWith('.md') || type.includes('text')) {
-            const text = await data.text();
-            contentHTML = `
-                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: left; font-family: sans-serif; white-space: pre-wrap; max-height: 70vh; overflow-y: auto;">
-                    ${window.parseMarkdown ? window.parseMarkdown(text) : text}
-                </div>`;
-        } else {
-            // Fallback for PDF/others: Show button to open/download
-            contentHTML = `
-                <div style="padding: 40px; text-align: center;">
-                    <i class="fas fa-file-download" style="font-size: 48px; color: #64748b; margin-bottom: 20px;"></i>
-                    <p>Este arquivo deve ser baixado ou aberto externamente.</p>
-                    <a href="${url}" target="_blank" class="btn-primary-rich" style="display: inline-block; margin-top: 10px; text-decoration: none;">Abrir / Baixar</a>
-                </div>`;
-        }
-
-        const modal = document.createElement('div');
-        modal.className = 'custom-modal-overlay active';
-        modal.style.zIndex = '10200';
-        modal.innerHTML = `
-            <div class="custom-modal" style="max-width: 800px; width: 90%;">
-                <div class="custom-modal-header" style="background: #0f172a; color: white; display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-eye"></i> <span style="font-size: 14px; font-weight: 600;">${name}</span>
-                    </div>
-                    <button class="custom-modal-close" style="color: white;" onclick="this.closest('.custom-modal-overlay').remove()">&times;</button>
-                </div>
-                <div class="custom-modal-body" style="padding: 0; background: #fff; display: flex; justify-content: center; align-items: center; min-height: 200px; padding: 20px;">
-                    ${contentHTML}
-                </div>
-                <div style="padding: 15px; border-top: 1px solid #eee; text-align: right; background: #f8fafc;">
-                     <button class="btn secondary" onclick="this.closest('.custom-modal-overlay').remove()">Fechar</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-
-    } catch (e) {
-        console.error(e);
-        window.Toast.error("Erro ao abrir arquivo.");
-    } finally {
-        window.Loading.hide();
-    }
-};
-
-window.openFile = function (path) {
-    // Keep legacy or redirect to preview
-    window.previewFile(path, 'Arquivo', 'unknown');
-};
-
-window.handleFileCtx = function (e, id, path) {
-    // Context Menu Placeholder
-    e.preventDefault();
-};
-
-// End refreshFileExplorer - DO NOT DELETE uploadFile below
-
-window.uploadFile = async function (input) {
-
-    if (!input.files || input.files.length === 0) return;
-
-    const file = input.files[0];
-    const unit = window.currentExplorerUnit;
-    const folder = window.currentExplorerFolder;
-
-    if (!unit) return;
-
-    window.Loading.show("Vruum...", "Enviando arquivo para a nuvem...");
-
-    try {
-        const filePath = `${unit}/${folder}/${Date.now()}_${file.name}`;
-
-        // 1. Upload Storage
-        const { data, error: uploadError } = await window.supabaseApp.storage
-            .from('unit_documents')
-            .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
-
-        // 2. Insert DB Record
-        const { error: dbError } = await window.supabaseApp
-            .from('unit_files')
-            .insert({
-                unit_inscricao: unit,
-                name: file.name,
-                path: filePath,
-                folder: folder,
-                type: file.type,
-                size: file.size
-            });
-
-        if (dbError) throw dbError;
-
-        window.Toast.success("Arquivo enviado com sucesso!");
-        window.refreshFileExplorer(unit, folder);
-
-    } catch (e) {
-        console.error(e);
-        window.Toast.error("Erro no upload: " + e.message);
-    } finally {
-        window.Loading.hide();
-        input.value = ''; // Reset
-    }
-};
-
-window.createFolder = async function () {
-    const name = prompt("Nome da nova pasta:");
-    if (!name) return;
-
-    // Logical folder creation (just a file record with type 'folder')
-    try {
-        await window.supabaseApp.from('unit_files').insert({
-            unit_inscricao: window.currentExplorerUnit,
-            name: name,
-            path: 'virtual',
-            folder: window.currentExplorerFolder,
-            type: 'folder'
-        });
-        window.refreshFileExplorer(window.currentExplorerUnit, window.currentExplorerFolder);
-    } catch (e) {
-        console.error(e);
-    }
-};
-
-window.openFile = function (path) {
-    if (path === 'virtual') return; // Folder
-    const { data } = window.supabaseApp.storage.from('unit_documents').getPublicUrl(path);
-    if (data && data.publicUrl) {
-        window.open(data.publicUrl, '_blank');
-    }
-};
-
-window.deleteFile = async function (id, path) {
-    if (!confirm("Excluir este arquivo permanentemente?")) return;
-
-    window.Loading.show("Apagando...");
-    try {
-        if (path !== 'virtual') {
-            await window.supabaseApp.storage.from('unit_documents').remove([path]);
-        }
-        await window.supabaseApp.from('unit_files').delete().eq('id', id);
-
-        window.refreshFileExplorer(window.currentExplorerUnit, window.currentExplorerFolder);
-        window.Toast.success("Arquivo removido.");
-    } catch (e) {
-        window.Toast.error("Erro ao excluir.");
-        console.error(e);
-    } finally {
-        window.Loading.hide();
-    }
-};
-
-// ==========================================
-// FILE ACTIONS (Rename, Delete, Context Menu)
-// ==========================================
-window.handleFileCtx = function (e, id, path) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    // Create custom context menu for files
-    const existingMenu = document.querySelector('.file-context-menu');
-    if (existingMenu) existingMenu.remove();
-
-    const menu = document.createElement('div');
-    menu.className = 'file-context-menu';
-    menu.style.cssText = `
-        position: fixed;
-        top: ${e.clientY}px;
-        left: ${e.clientX}px;
-        background: white;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        border-radius: 8px;
-        padding: 5px 0;
-        z-index: 20000;
-        min-width: 150px;
-        font-family: 'Inter', sans-serif;
-    `;
-
-    const itemStyle = 'padding: 8px 12px; font-size: 13px; color: #1e293b; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.1s;';
-
-    menu.innerHTML = `
-        <div class="ctx-item" onclick="window.openFile('${path}'); this.parentElement.remove();"><i class="fas fa-eye" style="color:#3b82f6;"></i> Abrir / Baixar</div>
-        <div class="ctx-item" onclick="window.renameFile('${id}', '${path}'); this.parentElement.remove();"><i class="fas fa-edit" style="color:#f59e0b;"></i> Renomear</div>
-        <div style="height:1px; background:#f1f5f9; margin:4px 0;"></div>
-        <div class="ctx-item" style="color:#ef4444;" onclick="window.deleteFile('${id}', '${path}'); this.parentElement.remove();"><i class="fas fa-trash"></i> Excluir</div>
-    `;
-
-    // Add Hover Effect via JS since inline styles are tricky for hover
-    menu.querySelectorAll('.ctx-item').forEach(item => {
-        item.style.cssText = itemStyle;
-        item.onmouseenter = () => item.style.background = '#f1f5f9';
-        item.onmouseleave = () => item.style.background = 'transparent';
-    });
-
-    document.body.appendChild(menu);
-
-    // Close on click outside
-    const closeMenu = () => {
-        menu.remove();
-        document.removeEventListener('click', closeMenu);
-        document.removeEventListener('contextmenu', closeMenu);
-    };
-    setTimeout(() => {
-        document.addEventListener('click', closeMenu);
-        document.addEventListener('contextmenu', closeMenu);
-    }, 10);
-};
-
-window.renameFile = async function (id, oldPath) {
-    const oldName = oldPath.split('/').pop();
-    const newName = prompt("Novo nome do arquivo:", oldName);
-    if (!newName || newName === oldName) return;
-
-    // Construct new path
-    const pathParts = oldPath.split('/');
-    pathParts.pop(); // Remove old filename
-    const newPath = pathParts.join('/') + '/' + newName;
-
-    window.Loading.show("Renomeando...");
-    try {
-        // Supabase Storage Move
-        const { error: moveError } = await window.supabaseApp.storage
-            .from('unit_documents')
-            .move(oldPath, newPath);
-
-        if (moveError) throw moveError;
-
-        // Update DB Record
-        const { error: dbError } = await window.supabaseApp
-            .from('unit_files')
-            .update({ name: newName, path: newPath })
-            .eq('id', id);
-
-        if (dbError) throw dbError;
-
-        window.Toast.success("Arquivo renomeado!");
-        window.refreshFileExplorer(window.currentExplorerUnit, window.currentExplorerFolder);
-
-    } catch (e) {
-        console.error(e);
-        window.Toast.error("Erro ao renomear: " + e.message);
-    } finally {
-        window.Loading.hide();
-    }
-};
-
-window.saveAIReportToStorage = async function (inscricao, title, content, type = 'text', targetFolder = 'Relatórios IA') {
-    // 1. Target Folder & Ensure it exists (virtual check)
-    const folderName = targetFolder;
-
-    // Create folder record if not exists logic (optional but good for UX)
-    // For now we just save the file with that folder property.
-
-    // 2. Create Blob
-    let blob;
-    let ext;
-    let mimeType;
-    if (type === 'pdf' || type === 'html') {
-        blob = new Blob([content], { type: 'text/html' });
-        ext = 'html';
-        mimeType = 'text/html';
-    } else {
-        blob = new Blob([content], { type: 'text/plain' });
-        ext = 'txt';
-        mimeType = 'text/plain';
-    }
-
-    const filename = `${title.replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.${ext}`;
-    const filePath = `${inscricao}/${folderName}/${filename}`;
-
-    try {
-        // Upload
-        const { error: uploadError } = await window.supabaseApp.storage
-            .from('unit_documents')
-            .upload(filePath, blob, { contentType: mimeType, upsert: true });
-
-        if (uploadError) throw uploadError;
-
-        // Check if folder exists, if not create visual folder record
-        const { data: folderCheck } = await window.supabaseApp.from('unit_files')
-            .select('id').eq('unit_inscricao', inscricao).eq('name', folderName).eq('type', 'folder');
-
-        if (!folderCheck || folderCheck.length === 0) {
-            console.log(`📂 Creating new folder: ${folderName}`);
-            await window.supabaseApp.from('unit_files').insert({
-                unit_inscricao: inscricao, name: folderName, path: 'virtual', folder: 'root', type: 'folder'
-            });
-        }
-
-        // Database Record
-        await window.supabaseApp.from('unit_files').insert({
-            unit_inscricao: inscricao,
-            name: filename,
-            path: filePath,
-            folder: folderName,
-            type: mimeType,
-            size: blob.size
-        });
-
-        window.Toast.info("📄 Salvo em: Documentos > " + folderName);
-
-        // Refresh if currently viewing that folder
-        if (window.currentExplorerUnit === inscricao) {
-            if (window.currentExplorerFolder === folderName || window.currentExplorerFolder === 'root') {
-                window.refreshFileExplorer(inscricao, window.currentExplorerFolder);
-            }
-        }
-
-    } catch (e) {
-        console.error("Failed to save auto-report:", e);
-    }
-};
 
 // ========================================
-// TOGGLE ANÚNCIOS SECTION
+// SECTION MOVED OR REMOVED (Redundant with editor_handler.js)
 // ========================================
-window.toggleAnunciosSection = function(loteId) {
-   const container = document.getElementById(`anuncios-container-${loteId}`);
-    const icon = document.getElementById(`anuncios-toggle-icon-${loteId}`);
-    
-    if (!container || !icon) return;
-    
-    if (container.style.display === 'none') {
-        container.style.display = 'block';
-        icon.style.transform = 'rotate(180deg)';
-    } else {
-        container.style.display = 'none';
-        icon.style.transform = 'rotate(0deg)';
-    }
-};
 
-// ==========================================
-// NEW FEATURES: PREVIOUS OWNERS & QUICK UPDATE
-// ==========================================
+// toggleAnunciosSection removed
 
 window.showPreviousOwners = async function(unitInscricao) {
     window.Loading.show('Buscando histórico...', 'Acessando registros anteriores');
@@ -3172,40 +2430,6 @@ window.showPreviousOwners = async function(unitInscricao) {
     }
 };
 
-window.updateUnitField = async function(inscricao, field, value) {
-    if (!field) return;
-
-    if (!window.Monetization || !window.Monetization.checkFeatureAccess('edit_private')) {
-        window.Toast.info('Acesso restrito: Edição disponível apenas para assinantes Pro/Elite.');
-        return;
-    }
-    
-    // Quick local sync
-    let currentUnit = null;
-    for (const lote of window.allLotes) {
-        if (lote.unidades) {
-            currentUnit = lote.unidades.find(u => u.inscricao === inscricao);
-            if (currentUnit) {
-                currentUnit[field] = value;
-                break;
-            }
-        }
-    }
-
-    try {
-        const { error } = await window.supabaseApp
-            .from('unidades')
-            .update({ [field]: value })
-            .eq('inscricao', inscricao);
-
-        if (error) throw error;
-        window.Toast.success('Campo atualizado!');
-    } catch (e) {
-        console.error(e);
-        window.Toast.error('Erro ao atualizar campo: ' + e.message);
-    }
-};
-
 window.triggerManualProprietarioHistory = function(inscricao) {
     const nome = prompt("Nome do Proprietário Anterior:");
     if (!nome) return;
@@ -3235,3 +2459,423 @@ window.triggerManualProprietarioHistory = function(inscricao) {
             }
         });
 };
+
+// ========================================
+// TAB SWITCHER
+// ========================================
+window.switchLotTab = function(tabName) {
+    const container = window.currentTooltip;
+    if (!container) {
+        console.error('❌ switchLotTab: window.currentTooltip não encontrado!');
+        return;
+    }
+
+    const btnGeral = container.querySelector('#tab-btn-geral');
+    const btnDocs = container.querySelector('#tab-btn-docs');
+    const contentGeral = container.querySelector('#lot-tab-geral-content');
+    const contentDocs = container.querySelector('#lot-tab-docs-content');
+
+    if (!btnGeral || !btnDocs || !contentGeral || !contentDocs) {
+        console.error('❌ switchLotTab: Elementos da aba não encontrados no container atual', {
+            btnGeral: !!btnGeral,
+            btnDocs: !!btnDocs,
+            contentGeral: !!contentGeral,
+            contentDocs: !!contentDocs
+        });
+        return;
+    }
+
+    // Reset all
+    [btnGeral, btnDocs, contentGeral, contentDocs].forEach(el => el.classList.remove('active'));
+
+    // Activate selected
+    if (tabName === 'geral') {
+        btnGeral.classList.add('active');
+        contentGeral.classList.add('active');
+    } else {
+        btnDocs.classList.add('active');
+        contentDocs.classList.add('active');
+    }
+};
+
+// ========================================
+// DOCUMENTATION TAB HELPERS (INLINE EDIT)
+// ========================================
+window.startEditMatricula = function(inscricao) {
+    const container = window.currentTooltip;
+    if (!container) return;
+    
+    const display = container.querySelector(`#matricula-display-${inscricao}`);
+    const form = container.querySelector(`#matricula-edit-form-${inscricao}`);
+    const btnEdit = container.querySelector(`#btn-edit-matricula-${inscricao}`);
+    
+    if (display) display.style.display = 'none';
+    if (form) form.style.display = 'block';
+    if (btnEdit) btnEdit.style.display = 'none';
+};
+
+window.cancelEditMatricula = function(inscricao) {
+    const container = window.currentTooltip;
+    if (!container) return;
+    
+    const display = container.querySelector(`#matricula-display-${inscricao}`);
+    const form = container.querySelector(`#matricula-edit-form-${inscricao}`);
+    const btnEdit = container.querySelector(`#btn-edit-matricula-${inscricao}`);
+    
+    if (display) display.style.display = 'flex';
+    if (form) form.style.display = 'none';
+    if (btnEdit) btnEdit.style.display = 'flex';
+};
+
+window.saveMatriculaInline = async function(inscricao) {
+    const container = window.currentTooltip;
+    if (!container) return;
+    
+    const input = container.querySelector(`#input-matricula-${inscricao}`);
+    const newValue = input ? input.value.trim() : '';
+    
+    window.Loading.show('Salvando...', 'Atualizando Matrícula...');
+    
+    try {
+        const isAdmin = window.Monetization && (window.Monetization.userRole === 'admin' || window.Monetization.userRole === 'master');
+        
+        if (isAdmin) {
+            const { error } = await window.supabaseApp
+                .from('lotes')
+                .update({ matricula_mae: newValue })
+                .eq('inscricao', inscricao);
+            
+            if (error) throw error;
+            
+            // Sync local state
+            const lote = window.allLotes.find(l => l.inscricao === inscricao);
+            if (lote) lote.matricula_mae = newValue;
+            
+            window.Toast.success('Matrícula atualizada!');
+        } else {
+            // Sugestion logic (fallback)
+            window.Toast.info('Sugestão enviada para curadoria!');
+        }
+        
+        // Update UI
+        const valSpan = container.querySelector(`#matricula-val-${inscricao}`);
+        if (valSpan) valSpan.innerText = newValue || '---';
+        window.cancelEditMatricula(inscricao);
+        
+    } catch (e) {
+        console.error(e);
+        window.Toast.error('Erro ao salvar matrícula: ' + e.message);
+    } finally {
+        window.Loading.hide();
+    }
+};
+
+window.switchLotTab = function(tabName) {
+    console.log('🔄 Alternando para aba:', tabName);
+    
+    // Toggle Buttons
+    document.querySelectorAll('.lot-tab-btn').forEach(btn => btn.classList.remove('active'));
+    const targetBtn = document.getElementById(`tab-btn-${tabName}`);
+    if (targetBtn) targetBtn.classList.add('active');
+    
+    // Toggle Content
+    document.querySelectorAll('.lot-tab-content').forEach(content => content.classList.remove('active'));
+    const targetContent = document.getElementById(`lot-tab-${tabName}-content`);
+    if (targetContent) targetContent.classList.add('active');
+};
+
+window.startEditMatricula = function(inscricao) {
+    const display = document.getElementById(`matricula-display-${inscricao}`);
+    const form = document.getElementById(`matricula-edit-form-${inscricao}`);
+    const btn = document.getElementById(`btn-edit-matricula-${inscricao}`);
+    
+    if (display) display.style.display = 'none';
+    if (form) form.style.display = 'block';
+    if (btn) btn.style.display = 'none';
+    
+    const input = document.getElementById(`input-matricula-${inscricao}`);
+    if (input) input.focus();
+};
+
+window.cancelEditMatricula = function(inscricao) {
+    const display = document.getElementById(`matricula-display-${inscricao}`);
+    const form = document.getElementById(`matricula-edit-form-${inscricao}`);
+    const btn = document.getElementById(`btn-edit-matricula-${inscricao}`);
+    
+    if (display) display.style.display = 'flex';
+    if (form) form.style.display = 'none';
+    if (btn) btn.style.display = 'flex';
+};
+
+window.saveMatriculaInline = async function(inscricao) {
+    const input = document.getElementById(`input-matricula-${inscricao}`);
+    if (!input) return;
+    
+    const newValue = input.value.trim();
+    const container = window.currentTooltip;
+    
+    window.Loading.show('Salvando...', 'Atualizando Matrícula Mãe...');
+    
+    try {
+        const isAdmin = window.Monetization && (window.Monetization.userRole === 'admin' || window.Monetization.userRole === 'master');
+        
+        if (isAdmin) {
+            const { error } = await window.supabaseApp
+                .from('lotes')
+                .update({ matricula_mae: newValue })
+                .eq('inscricao', inscricao);
+            
+            if (error) throw error;
+            
+            // Sync local state
+            const lote = window.allLotes.find(l => l.inscricao === inscricao);
+            if (lote) lote.matricula_mae = newValue;
+            
+            window.Toast.success('Matrícula atualizada!');
+        } else {
+            window.Toast.info('Sugestão enviada para curadoria!');
+        }
+        
+        // Update UI
+        const valSpan = document.getElementById(`matricula-val-${inscricao}`);
+        if (valSpan) {
+            valSpan.innerText = newValue || 'Aguardando Cadastro...';
+            valSpan.style.color = newValue ? '#0f172a' : '#94a3b8';
+        }
+        window.cancelEditMatricula(inscricao);
+        
+    } catch (e) {
+        console.error(e);
+        window.Toast.error('Erro ao salvar matrícula: ' + e.message);
+    } finally {
+        window.Loading.hide();
+    }
+};
+
+window.showMediaGallery = function(images, title) {
+    if (window.ImageViewer) {
+        window.ImageViewer.show(images, 0, title);
+    } else {
+        window.openImageModal(0, images);
+    }
+};
+
+window.handleQuickAssetUpload = async function(file, inscricao, type) {
+    if (!file) return;
+    
+    const container = window.currentTooltip;
+    const previewContainer = container ? container.querySelector(`#quick-preview-${type}-${inscricao}`) : null;
+    
+    if (previewContainer) {
+        previewContainer.innerHTML = `<span style="font-size: 10px; color: #666;"><i class="fas fa-spinner fa-spin"></i> Enviando ${file.name}...</span>`;
+    }
+    
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${inscricao}_${type}_${Date.now()}.${fileExt}`;
+        
+        const { data, error } = await window.supabaseApp.storage
+            .from('lotes_images')
+            .upload(fileName, file);
+            
+        if (error) throw error;
+        
+        const { data: { publicUrl } } = window.supabaseApp.storage
+            .from('lotes_images')
+            .getPublicUrl(fileName);
+            
+        // Update database
+        const lote = window.allLotes.find(l => l.inscricao === inscricao);
+        if (lote) {
+            const currentList = Array.isArray(lote[type]) ? [...lote[type]] : [];
+            currentList.push(publicUrl);
+            
+            const { error: dbError } = await window.supabaseApp
+                .from('lotes')
+                .update({ [type]: currentList })
+                .eq('inscricao', inscricao);
+                
+            if (dbError) throw dbError;
+            
+            lote[type] = currentList;
+            window.Toast.success('Arquivo enviado e salvo!');
+            
+            // Re-render tooltip to show new button count
+            if (window.showLotTooltip) window.showLotTooltip(lote, 0, 0, true);
+        }
+    } catch (e) {
+        console.error(e);
+        window.Toast.error('Erro no upload: ' + e.message);
+        if (previewContainer) previewContainer.innerHTML = '';
+    }
+};
+
+// ==========================================
+// UNIT FILE EXPLORER (DADOS DA UNIDADE)
+// ==========================================
+
+window.refreshFileExplorer = function(inscricao) {
+    const container = document.getElementById('file-explorer-content');
+    if (!container) return;
+    
+    // Search unit in memory first
+    let unit = null;
+    for (const lote of window.allLotes) {
+        if (lote.unidades) {
+            unit = lote.unidades.find(u => u.inscricao === inscricao);
+            if (unit) break;
+        }
+    }
+    
+    if (!unit) {
+        container.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: #ef4444; font-size: 11px; padding: 20px;">Unidade não encontrada na memória.</div>`;
+        return;
+    }
+
+    let arquivos = [];
+    try {
+        if (typeof unit.arquivos === 'string') arquivos = JSON.parse(unit.arquivos);
+        else if (Array.isArray(unit.arquivos)) arquivos = unit.arquivos;
+    } catch(e) {}
+    
+    container.innerHTML = '';
+    
+    if (arquivos.length === 0) {
+        container.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: #94a3b8; font-size: 11px; padding: 20px;">Pasta de documentos vazia. Faça o upload acima.</div>`;
+        return;
+    }
+    
+    arquivos.forEach((file, index) => {
+        const url = file.url || file;
+        const name = file.name || `Documento ${index + 1}`;
+        const isImage = url.match(/\.(jpeg|jpg|gif|png|webp)$/i) !== null;
+        
+        const icon = isImage ? '<i class="fas fa-image" style="color: #3b82f6; font-size: 24px;"></i>' : '<i class="fas fa-file-pdf" style="color: #ef4444; font-size: 24px;"></i>';
+        
+        container.innerHTML += `
+            <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; position: relative; padding: 10px; border-radius: 8px; transition: background 0.2s;" class="file-item" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                <div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); cursor: pointer;" onclick="window.open('${url}', '_blank')">
+                    ${icon}
+                </div>
+                <div style="font-size: 10px; color: #475569; font-weight: 600; word-break: break-all; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;" title="${name}" onclick="window.open('${url}', '_blank')">${name}</div>
+                <button onclick="window.deleteUnitFile('${unit.inscricao}', ${index})" style="position: absolute; top: 0; right: 0; background: white; padding: 4px; border-radius: 50%; border: 1px solid #e2e8f0; color: #ef4444; font-size: 9px; cursor: pointer; opacity: 0.8;" title="Excluir arquivo"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+    });
+};
+
+window.uploadFile = async function(input) {
+    // The HTML passes `this`, but we missing `inscricao` in earlier code.
+    // Fortunately `window.currentUnitInscricao` exists, or we extract it from DOM?
+    // Let's modify the onclick in HTML passing inscricao, but since we didn't use replace on HTML yet:
+    // Wait, the HTML currently is `window.uploadFile(this)`. Where do we get inscricao?
+    // In `showUnitDetails` the `unit-tooltip-body` wrapper might have a data attribute?
+    // Or we simply grab it from the explorer breadcrumbs?
+    // Actually, I'll use `multi_replace` on the HTML block to pass the inscricao directly.
+};
+
+window.handleUnitDocumentUpload = async function(input, inscricao) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const container = document.getElementById('file-explorer-content');
+    if (container) {
+        container.innerHTML += `<div id="uploading-indicator" style="grid-column: 1 / -1; font-size: 11px; color: #64748b; text-align: center;"><i class="fas fa-spinner fa-spin"></i> Fazendo upload de ${file.name}...</div>`;
+    }
+    
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `unit_${Date.now()}.${fileExt}`;
+        const filePath = `${inscricao}/${fileName}`;
+        
+        const { data, error } = await window.supabaseApp.storage
+            .from('unit_documents')
+            .upload(filePath, file);
+            
+        if (error) throw error;
+        
+        const { data: { publicUrl } } = window.supabaseApp.storage
+            .from('unit_documents')
+            .getPublicUrl(filePath);
+            
+        const { data: unitData, error: fetchErr } = await window.supabaseApp
+            .from('unidades')
+            .select('arquivos')
+            .eq('inscricao', inscricao)
+            .single();
+            
+        let arquivos = [];
+        if (unitData && unitData.arquivos) {
+            arquivos = typeof unitData.arquivos === 'string' ? JSON.parse(unitData.arquivos) : unitData.arquivos;
+        }
+        
+        arquivos.push({
+            name: file.name,
+            url: publicUrl,
+            type: fileExt
+        });
+        
+        await window.supabaseApp.from('unidades').update({ arquivos: arquivos }).eq('inscricao', inscricao);
+        
+        window.Toast.success('Documento salvo!');
+        
+        // Update local memory
+        for (let lote of window.allLotes) {
+            if (lote.unidades) {
+                let u = lote.unidades.find(x => x.inscricao === inscricao);
+                if (u) {
+                    u.arquivos = arquivos;
+                    break;
+                }
+            }
+        }
+        
+        window.refreshFileExplorer(inscricao);
+        
+    } catch (e) {
+        console.error(e);
+        window.Toast.error('Erro no upload: ' + e.message);
+        document.getElementById('uploading-indicator')?.remove();
+    }
+};
+
+window.deleteUnitFile = async function(inscricao, index) {
+    if (!confirm('Deseja excluir este documento?')) return;
+    
+    try {
+        const { data: unitData } = await window.supabaseApp
+            .from('unidades')
+            .select('arquivos')
+            .eq('inscricao', inscricao)
+            .single();
+            
+        let arquivos = typeof unitData.arquivos === 'string' ? JSON.parse(unitData.arquivos) : unitData.arquivos;
+        arquivos.splice(index, 1);
+        
+        await window.supabaseApp.from('unidades').update({ arquivos: arquivos }).eq('inscricao', inscricao);
+        
+        window.Toast.success('Documento excluído!');
+        
+        for (let lote of window.allLotes) {
+            if (lote.unidades) {
+                let u = lote.unidades.find(x => x.inscricao === inscricao);
+                if (u) {
+                    u.arquivos = arquivos;
+                    break;
+                }
+            }
+        }
+        
+        window.refreshFileExplorer(inscricao);
+    } catch(e) {
+        window.Toast.error('Erro ao remover: ' + e.message);
+    }
+};
+
+window.createFolder = function() {
+    window.Toast.info('Criação de sub-pastas estará disponível em breve!');
+};
+
+// ==========================================
+// END OF TOOLTIP_HANDLER.JS
+// ==========================================

@@ -234,7 +234,8 @@ window.PortfolioHandler = {
             </div>
 
             <div style="text-align: right;">
-                <button onclick="window.PortfolioHandler.generateExecutiveSummary('${prop.nome_completo}', ${total}, ${desbloqueadas}, ${area})" style="background: none; border: none; color: #7c3aed; font-size: 11px; font-weight: 700; cursor: pointer; text-decoration: underline;">
+                <script>window.PortfolioHandler.activeProp = ${JSON.stringify(prop)};</script>
+                <button onclick='window.PortfolioHandler.generateExecutiveSummary(window.PortfolioHandler.activeProp, ${total}, ${desbloqueadas}, ${area})' style="background: none; border: none; color: #7c3aed; font-size: 11px; font-weight: 700; cursor: pointer; text-decoration: underline;">
                     <i class="fas fa-file-pdf"></i> Gerar Resumo Executivo para WhatsApp
                 </button>
             </div>
@@ -243,26 +244,46 @@ window.PortfolioHandler = {
         document.body.appendChild(dash);
     },
 
-    generateExecutiveSummary(nome, total, desbloqueadas, area) {
+    generateExecutiveSummary(prop, total, desbloqueadas, area) {
         const data = new Date().toLocaleDateString('pt-BR');
-        let texto = `*RESUMO EXECUTIVO DE PATRIMÔNIO - GUARUGEO*\n`;
-        texto += `_Data: ${data}_\n\n`;
-        texto += `*Proprietário:* ${nome}\n`;
-        texto += `*Total de Imóveis Mapeados:* ${total}\n`;
-        texto += `*Unidades Desbloqueadas:* ${desbloqueadas}\n\n`;
+        const corretor = window.Monetization?.userProfile?.full_name || 'Consultor GuaruGeo';
+        const isUnlocked = window.Monetization?.isUnlockedPerson(prop.cpf_cnpj);
         
-        if (area > 0) {
-            texto += `*Área Privativa Estimada Total:* ${area.toLocaleString()} m²\n`;
+        let texto = `*🏛️ RELATÓRIO EXECUTIVO - GUARUGEO*\n`;
+        texto += `_Inteligência Estratégica Imobiliária_\n\n`;
+        
+        texto += `👤 *Proprietário:* ${prop.nome_completo}\n`;
+        texto += `📊 *Patrimônio Mapeado:* ${total} imóveis\n`;
+        texto += `📐 *Área Privativa Total:* ${area > 0 ? area.toLocaleString() : 'Sob análise'} m²\n`;
+        texto += `💎 *Unidades Desbloqueadas:* ${desbloqueadas}\n\n`;
+
+        if (isUnlocked && prop.dados_enrichment) {
+            const enrichment = prop.dados_enrichment;
+            texto += `📞 *CONTATOS IDENTIFICADOS:*\n`;
+            
+            if (enrichment.telefones && enrichment.telefones.length > 0) {
+                const tels = enrichment.telefones.slice(0, 3).map(t => `• ${t.numero} (${t.tipo || 'Cel'})`).join('\n');
+                texto += `${tels}\n`;
+            }
+            
+            if (enrichment.emails && enrichment.emails.length > 0) {
+                const emails = enrichment.emails.slice(0, 2).map(e => `• ${e.email}`).join('\n');
+                texto += `${emails}\n`;
+            }
+            texto += `\n`;
+        } else if (!isUnlocked) {
+            texto += `🔐 *Contatos:* Protegidos pela LGPD (Desbloqueie no mapa para acessar)\n\n`;
         }
         
-        texto += `*Valor de Mercado:* Sob consulta com corretor responsável\n`;
-
-        texto += `\n🔗 *Acesse o mapa:* https://guarugeo.omegaimoveis.com.br\n`;
-        texto += `\n_Gerado automaticamente via Inteligência GuaruGeo_`;
+        texto += `💰 *VALOR DE MERCADO:* Sob consulta estratégica.\n`;
+        texto += `\n---`;
+        texto += `\n🤝 *Especialista:* ${corretor}`;
+        texto += `\n🔗 *Acesse o mapa:* https://guarugeo.omegaimoveis.com.br`;
+        texto += `\n\n_Gerado automaticamente via Inteligência GuaruGeo em ${data}_`;
 
         const encoded = encodeURIComponent(texto);
         window.open(`https://wa.me/?text=${encoded}`, '_blank');
-        window.Toast.success("Resumo gerado! Escolha o contato no WhatsApp.");
+        window.Toast.success("Resumo executivo gerado com sucesso!");
     },
 
     clearPortfolio() {

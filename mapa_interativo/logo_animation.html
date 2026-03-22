@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuaruGeo - Logo Animation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap');
+
+        :root {
+            --primary: #0ea5e9;
+            --secondary: #10b981;
+            --dark: #0f172a;
+            --accent: #f59e0b;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        #animation-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+        }
+
+        /* Ambient light from behind */
+        .glow-bg {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, rgba(16, 185, 129, 0.05) 50%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(60px);
+            animation: pulse-bg 8s infinite ease-in-out;
+            z-index: 1;
+        }
+
+        @keyframes pulse-bg {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+
+        /* Particle system */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+        }
+
+        .logo-wrapper {
+            position: relative;
+            z-index: 10;
+            opacity: 0;
+            transform: scale(0.8) translateY(20px);
+            animation: entrance 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation-delay: 0.5s;
+            /* Container to mask the white background of the PNG if it's a square */
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: white; /* Base matches logo bg for perfection */
+            box-shadow: 0 0 100px rgba(14, 165, 233, 0.4);
+            border: 4px solid rgba(255,255,255,0.1);
+        }
+
+        @keyframes entrance {
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .logo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transform: scale(0.85); /* Padding inside the circle */
+        }
+
+        /* Shimmer effect overlay */
+        .shimmer-overlay {
+            position: absolute;
+            top: 0;
+            left: -150%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.6) 50%,
+                transparent 100%
+            );
+            transform: skewX(-20deg);
+            z-index: 11;
+            animation: shimmer 4s infinite ease-in-out;
+            animation-delay: 2s;
+            pointer-events: none;
+        }
+
+        @keyframes shimmer {
+            0% { left: -150%; }
+            30%, 100% { left: 150%; }
+        }
+
+        /* Logo Reflection */
+        .reflection {
+            position: absolute;
+            bottom: -100px;
+            width: 100%;
+            height: 100px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
+            transform: scaleY(-1);
+            mask-image: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+            opacity: 0.3;
+            filter: blur(2px);
+        }
+
+        .tagline {
+            margin-top: 40px;
+            color: white;
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 12px;
+            text-transform: uppercase;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fade-up 1s ease-out forwards;
+            animation-delay: 1.8s;
+            text-align: center;
+        }
+
+        .tagline span {
+            font-weight: 900;
+            color: var(--primary);
+            text-shadow: 0 0 20px rgba(14, 165, 233, 0.5);
+        }
+
+        @keyframes fade-up {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Slogan */
+        .slogan {
+            margin-top: 15px;
+            color: #94a3b8;
+            font-size: 14px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            opacity: 0;
+            animation: fade-in 1s ease-out forwards;
+            animation-delay: 2.5s;
+        }
+
+        @keyframes fade-in {
+            to { opacity: 1; }
+        }
+
+        /* Video Controls Simulator (for capturing) */
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            display: flex;
+            gap: 20px;
+            z-index: 100;
+        }
+
+        .btn-action {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            font-size: 12px;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-action i {
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="animation-container">
+        <canvas id="particle-canvas"></canvas>
+        <div class="glow-bg"></div>
+
+        <div class="logo-wrapper">
+            <img src="logo.png" alt="GuaruGeo Logo" class="logo-img">
+            <div class="shimmer-overlay"></div>
+            <!-- Reflection commented out as logo.png likely has its own name inside, 
+                 but if it's just the icon we can use it. The viewed logo has name. -->
+        </div>
+
+        <div class="tagline">INTELIGÊNCIA <span>GEORREFERENCIADA</span></div>
+        <div class="slogan">Excelência em Dados Imobiliários</div>
+
+        <div class="controls">
+            <button class="btn-action" onclick="window.location.reload()"><i class="fas fa-redo"></i> Replay</button>
+            <button class="btn-action" onclick="captureSnapshot()"><i class="fas fa-camera"></i> Snapshot</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = Math.random() * 0.5 - 0.25;
+                this.speedY = Math.random() * 0.5 - 0.25;
+                this.opacity = Math.random() * 0.5;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+                    this.init();
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = `rgba(14, 165, 233, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 150; i++) {
+            particles.push(new Particle());
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        function captureSnapshot() {
+            // This is just for the UI, real capture would be via browser tools or stream recording
+            alert("Vídeo pronto para gravação! Use um gravador de tela (OBS/Windows+G) para capturar em alta qualidade.");
+        }
+    </script>
+</body>
+</html>

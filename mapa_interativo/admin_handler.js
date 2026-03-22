@@ -36,6 +36,7 @@ window.Admin = {
                         <button class="admin-tab" onclick="window.Admin.switchTab(this, 'transactions')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">📊 Vendas</button>
                         <button class="admin-tab" onclick="window.Admin.switchTab(this, 'curatorship')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">🏛️ Curadoria</button>
                         <button class="admin-tab" onclick="window.Admin.switchTab(this, 'crm')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">🤝 CRM Admin</button>
+                        <button class="admin-tab" onclick="window.Admin.switchTab(this, 'leiloes')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">⚖️ Leilões</button>
                         <button class="admin-tab" onclick="window.Admin.switchTab(this, 'settings')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">⚙️ Config</button>
                         <button class="admin-tab" onclick="window.Admin.switchTab(this, 'audit')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">📜 Auditoria</button>
                     </div>
@@ -79,6 +80,9 @@ window.Admin = {
             await this.renderCuratorship(content);
         } else if (tab === 'crm') {
             await this.renderCRMIntelligence(content);
+        } else if (tab === 'leiloes') {
+            if (window.LeilaoStaging) await window.LeilaoStaging.renderPanel(content);
+            else content.innerHTML = '<div style="padding:40px;text-align:center;color:#ef4444;">Script LeilaoStaging não carregado.</div>';
         } else if (tab === 'audit') {
             await this.renderAuditLogs(content);
         } else if (tab === 'settings') {
@@ -290,6 +294,7 @@ window.Admin = {
             if (activeTab.innerText.includes('Curadoria')) tabName = 'curatorship';
             if (activeTab.innerText.includes('Vendas')) tabName = 'transactions';
             if (activeTab.innerText.includes('Config')) tabName = 'settings';
+            if (activeTab.innerText.includes('Leilões')) tabName = 'leiloes';
             this.switchTab(activeTab, tabName);
         }
     },

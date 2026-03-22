@@ -367,3 +367,74 @@
     height: 20px !important;
     margin: 5px !important;
 }
+
+/* ============================================================
+   LOT TOOLTIP TABS
+   ============================================================ */
+.lot-tooltip-tabs {
+    display: flex;
+    background: #1e293b;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.lot-tab-btn {
+    padding: 12px 18px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.lot-tab-btn:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.lot-tab-btn.active {
+    color: #60a5fa;
+    border-bottom-color: #60a5fa;
+    background: rgba(96, 165, 250, 0.1);
+}
+
+.lot-tab-content {
+    display: none;
+}
+
+.lot-tab-content.active {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.lot-tooltip-body {
+    padding: 20px;
+    max-height: 65vh;
+    overflow-y: auto;
+    background: white;
+}
+
+.lot-tooltip-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.lot-tooltip-body::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.lot-tooltip-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}

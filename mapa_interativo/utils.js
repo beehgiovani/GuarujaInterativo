@@ -433,12 +433,13 @@ window.ZoneColors = ZoneColors;
 window.utmToLatLon = utmToLatLon;
 window.latLonToUtm = latLonToUtm;
 window.getDistanceFromLatLonInMeters = getDistanceFromLatLonInMeters;
+window.formatPhone = formatPhone;
 // Helper: Fetch Full Details on Demand
-window.fetchLotDetails = async function (inscricao) {
+window.fetchLotDetails = async function (inscricao, force = false) {
     if (!window.allLotes) return null;
     const localLote = window.allLotes.find(l => l.inscricao === inscricao);
 
-    if (localLote && localLote._detailsLoaded) {
+    if (localLote && localLote._detailsLoaded && !force) {
         console.log(`[Utils] Lote ${inscricao} já possui detalhes carregados.`);
         return localLote;
     }
@@ -564,21 +565,7 @@ window.loadLotesFromCache = async function () {
     }
 };
 
-window.exportEdits = function () {
-    if (!window.allLotes) return;
-    const edited = Object.keys(window.editedLotes || {}).length;
-    if (edited === 0) {
-        Toast.warning('Nenhuma alteração para exportar.');
-        return;
-    }
-    const blob = new Blob([JSON.stringify(window.allLotes, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `guaruja_lotes_editados_${Date.now()}.json`;
-    a.click();
-    Toast.success(`${edited} itens exportados.`);
-};
+// Export Edits removed per user review
 
 // ========================================
 // SIMPLE MARKDOWN PARSER - PREMIUM STYLE

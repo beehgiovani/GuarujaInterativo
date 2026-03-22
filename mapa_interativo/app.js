@@ -211,41 +211,143 @@ function setupAppListeners() {
     }
 
     // --- PWA INSTALLATION LOGIC ---
-    let deferredPrompt;
-    const pwaBtn = document.getElementById('btn-pwa-install');
-    const pwaIos = document.getElementById('pwa-ios-instructions');
+    window.PWAHandler = {
+        deferredPrompt: null,
+        storageKey: 'guarugeo_pwa_prompt',
+        
+        init: function() {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            if (isStandalone) return;
 
-    // Detect if is iOS
-    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                this.deferredPrompt = e;
+                this.checkAndShow();
+            });
 
-    if (isStandalone) {
-        // Already installed
-        const container = document.getElementById('pwa-install-container');
-        if (container) container.style.display = 'none';
-    } else if (isIos) {
-        // Show iOS instructions
-        if (pwaIos) pwaIos.style.display = 'block';
-    }
+            window.addEventListener('appinstalled', () => {
+                this.deferredPrompt = null;
+                this.hide();
+                localStorage.setItem(this.storageKey, 'installed');
+            });
+            
+            // For iOS we can check and show manual instructions if needed.
+            // But let's stick to the prompt structure.
+            const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIos && !isStandalone) {
+                this.checkAndShow();
+            }
+        },
 
-    window.addEventListener('beforeinstallprompt', (e) => {
-        // Prevent default browser prompt
-        e.preventDefault();
-        deferredPrompt = e;
-        // Show our custom button
-        if (pwaBtn) pwaBtn.style.display = 'inline-block';
-    });
+        checkAndShow: function() {
+            const choice = localStorage.getItem(this.storageKey);
+            if (choice === 'never' || choice === 'installed') return;
+            
+            if (choice === 'later') {
+                const lastTime = localStorage.getItem(this.storageKey + '_time');
+                if (lastTime && Date.now() - parseInt(lastTime) < 24 * 60 * 60 * 1000) return;
+            }
 
-    if (pwaBtn) {
-        pwaBtn.addEventListener('click', async () => {
-            if (!deferredPrompt) return;
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
+            // Show after 3s delay
+            setTimeout(() => this.show(), 3000);
+        },
+
+        show: function() {
+            if (document.getElementById('pwa-custom-prompt')) return;
+
+            const promptDiv = document.createElement('div');
+            promptDiv.id = 'pwa-custom-prompt';
+            promptDiv.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: white;
+                padding: 20px;
+                border-radius: 12px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                z-index: 99999;
+                max-width: 330px;
+                border: 1px solid #e2e8f0;
+                font-family: 'Inter', sans-serif;
+                transform: translateY(150%);
+                opacity: 0;
+                transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            `;
+            promptDiv.innerHTML = `
+                <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px;">
+                    <div style="background: #2563eb; color: white; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 20px; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);">
+                        <i class="fas fa-cloud-download-alt"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight: 800; color: #1e293b; font-size: 15px; margin-bottom: 4px;">Instalar Aplicativo</div>
+                        <div style="font-size: 12.5px; color: #64748b; line-height: 1.4;">Gostaria de baixar a versão para instalação e ter acesso rápido direto do seu celular ou computador?</div>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button id="pwa-btn-install" style="background: #2563eb; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">
+                        <i class="fas fa-download" style="margin-right: 6px;"></i> Baixar Agora
+                    </button>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="pwa-btn-later" style="flex: 1; background: #f8fafc; color: #475569; border: 1px solid #cbd5e1; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">Lembrar Depois</button>
+                        <button id="pwa-btn-never" style="flex: 1; background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">Nunca</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(promptDiv);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    promptDiv.style.transform = 'translateY(0)';
+                    promptDiv.style.opacity = '1';
+                }, 100);
+            });
+
+            document.getElementById('pwa-btn-install').onclick = () => this.install();
+            document.getElementById('pwa-btn-later').onclick = () => this.dismiss('later');
+            document.getElementById('pwa-btn-never').onclick = () => this.dismiss('never');
+        },
+
+        hide: function() {
+            const promptDiv = document.getElementById('pwa-custom-prompt');
+            if (promptDiv) {
+                promptDiv.style.transform = 'translateY(150%)';
+                promptDiv.style.opacity = '0';
+                setTimeout(() => promptDiv.remove(), 500);
+            }
+        },
+
+        dismiss: function(type) {
+            this.hide();
+            localStorage.setItem(this.storageKey, type);
+            if (type === 'later') {
+                localStorage.setItem(this.storageKey + '_time', Date.now().toString());
+            }
+        },
+
+        install: async function() {
+            if (!this.deferredPrompt) {
+                const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                if(isIos) {
+                    if(window.Toast) window.Toast.info("No iPhone: Toque no ícone Compartilhar e depois 'Adicionar à Tela de Início'");
+                    else alert("No iPhone: Toque no ícone Compartilhar e depois 'Adicionar à Tela de Início'");
+                } else {
+                    if(window.Toast) window.Toast.warning("A instalação automática não está disponível no momento. Tente opções no menu do navegador.");
+                    else alert("A instalação automática não está disponível no momento.");
+                }
+                this.hide();
+                return;
+            }
+            this.deferredPrompt.prompt();
+            const { outcome } = await this.deferredPrompt.userChoice;
             console.log(`PWA install outcome: ${outcome}`);
-            deferredPrompt = null;
-            pwaBtn.style.display = 'none';
-        });
-    }
+            this.deferredPrompt = null;
+            this.hide();
+        }
+    };
+
+    window.PWAHandler.init();
 }
 
 // Make init global so Auth can call it

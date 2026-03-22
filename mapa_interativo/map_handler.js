@@ -196,7 +196,63 @@ window.exitHyper3D = () => console.warn("Hyper 3D Desativado");
 
 // GPS Control moved to location_handler.js
 window.addGpsControl = function () {
-    // Legacy NO-OP
+    if (!window.map) return;
+    
+    // Evitar duplicatas
+    if (document.getElementById('custom-gps-control')) return;
+
+    const controlDiv = document.createElement('div');
+    controlDiv.id = 'custom-gps-control';
+    controlDiv.style.cssText = 'background: white; padding: 8px; margin: 10px; border-radius: 4px; box-shadow: rgba(0, 0, 0, 0.3) 0px 1px 4px -1px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; transition: background 0.2s;';
+    controlDiv.title = 'Minha Localização';
+    
+    controlDiv.innerHTML = '<i class="fas fa-crosshairs" style="color: #666; font-size: 18px;"></i>';
+    
+    controlDiv.onmouseover = () => controlDiv.style.background = '#f3f4f6';
+    controlDiv.onmouseout = () => controlDiv.style.background = 'white';
+
+    controlDiv.addEventListener('click', () => {
+        if (navigator.geolocation) {
+            if (window.Toast) window.Toast.info("Buscando localização GPS...");
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const pos = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                    };
+                    window.map.setCenter(pos);
+                    window.map.setZoom(18);
+                    
+                    if (window.gpsMarker) {
+                        window.gpsMarker.setPosition(pos);
+                    } else {
+                        window.gpsMarker = new google.maps.Marker({
+                            position: pos,
+                            map: window.map,
+                            title: 'Sua Localização',
+                            icon: {
+                                path: google.maps.SymbolPath.CIRCLE,
+                                scale: 8,
+                                fillColor: '#4285F4',
+                                fillOpacity: 1,
+                                strokeColor: 'white',
+                                strokeWeight: 2
+                            },
+                        });
+                    }
+                },
+                (error) => {
+                    console.error("GPS Error:", error);
+                    window.Toast && window.Toast.warning("Não foi possível acessar a localização. Verifique as permissões do navegador.");
+                },
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            );
+        } else {
+            window.Toast && window.Toast.error("Geolocalização não suportada pelo seu navegador.");
+        }
+    });
+
+    window.map.controls[google.maps.ControlPosition.TOP_RIGHT].push(controlDiv);
 };
 
 window.initMobileSidebar = function () {
@@ -487,6 +543,9 @@ window.initMap = async function () {
             eachLayer: (cb) => window.drawnItems.layers.forEach(cb)
         };
 
+        // Add GPS Control Discretely (TOP RIGHT)
+        if (window.addGpsControl) window.addGpsControl();
+
         // 6. Start Data Loading Sequence
         await window.initMapData();
 
@@ -543,6 +602,9 @@ window.initMap = async function () {
         return nearest;
     };
     window.initDraw = async function () {
+        // Aguarda um curto período para garantir que o DOM e os Custom Elements estejam prontos
+        await new Promise(resolve => setTimeout(resolve, 800));
+
         try {
             const { DrawingManager } = await google.maps.importLibrary("drawing");
             let drawingManagerControl = document.getElementById('main-drawing-manager');
@@ -976,9 +1038,7 @@ window.initMap = async function () {
     let isCachedLoaded = false;
     window.currentCity = window.currentCity || 'Guarujá';
 
-    window.changeCity = async function(cityName) {
-        return; // City switching disabled for now
-    };
+// changeCity disabled and removed per dead code cleanup
 
     window.initMapData = async function() {
         try {
@@ -1880,28 +1940,6 @@ window.handleContextAction = function (action) {
 // ========================================
 window.currentOffMarketFilter = 'todos';
 
-window.applyOffMarketFilter = function(filterType) {
-    if (window.currentLevel !== 2) {
-        if (window.Toast) window.Toast.warning("Aproxime para visualizar os lotes (Setor) para ver os pontos de captação.");
-    }
-    window.currentOffMarketFilter = filterType;
-    if (window.Toast) {
-        if (filterType === 'todos') window.Toast.info("Filtros limpos. Mostrando todos os lotes.");
-        else window.Toast.success(`Filtro Off-Market Ativado: ${filterType.toUpperCase()}`);
-    }
-    
-    // Atualizar UI dos chips
-    document.querySelectorAll('#off-market-filters .filter-chip').forEach(chip => {
-        chip.style.transform = 'scale(1)';
-        chip.style.boxShadow = 'none';
-    });
-    // Identificar chip clicado e dar destaque
-    if(event && event.currentTarget) {
-        event.currentTarget.style.transform = 'scale(1.05)';
-        event.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-    }
-
-    window.renderHierarchy();
-};
+// applyOffMarketFilter removed along with UI filters
 
 console.log("✅ Map Handler module loaded");

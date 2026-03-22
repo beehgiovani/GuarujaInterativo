@@ -1143,41 +1143,7 @@ window.editLead = function (leadId) {
 // ========================================
 // AI INTEGRATION: SAVE LEAD FROM FAROL
 // ========================================
-window.saveLeadFromAI = async function (leadData) {
-    if (!window.Monetization.canAccess('crm_history')) {
-        window.Toast.info("Assine o Plano Pro para capturar leads via IA automaticamente.");
-        return { success: false, message: "Acesso restrito" };
-    }
-    console.log("🤖 Farol tentando salvar lead:", leadData);
-
-    // Normalize data (Ensuring at least name and some contact)
-    if (!leadData.nome) return { success: false, message: "Nome não identificado" };
-
-    const finalData = {
-        nome: leadData.nome,
-        telefone: leadData.telefone || null,
-        email: leadData.email || null,
-        contato: leadData.telefone || leadData.email || "Lead via Chat",
-        tipo_imovel: leadData.tipo_imovel || null,
-        zonas_interesse: leadData.zonas_interesse || [],
-        valor_max: leadData.valor_max || null,
-        observacoes: leadData.observacoes || "Lead capturado automaticamente pelo Farol IA via Chat.",
-        status: 'ativo',
-        created_at: new Date().toISOString()
-    };
-
-    try {
-        const { error } = await window.supabaseApp.from('leads').insert(finalData);
-        if (error) throw error;
-
-        await updateLeadsCount();
-        window.Toast.success(`Novo lead capturado: ${finalData.nome}!`, 'Farol CRM');
-        return { success: true };
-    } catch (e) {
-        console.error("Erro Farol Lead Save:", e);
-        return { success: false, error: e.message };
-    }
-};
+// AI Lead Capture logic removed per user plan
 
 window.generateFollowup = async function (leadId) {
     window.Loading.show(`🚀 Preparando Follow-up...`, `O Farol está analisando o melhor roteiro...`);

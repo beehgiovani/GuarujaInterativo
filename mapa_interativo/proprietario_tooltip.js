@@ -145,11 +145,14 @@ window.ProprietarioTooltip = {
         tooltip.className = 'proprietario-tooltip';
         tooltip.style.cssText = `
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 90%; max-width: 900px; height: 85vh; background: var(--glass-bg, white);
-            backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%);
-            border-radius: var(--radius-lg, 28px); box-shadow: var(--shadow-premium);
-            border: 1px solid var(--glass-border, #f1f5f9);
-            z-index: 9999; overflow: hidden; display: flex; flex-direction: column;
+            width: 90%; max-width: 900px; height: 85vh; 
+            background: rgba(255, 255, 255, 0.98); /* Less translucent for better readability */
+            backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: var(--radius-lg, 28px); 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            z-index: 200000; /* Mirror the landing z-index for consistency */
+            overflow: hidden; display: flex; flex-direction: column;
             animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         `;
 
@@ -303,7 +306,7 @@ window.ProprietarioTooltip = {
                     </div>
                     <div style="flex: 1;">
                         <div style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px;">
-                            ${window.maskName(prop.nome_completo, window.Monetization.isUnlockedPerson(prop.cpf_cnpj))}
+                            ${window.maskName(prop.nome_completo, (window.Monetization && typeof window.Monetization.isUnlockedPerson === 'function' && window.Monetization.isUnlockedPerson(prop.cpf_cnpj)))}
                             ${(() => {
                                 const pred = window.PredictiveHandler.calculateScore(prop);
                                 return `
@@ -1003,7 +1006,7 @@ window.ProprietarioTooltip = {
             Analise o patrimônio de ${prop.nome_completo}:
             - Total de imóveis: ${unidades.length}
             - Tipologias: ${[...new Set(unidades.map(u => u.tipo))].join(', ')}
-            - Bairros de Atuação: ${[...new Set(unidades.map(u => u.lotes?.bairro)).filter(b => b)].join(', ')}
+            - Bairros de Atuação: ${[...new Set(unidades.map(u => u.lotes?.bairro).filter(b => b))].join(', ')}
             - Metragem Total Estimada: ${unidades.reduce((acc, u) => acc + (parseFloat(u.metragem) || 0), 0).toLocaleString('pt-BR')} m²
 
             Informação Importante: O valor venal total é R$ ${unidades.reduce((acc, u) => acc + (u.valor_venal || 0), 0).toLocaleString('pt-BR')}, mas lembre-se que este NÃO é o valor de mercado. Use o Valor Venal apenas como referência técnica de base de tributação.

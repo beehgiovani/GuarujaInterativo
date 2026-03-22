@@ -3,6 +3,19 @@
 // ==========================================
 
 window.showFarolInsights = async function () {
+    // Verificação de Acesso
+    if (window.Monetization && !window.Monetization.checkFeatureAccess('advanced_ai')) {
+        window.Monetization.showSubscriptionPlans();
+        window.Toast.info("O Radar Farol Completo é exclusivo para o plano Elite ou superior.");
+        return;
+    }
+
+    // Cobrança (1 crédito por análise)
+    if (window.Monetization && (window.Monetization.userRole === 'pro' || !window.Monetization.userRole || window.Monetization.userRole === 'user')) {
+        const spent = await window.Monetization.consumeCredits(1, "Análise Farol Insights");
+        if (!spent) return;
+    }
+
     window.Loading.show("Farol analisando mercado...", "Cruzando oferta vs demanda...");
 
     try {

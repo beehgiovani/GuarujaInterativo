@@ -3,19 +3,42 @@
 // ==========================================
 
 window.ReportHandler = {
-    generatePDF: async function(lote, unit) {
-        window.Loading.show('Gerando Dossiê...', 'Compilando inteligência imobiliária');
+    generateDossie: async function(unitInscricao) {
+        window.Loading.show("Preparando Dossiê...", "Buscando dados no satélite");
+        try {
+            const loteInscricao = unitInscricao.substring(0, 8);
+            const lote = await window.fetchLotDetails(loteInscricao);
+            if (!lote) throw new Error("Lote não encontrado.");
+            
+            const unit = lote.unidades?.find(u => u.inscricao === unitInscricao);
+            if (!unit) throw new Error("Unidade não encontrada.");
 
-        // Check permission (Master Plan or Credits)
-        const isMaster = window.Monetization && window.Monetization.userRole === 'master';
-        if (!isMaster) {
-            const hasCredits = await window.Monetization.checkCredits(5); // Dossiê custa 5 créditos
-            if (!hasCredits) {
-                window.Loading.hide();
-                return;
-            }
-            await window.supabaseApp.rpc('spend_credits', { amount_to_spend: 5, detail: `Dossiê Unit ${unit.inscricao}` });
+            await this.generatePDF(lote, unit);
+        } catch (e) {
+            console.error(e);
+            window.Toast.error("Erro ao gerar dossiê: " + e.message);
+        } finally {
+            window.Loading.hide();
         }
+    },
+
+    generatePDF: async function(lote, unit) {
+        // Check permission (Master Plan / Admin / Elite don't spend credits for this if it's unlimited)
+        // But for others, it costs 5 credits.
+        const role = window.Monetization?.userRole;
+        const isFree = !role || role === 'user';
+        const isPro = role === 'pro';
+        
+        // Se for Free ou Pro, deve pagar 1 crédito. Elite/Master é incluso.
+        if (isFree || isPro) {
+            const hasCredits = await window.Monetization.checkCredits(1);
+            if (!hasCredits) return;
+            
+            const spent = await window.Monetization.consumeCredits(1, `Dossiê PDF: ${unit.inscricao}`);
+            if (!spent) return;
+        }
+
+        window.Loading.show('Gerando Dossiê...', 'Compilando inteligência imobiliária');
 
         const reportWindow = window.open('', '_blank');
         const html = this.buildReportHTML(lote, unit);

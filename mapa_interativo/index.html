@@ -119,62 +119,6 @@
     </div>
 
 
-    <!-- Download Apps Modal -->
-    <div id="downloadModal" class="custom-modal-overlay" style="z-index: 20000;">
-        <div class="custom-modal" style="max-width: 500px; text-align: center;">
-            <div class="custom-modal-header">
-                <div class="custom-modal-title">📱 Baixe o Guarujá GeoMap</div>
-                <button type="button" class="custom-modal-close" aria-label="Fechar"
-                    onclick="document.getElementById('downloadModal').classList.remove('active')">&times;</button>
-            </div>
-            <div class="custom-modal-body" style="padding: 24px;">
-                <p style="color: #64748b; margin-bottom: 24px; font-size: 13px;">
-                    Tenha o poder da inteligência imobiliária diretamente no seu dispositivo. Escolha a melhor opção para você:
-                </p>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                    <!-- Option 1: PWA (Recommended) -->
-                    <div id="pwa-install-container" style="grid-column: span 2; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 16px; margin-bottom: 8px; text-align: left;">
-                        <div style="display: flex; align-items: flex-start; gap: 12px;">
-                            <div style="background: #2563eb; color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                <i class="fas fa-cloud-download-alt"></i>
-                            </div>
-                            <div>
-                                <div style="font-weight: 800; color: #1e3a8a; font-size: 14px;">Instalar como Aplicativo (PWA)</div>
-                                <div style="font-size: 11px; color: #60a5fa; margin-bottom: 10px;">Recomendado para iPhone e Android</div>
-                                
-                                <button id="btn-pwa-install" class="btn-primary-rich" style="padding: 8px 16px; font-size: 12px; background: #2563eb; display: none;">
-                                    Instalar Agora
-                                </button>
-                                
-                                <div id="pwa-ios-instructions" style="display: none; font-size: 11px; color: #1e3a8a; line-height: 1.4;">
-                                    Clique no ícone de <i class="fas fa-share-square"></i> <b>Compartilhar</b> e selecione <b>"Adicionar à Tela de Início"</b>.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Option 2: Windows -->
-                    <a href="downloads/Installer_Windows.zip" download class="dashboard-btn"
-                        style="flex-direction: column; padding: 16px; font-size: 12px; height: auto; text-decoration: none; background: white; border: 1px solid #e2e8f0; color: #334155;">
-                        <i class="fab fa-windows" style="font-size: 24px; margin-bottom: 8px; color: #00a4ef;"></i>
-                        <span style="display: block; font-weight: 700;">Windows PC</span>
-                        <small style="opacity: 0.7; font-size: 10px;">Instalador .zip</small>
-                    </a>
-
-                    <!-- Option 3: Android APK -->
-                    <button type="button"
-                        onclick="window.open('https://wa.me/5513997099494?text=Olá, gostaria de solicitar o arquivo APK do Guarujá GeoMap', '_blank')"
-                        class="dashboard-btn"
-                        style="flex-direction: column; padding: 16px; font-size: 12px; height: auto; background: white; border: 1px solid #e2e8f0; cursor: pointer; color: #334155;">
-                        <i class="fab fa-android" style="font-size: 24px; margin-bottom: 8px; color: #3ddc84;"></i>
-                        <span style="display: block; font-weight: 700;">Android APK</span>
-                        <small style="opacity: 0.7; font-size: 10px;">Solicitar via Whats</small>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
     <div id="image-modal" class="image-modal" onclick="closeImageModal()">
         <div class="modal-window-frame" onclick="event.stopPropagation()">
             <div class="modal-header-bar">
@@ -267,9 +211,7 @@
                     <div style="display: flex; gap: 15px;">
                         <i class="fas fa-users" onclick="window.showLeadsPanel()" title="CRM Clientes" style="color: #475569; cursor: pointer;"></i>
                         <i class="fas fa-chart-line" onclick="window.AnalyticsDashboard.show()" title="Analytics" style="color: #6366f1; cursor: pointer;"></i>
-                        <i class="fas fa-lightbulb" onclick="window.showFarolInsights()" title="Farol Insights" style="color: #f59e0b; cursor: pointer;"></i>
                         <i class="fas fa-info-circle" onclick="window.Institutional?.showMenu(event)" title="Info & Suporte" style="color: #64748b; cursor: pointer;"></i>
-                        <i class="fas fa-mobile-alt" onclick="document.getElementById('downloadModal').classList.add('active')" title="Baixar App" style="color: #10b981; cursor: pointer;"></i>
                         <i class="fas fa-user-shield" id="btnAdminPanel" onclick="window.Admin && window.Admin.showAdminPanel()" title="Painel Admin" style="color: #1e293b; cursor: pointer; display: none;"></i>
                     </div>
                     <div id="user-credits-display" onclick="window.Monetization && window.Monetization.showSubscriptionPlans()" style="display: flex; align-items: center; gap: 5px; font-weight: 800; font-size: 11px; color: #2563eb; cursor: pointer;">
@@ -566,31 +508,110 @@
                 <button type="button" class="custom-modal-close" aria-label="Fechar" onclick="closeModal('modal-lot-form-overlay')">&times;</button>
             </div>
             <div class="custom-modal-body">
-                <div class="form-group">
-                    <label class="form-label" for="new-lot-inscricao">Inscrição (8 dígitos)</label>
-                    <input type="text" id="new-lot-inscricao" class="form-input" placeholder="Ex: 00001001"
-                        title="Código de inscrição do lote (8 dígitos)" maxlength="8">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="new-lot-address">Endereço / Localização</label>
-                    <input type="text" id="new-lot-address" class="form-input" placeholder="Rua, Número, Bairro" title="Endereço completo do lote">
-                </div>
-
                 <div class="form-row">
                     <div class="form-group" style="flex: 1;">
-                        <label class="form-label" for="new-lot-quadra">Quadra</label>
-                        <input type="text" id="new-lot-quadra" class="form-input" placeholder="Ex: 001" title="Número da quadra">
+                        <label class="form-label" for="new-lot-zona">Zona (Z)</label>
+                        <input type="text" id="new-lot-zona" class="form-input" placeholder="Ex: 1" maxlength="1" onkeyup="window.updateLotPreview()">
                     </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label class="form-label" for="new-lot-lote-geo">Lote</label>
-                        <input type="text" id="new-lot-lote-geo" class="form-input" placeholder="Ex: 001" title="Número do lote">
+                    <div class="form-group" style="flex: 2;">
+                        <label class="form-label" for="new-lot-setor">Setor (SSSS)</label>
+                        <input type="text" id="new-lot-setor" class="form-input" placeholder="Ex: 0001" maxlength="4" onkeyup="window.updateLotPreview()">
                     </div>
+                    <div class="form-group" style="flex: 2;">
+                        <label class="form-label" for="new-lot-lote">Lote (LLL)</label>
+                        <input type="text" id="new-lot-lote" class="form-input" placeholder="Ex: 001" maxlength="3" onkeyup="window.updateLotPreview()">
+                    </div>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 20px; text-align: center;">
+                    <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Inscrição Base (Lote) a ser Criada</div>
+                    <div id="lot-full-preview" style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 4px; letter-spacing: 2px;">--------</div>
                 </div>
 
                 <div class="modal-actions">
                     <button type="button" class="btn-ghost" onclick="closeModal('modal-lot-form-overlay')">Cancelar</button>
                     <button type="button" class="btn-primary-rich" onclick="submitNewLot()">Criar Lote</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. MAP: Mass Unit Manager Modal (Admin Only) -->
+    <div id="modal-mass-unit-manager" class="custom-modal-overlay">
+        <div class="custom-modal" style="max-width: 900px; width: 95%;">
+            <div class="custom-modal-header">
+                <div class="custom-modal-title">
+                    <span>🏢 Gerenciador de Unidades: <span id="mass-manager-lote-id"></span></span>
+                </div>
+                <button type="button" class="custom-modal-close" aria-label="Fechar" onclick="closeModal('modal-mass-unit-manager')">&times;</button>
+            </div>
+            <div class="custom-modal-body" style="padding: 10px; max-height: 70vh; overflow-y: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+                    <thead>
+                        <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                            <th style="padding: 10px; width: 80px;">Sufixo (Lote)</th>
+                            <th style="padding: 10px;">Proprietário</th>
+                            <th style="padding: 10px;">Endereço/Complemento</th>
+                            <th style="padding: 10px;">Matrícula</th>
+                            <th style="padding: 10px;">RIP</th>
+                            <th style="padding: 10px; text-align: center; width: 50px;">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mass-unit-table-body">
+                        <!-- Handled by JS -->
+                    </tbody>
+                </table>
+                <div style="margin-top: 15px;">
+                    <button onclick="window.addMassUnitRow()" class="btn-ghost" style="font-size: 12px; padding: 6px 12px;"><i class="fas fa-plus"></i> Adicionar Linha Vazia</button>
+                    <button onclick="window.addSequenceMassUnitRows()" class="btn-ghost" style="font-size: 12px; padding: 6px 12px; margin-left: 10px;"><i class="fas fa-list-ol"></i> Gerar Sequência</button>
+                </div>
+            </div>
+            <div class="custom-modal-header" style="justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); border-bottom: none;">
+                <button type="button" class="btn-ghost" onclick="closeModal('modal-mass-unit-manager')">Cancelar</button>
+                <button type="button" class="btn-primary-rich" onclick="window.saveMassUnits()"><i class="fas fa-save"></i> Salvar Tudo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAP: New Unit Modal -->
+    <div id="modal-unit-form-overlay" class="custom-modal-overlay">
+        <div class="custom-modal">
+            <div class="custom-modal-header">
+                <div class="custom-modal-title">
+                    <span>🏢 Nova Unidade</span>
+                </div>
+                <button type="button" class="custom-modal-close" aria-label="Fechar" onclick="closeModal('modal-unit-form-overlay')">&times;</button>
+            </div>
+            <div class="custom-modal-body">
+                <input type="hidden" id="new-unit-lot-ref">
+                <div class="form-group">
+                    <label class="form-label" for="new-unit-suffix">Sufixo da Unidade (3 dígitos)</label>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="background: #f1f5f9; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; font-weight: 700; color: #64748b; display: flex; align-items: center;" id="unit-prefix-preview">
+                            --------
+                        </div>
+                        <input type="text" id="new-unit-suffix" class="form-input" placeholder="Ex: 001" maxlength="3" style="flex: 1;" onkeyup="document.getElementById('unit-full-preview').innerText = document.getElementById('unit-prefix-preview').innerText + this.value">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="new-unit-owner">Nome do Proprietário (Opcional)</label>
+                    <input type="text" id="new-unit-owner" class="form-input" placeholder="Ex: João da Silva">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="new-unit-address">Complemento (Apto/Sala)</label>
+                    <input type="text" id="new-unit-address" class="form-input" placeholder="Ex: Apto 101, Cobertura">
+                </div>
+
+                <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 20px; text-align: center;">
+                    <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Inscrição Final a ser Criada</div>
+                    <div id="unit-full-preview" style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 4px; letter-spacing: 2px;">--------...</div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-ghost" onclick="closeModal('modal-unit-form-overlay')">Cancelar</button>
+                    <button type="button" class="btn-primary-rich" onclick="submitNewUnit()"><i class="fas fa-save"></i> Criar Unidade</button>
                 </div>
             </div>
         </div>
@@ -627,34 +648,34 @@
 
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="utils.js?v=1.5"></script>
+    <script src="utils.js?v=1.16"></script>
     <script src="supabase_client.js"></script>
     <script src="auth_handler.js"></script>
  
     <!-- Google Maps Engine (Migration Target) -->
     <script type="module" src="https://unpkg.com/@googlemaps/extended-component-library@0.6"></script>
-    <script src="google_maps_loader.js?v=1.5"></script>
+    <script src="google_maps_loader.js?v=1.16"></script>
 
     <!-- App Logic -->
-    <!-- <script src="google_earth_handler.js?v=1.5"></script> -->
+    <!-- <script src="google_earth_handler.js?v=1.16"></script> -->
 
     <!-- Anuncios Module (Load before Tooltip) -->
-    <link rel="stylesheet" href="anuncios/anuncios_styles.css?v=1.5">
-    <script src="anuncios/anuncios_handler.js?v=1.5"></script>
+    <link rel="stylesheet" href="anuncios/anuncios_styles.css?v=1.16">
+    <script src="anuncios/anuncios_handler.js?v=1.16"></script>
     
-    <script src="monetization_handler.js?v=1.5"></script>
-    <script src="search_handler.js?v=1.5"></script>
-    <script src="tooltip_handler.js?v=1.5"></script>
-    <script src="neighborhood_handler.js?v=1.5"></script>
-    <script src="osm_handler.js?v=1.5"></script>
-    <script src="map_handler.js?v=1.5"></script>
-    <script src="editor_handler.js?v=1.5"></script>
-    <script src="enrichment_handler.js?v=1.5"></script>
-    <script src="admin_handler.js?v=1.5"></script>
-    <script src="report_handler.js?v=1.5"></script>
-    <script src="crm_handler.js?v=1.5"></script>
-    <script src="insights_handler.js?v=1.5"></script>
-    <script src="app.js?v=1.5"></script>
+    <script src="monetization_handler.js?v=1.16"></script>
+    <script src="search_handler.js?v=1.16"></script>
+    <script src="tooltip_handler.js?v=1.16"></script>
+    <script src="neighborhood_handler.js?v=1.16"></script>
+    <script src="osm_handler.js?v=1.16"></script>
+    <script src="map_handler.js?v=1.16"></script>
+    <script src="editor_handler.js?v=1.16"></script>
+    <script src="enrichment_handler.js?v=1.16"></script>
+    <script src="admin_handler.js?v=1.16"></script>
+    <script src="report_handler.js?v=1.16"></script>
+    <script src="crm_handler.js?v=1.16"></script>
+    <script src="insights_handler.js?v=1.16"></script>
+    <script src="app.js?v=1.16"></script>
 
     <!-- New Modules (Analytics & Owners) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
@@ -664,7 +685,6 @@
     <!-- <script src="infosimples_handler.js"></script> -->
     <script src="gemini_chat_handler.js"></script>
     <script src="ai_history_handler.js"></script>
-    <script src="marketing_handler.js"></script>
     <script src="notifications_handler.js"></script>
     <script src="media_handler.js"></script>
     <script src="image_viewer_handler.js"></script>
@@ -684,6 +704,7 @@
 
     <!-- Legal Engines -->
     <script src="contract_templates.js"></script>
+    <script src="leilao_staging_handler.js"></script>
     <script src="renovation_radar.js"></script>
     <script src="push_handler.js"></script>
     

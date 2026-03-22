@@ -8,6 +8,13 @@ window.OSMHandler = (function() {
     
     const CACHE = {}; // Simple memory cache
     
+    const MIRRORS = [
+        'https://overpass-api.de/api/interpreter',
+        'https://lz4.overpass-api.de/api/interpreter',
+        'https://overpass.openstreetmap.ru/api/interpreter',
+        'https://overpass.kumi.systems/api/interpreter'
+    ];
+    
     async function fetchPOIs(lat, lng, containerId) {
         const cacheKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
         const container = document.getElementById(containerId);
@@ -26,48 +33,57 @@ window.OSMHandler = (function() {
             </div>
         `;
 
-        try {
-            // Overpass Query: 500m radius
-            // We look for: Schools, Pharmacies, Bakeries, Supermarkets/Convenience, Restaurants
-            const query = `
-                [out:json][timeout:10];
-                (
-                  node["amenity"~"school|pharmacy|bakery|restaurant|cafe|marketplace"](around:400,${lat},${lng});
-                  way["amenity"~"school|pharmacy|bakery|restaurant|cafe|marketplace"](around:400,${lat},${lng});
-                  node["shop"~"supermarket|convenience|bakery"](around:400,${lat},${lng});
-                );
-                out body;
-                >;
-                out skel qt;
-            `;
+        const query = `
+            [out:json][timeout:60];
+            (
+              node["amenity"~"school|pharmacy|bakery|restaurant|cafe|marketplace"](around:400,${lat},${lng});
+              way["amenity"~"school|pharmacy|bakery|restaurant|cafe|marketplace"](around:400,${lat},${lng});
+              node["shop"~"supermarket|convenience|bakery"](around:400,${lat},${lng});
+            );
+            out body;
+            >;
+            out skel qt;
+        `;
 
-            const url = 'https://overpass-api.de/api/interpreter';
-            const body = `data=${encodeURIComponent(query)}`;
+        for (const mirrorUrl of MIRRORS) {
+            try {
+                console.log(`📡 Tentando mirror OSM: ${mirrorUrl}`);
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s per mirror
 
-            const response = await fetch(url, {
-                method: 'POST',
-                body: body
-            });
+                const response = await fetch(mirrorUrl, {
+                    method: 'POST',
+                    body: `data=${encodeURIComponent(query)}`,
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
 
-            if (!response.ok) throw new Error('OSM Error');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-            const data = await response.json();
-            const elements = data.elements || [];
+                const data = await response.json();
+                const elements = data.elements || [];
 
-            // Process Data
-            const pois = processElements(elements, lat, lng);
-            CACHE[cacheKey] = pois;
-            
-            renderWidget(pois, container);
+                // Process Data
+                const pois = processElements(elements, lat, lng);
+                CACHE[cacheKey] = pois;
+                
+                renderWidget(pois, container);
+                return; // Sucesso! Sai da função
 
-        } catch (e) {
-            console.error('OSM Fetch Error:', e);
-            container.innerHTML = `
-                <div style="padding: 12px; text-align: center; color: #94a3b8; font-size: 10px;">
-                    <i class="fas fa-wifi"></i> Não foi possível carregar a vizinhança.
-                </div>
-            `;
+            } catch (e) {
+                console.warn(`⚠️ Falha no mirror OSM (${mirrorUrl}):`, e.message);
+                // Continua para o próximo loop/mirror
+            }
         }
+
+        // Se chegou aqui, todos os mirrors falharam
+        container.innerHTML = `
+            <div style="padding: 12px; text-align: center; color: #94a3b8; font-size: 10px;">
+                <i class="fas fa-exclamation-triangle"></i> Servidores OSM instáveis. Tente novamente em instantes.
+            </div>
+        `;
     }
 
     function processElements(elements, centerLat, centerLng) {
