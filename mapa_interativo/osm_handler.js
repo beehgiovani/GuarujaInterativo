@@ -9,10 +9,11 @@ window.OSMHandler = (function() {
     const CACHE = {}; // Simple memory cache
     
     const MIRRORS = [
-        'https://overpass-api.de/api/interpreter',
         'https://lz4.overpass-api.de/api/interpreter',
-        'https://overpass.openstreetmap.ru/api/interpreter',
-        'https://overpass.kumi.systems/api/interpreter'
+        'https://overpass.kumi.systems/api/interpreter',
+        'https://overpass-api.de/api/interpreter',
+        'https://overpass.osm.ch/api/interpreter',
+        'https://overpass.nchc.org.tw/api/interpreter'
     ];
     
     async function fetchPOIs(lat, lng, containerId) {
@@ -34,15 +35,12 @@ window.OSMHandler = (function() {
         `;
 
         const query = `
-            [out:json][timeout:60];
+            [out:json][timeout:25];
             (
-              node["amenity"~"school|pharmacy|bakery|restaurant|cafe|marketplace"](around:400,${lat},${lng});
-              way["amenity"~"school|pharmacy|bakery|restaurant|cafe|marketplace"](around:400,${lat},${lng});
-              node["shop"~"supermarket|convenience|bakery"](around:400,${lat},${lng});
+              nwr["amenity"~"school|pharmacy|bakery|restaurant|cafe|marketplace"](around:400,${lat},${lng});
+              nwr["shop"~"supermarket|convenience|bakery"](around:400,${lat},${lng});
             );
-            out body;
-            >;
-            out skel qt;
+            out center body;
         `;
 
         for (const mirrorUrl of MIRRORS) {
@@ -50,7 +48,7 @@ window.OSMHandler = (function() {
                 console.log(`📡 Tentando mirror OSM: ${mirrorUrl}`);
                 
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s per mirror
+                const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s per mirror
 
                 const response = await fetch(mirrorUrl, {
                     method: 'POST',
@@ -81,7 +79,12 @@ window.OSMHandler = (function() {
         // Se chegou aqui, todos os mirrors falharam
         container.innerHTML = `
             <div style="padding: 12px; text-align: center; color: #94a3b8; font-size: 10px;">
-                <i class="fas fa-exclamation-triangle"></i> Servidores OSM instáveis. Tente novamente em instantes.
+                <i class="fas fa-exclamation-triangle"></i> Servidores OSM instáveis.
+                <div style="margin-top: 5px;">
+                    <button onclick="window.OSMHandler.fetchPOIs(${lat}, ${lng}, '${containerId}')" style="background: rgba(37,99,235,0.1); color: #3b82f6; border: none; padding: 4px 10px; border-radius: 4px; font-size: 9px; cursor: pointer; font-weight: 700;">
+                        <i class="fas fa-sync-alt"></i> Tentar novamente
+                    </button>
+                </div>
             </div>
         `;
     }
@@ -113,12 +116,16 @@ window.OSMHandler = (function() {
 
             if (cat && groups[cat]) {
                 groups[cat].count++;
-                // Calculate distance if node
-                if (el.lat && el.lon) {
-                    const d = getDist(centerLat, centerLng, el.lat, el.lon);
+                
+                // Calculate distance (handling node lat/lon or way/rel center)
+                const itemLat = el.lat || (el.center ? el.center.lat : null);
+                const itemLon = el.lon || (el.center ? el.center.lon : null);
+
+                if (itemLat && itemLon) {
+                    const d = getDist(centerLat, centerLng, itemLat, itemLon);
                     groups[cat].items.push({ name: tags.name, dist: d });
                 } else {
-                    groups[cat].items.push({ name: tags.name, dist: 0 }); // ways handling simplified
+                    groups[cat].items.push({ name: tags.name, dist: 0 }); 
                 }
             }
         });

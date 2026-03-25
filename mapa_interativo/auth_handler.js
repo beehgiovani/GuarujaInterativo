@@ -55,7 +55,7 @@ window.Auth = {
         
         if (session) {
             console.log("🔐 Sessão ativa identificada:", session.user.email);
-            this.handleAuthenticatedUser(session.user);
+            await this.handleAuthenticatedUser(session.user);
         } else {
             console.log("🔓 Nenhum usuário logado.");
             localStorage.removeItem('guaruja_auth');
@@ -70,12 +70,12 @@ window.Auth = {
 
         // Listener para mudanças de estado (login/logout)
         // Guarda para evitar múltiplas inicializações
-        window.supabaseApp.auth.onAuthStateChange((event, session) => {
+        window.supabaseApp.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_IN' && session) {
                 if (!this._appInitialized) {
                     // Só inicializa se ainda não foi feito pela sessão ativa acima
                     console.log("🔔 User Logged In (novo login):", session.user.email);
-                    this.handleAuthenticatedUser(session.user);
+                    await this.handleAuthenticatedUser(session.user);
                 } else {
                     console.log('ℹ️ SIGNED_IN ignorado - app já inicializado.');
                 }
@@ -218,22 +218,33 @@ window.Auth = {
         await window.supabaseApp.auth.signOut();
     },
 
-    handleAuthenticatedUser: function(user) {
+    handleAuthenticatedUser: async function(user) {
         if (this._appInitialized) {
             console.log('ℹ️ handleAuthenticatedUser ignorado - app já inicializado.');
             return;
         }
-        this._appInitialized = true;
 
+        // 1. Carregar Perfil (Status, Saldo, Role)
+        if (window.Monetization) {
+            await window.Monetization.loadUserProfile(user.id);
+        }
+
+        // 2. Verificar Status de Aprovação (Manual Approval Gate)
+        const profile = window.Monetization ? window.Monetization.userProfile : null;
+        const status = profile ? profile.status : 'approved'; // Default approved para evitar lock se profile falhar? Melhor 'pending'?
+
+        if (status === 'pending' || status === 'rejected') {
+            console.warn("⚠️ Acesso bloqueado: Status =", status);
+            this.showPendingApprovalUI(status);
+            return;
+        }
+
+        // 3. Proceder com Inicialização
+        this._appInitialized = true;
         localStorage.setItem('guaruja_auth', 'true');
         document.getElementById('loginOverlay').style.display = 'none';
         window.logActivity('login');
         
-        // Inicializa o Perfil de Monetização (Saldo/Role)
-        if (window.Monetization) {
-            window.Monetization.loadUserProfile(user.id);
-        }
-
         // Carrega notas particulares (pendentes de curadoria)
         if (window.loadUserPendingEdits) {
             window.loadUserPendingEdits();
@@ -244,6 +255,47 @@ window.Auth = {
             console.log("📍 Authentication successful. Initializing app...");
             window.init();
         }
+    },
+
+    showPendingApprovalUI: function(status) {
+        const title = document.querySelector('.login-box h2');
+        const btn = document.getElementById('btnLogin');
+        const content = document.querySelector('.login-box form');
+        const toggleLink = document.getElementById('toggleAuthLink');
+        const nameField = document.getElementById('loginNameField');
+        const resendLink = document.getElementById('resendConfirmationLink');
+
+        if (status === 'rejected') {
+            title.innerText = "Acesso Negado";
+            content.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <i class="fas fa-times-circle" style="font-size: 48px; color: #ef4444; margin-bottom: 20px;"></i>
+                    <p style="color: #475569; font-size: 14px; line-height: 1.6;">
+                        Infelizmente sua solicitação de acesso não foi aprovada no momento.
+                    </p>
+                    <button onclick="window.Auth.logout()" style="margin-top: 20px; width: 100%; padding: 12px; background: #ef4444; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">Sair</button>
+                </div>
+            `;
+        } else {
+            title.innerText = "Aguarde a Aprovação";
+            content.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <i class="fas fa-hourglass-half" style="font-size: 48px; color: #f59e0b; margin-bottom: 20px;"></i>
+                    <p style="color: #475569; font-size: 14px; line-height: 1.6;">
+                        Sua conta foi criada e o e-mail confirmado!<br><br>
+                        Por questões de segurança, um administrador irá revisar seu acesso. 
+                        <b>Você receberá uma notificação quando for liberado.</b>
+                    </p>
+                    <button onclick="window.Auth.logout()" style="margin-top: 20px; width: 100%; padding: 12px; background: #64748b; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">Fazer Logout</button>
+                    <a href="https://wa.me/5513997099494" target="_blank" style="display: block; margin-top: 15px; color: #2563eb; font-size: 12px; font-weight: 600; text-decoration: none;">Acelerar aprovação via WhatsApp</a>
+                </div>
+            `;
+        }
+        
+        if (nameField) nameField.style.display = 'none';
+        if (resendLink) resendLink.style.display = 'none';
+        if (toggleLink) toggleLink.style.display = 'none';
+        if (btn) btn.style.display = 'none';
     },
 
     toggleAuthMode: function(mode) {

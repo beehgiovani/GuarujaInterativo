@@ -453,6 +453,13 @@ window.editUnitFromTooltip = function (unitInscricao) {
                    <input type="text" id="edit-unit-complemento" value="${existingEdits.complemento || targetUnit.complemento || ''}" 
                         style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;" placeholder="Ex: Torre A">
                 </div>
+                <div style="flex: 1;">
+                   <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">CPF/CNPJ</label>
+                   <input type="text" id="edit-unit-cpf" value="${existingEdits.cpf_cnpj || targetUnit.cpf_cnpj || ''}" 
+                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;" placeholder="Somente números">
+                </div>
+            </div>
+            <div style="margin-bottom: 12px; display: flex; gap: 8px;">
                  <div style="flex: 1;">
                      <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Tipo de Unidade</label>
                      <select id="edit-unit-tipo" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;">
@@ -683,6 +690,8 @@ window.saveUnitEdit = async function (unitInscricao) {
 
         const edits = {
             complemento: getText('edit-unit-complemento'),
+            cpf_cnpj: getText('edit-unit-cpf')?.replace(/\D/g, ''), // Limpar caracteres não numéricos
+            nome_proprietario: getText('edit-unit-owner'),
             tipo: getText('edit-unit-tipo'),
             status_venda: getText('edit-unit-status'),
 
@@ -693,17 +702,16 @@ window.saveUnitEdit = async function (unitInscricao) {
             banheiros: getNumber('edit-unit-banheiros'),
             area_util: getNumber('edit-unit-area-util'),
             area_total: getNumber('edit-unit-area-total'),
-
-            // Valores Financeiros
             valor_venal: getNumber('edit-unit-valor-venal'),
             valor_real: getNumber('edit-unit-valor-real'),
             valor_vendavel: getNumber('edit-unit-valor-vendavel'),
-
-            imagens: JSON.parse(document.getElementById('edit-unit-gallery-json')?.value || '[]'),
+            
+            // Novos Campos
+            matricula: getText('edit-unit-matricula') || getText(`input-matricula-${unitInscricao}`),
+            rip: getText('edit-unit-rip') || getText(`input-rip-${unitInscricao}`),
             cod_ref: getText('edit-unit-cod-ref'),
             link_url: getText('edit-unit-link'),
-            matricula: getText('edit-unit-matricula'),
-            rip: getText('edit-unit-rip')
+            imagens: JSON.parse(document.getElementById('edit-unit-gallery-json')?.value || '[]')
         };
 
         // Security check: Only include owner data if it was editable (not masked/readonly)
@@ -1361,7 +1369,7 @@ window.openMassUnitManager = async function (loteInscricao) {
     try {
         const { data: units, error } = await window.supabaseApp
             .from('unidades')
-            .select('inscricao, nome_proprietario, endereco_completo, matricula, rip')
+            .select('inscricao, nome_proprietario, cpf_cnpj, complemento, matricula, rip, endereco_completo')
             .eq('lote_inscricao', loteInscricao)
             .order('inscricao', { ascending: true });
             
@@ -1390,7 +1398,8 @@ window.addMassUnitRow = function (data = null) {
     
     const suffix = data ? data.inscricao.slice(-3) : '';
     const owner = data ? (data.nome_proprietario || '') : '';
-    const address = data ? (data.endereco_completo || '') : '';
+    const cpf = data ? (data.cpf_cnpj || '') : '';
+    const complemento = data ? (data.complemento || '') : '';
     const matricula = data ? (data.matricula || '') : '';
     const rip = data ? (data.rip || '') : '';
     
@@ -1399,10 +1408,13 @@ window.addMassUnitRow = function (data = null) {
             <input type="text" class="mass-input suffix" value="${suffix}" placeholder="001" maxlength="3" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-family: monospace; text-align: center;">
         </td>
         <td style="padding: 10px;">
-            <input type="text" class="mass-input owner" value="${owner}" placeholder="Nome do Proprietário" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+            <input type="text" class="mass-input owner" value="${owner}" placeholder="Nome" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
         </td>
         <td style="padding: 10px;">
-            <input type="text" class="mass-input address" value="${address}" placeholder="Apto, Bloco, etc." style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+            <input type="text" class="mass-input cpf" value="${cpf}" placeholder="CPF/CNPJ" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-family: monospace; font-size: 11px;">
+        </td>
+        <td style="padding: 10px;">
+            <input type="text" class="mass-input complemento" value="${complemento}" placeholder="Apto/Torre" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
         </td>
         <td style="padding: 10px;">
             <input type="text" class="mass-input matricula" value="${matricula}" placeholder="Matrícula" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
@@ -1426,6 +1438,8 @@ window.saveMassUnits = async function () {
     const unitsToSave = [];
     const errors = [];
     
+    const collectiveAddress = document.getElementById('mass-collective-address')?.value.trim() || '';
+
     rows.forEach((row, index) => {
         const suffix = row.querySelector('.suffix').value.trim().padStart(3, '0');
         if (suffix === '000' && index > 0) {
@@ -1433,7 +1447,8 @@ window.saveMassUnits = async function () {
         }
         
         const owner = row.querySelector('.owner').value.trim();
-        const address = row.querySelector('.address').value.trim();
+        const cpf = row.querySelector('.cpf').value.trim().replace(/\D/g, '');
+        const complemento = row.querySelector('.complemento').value.trim();
         const matricula = row.querySelector('.matricula').value.trim();
         const rip = row.querySelector('.rip').value.trim();
         
@@ -1442,7 +1457,9 @@ window.saveMassUnits = async function () {
                 lote_inscricao: currentMassLoteId,
                 inscricao: currentMassLoteId + suffix,
                 nome_proprietario: owner,
-                endereco_completo: address,
+                cpf_cnpj: cpf,
+                complemento: complemento,
+                endereco_completo: collectiveAddress, // Apply collective address
                 matricula: matricula,
                 rip: rip
             });

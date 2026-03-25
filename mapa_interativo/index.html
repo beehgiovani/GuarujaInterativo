@@ -433,6 +433,13 @@
                             onclick="window.toggleNeighborhoodEditMode(this)">
                             <i class="fas fa-pen"></i>
                         </button>
+                        <!-- Presentation/Landing Re-trigger Button -->
+                        <button type="button" class="dashboard-btn" 
+                            onclick="if(window.Landing) window.Landing.show();" 
+                            title="Ver Apresentação do Projeto"
+                            style="background: #6366f1; color: white; border: 1px solid #4f46e5;">
+                            <i class="fas fa-presentation-screen"></i> Apresentação
+                        </button>
                     </div>
                 </div>
             </div>
@@ -538,7 +545,7 @@
 
     <!-- 3. MAP: Mass Unit Manager Modal (Admin Only) -->
     <div id="modal-mass-unit-manager" class="custom-modal-overlay">
-        <div class="custom-modal" style="max-width: 900px; width: 95%;">
+        <div class="custom-modal" style="max-width: 1000px; width: 95%;">
             <div class="custom-modal-header">
                 <div class="custom-modal-title">
                     <span>🏢 Gerenciador de Unidades: <span id="mass-manager-lote-id"></span></span>
@@ -546,14 +553,21 @@
                 <button type="button" class="custom-modal-close" aria-label="Fechar" onclick="closeModal('modal-mass-unit-manager')">&times;</button>
             </div>
             <div class="custom-modal-body" style="padding: 10px; max-height: 70vh; overflow-y: auto;">
+                <div style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 15px;">
+                    <div style="flex: 1;">
+                        <label style="display: block; font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 5px;">📍 Endereço Coletivo (Aplicar a todas as unidades)</label>
+                        <input type="text" id="mass-collective-address" placeholder="Ex: Rua das Flores, 123 - Centro" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-weight: 600;">
+                    </div>
+                </div>
                 <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
                     <thead>
                         <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-                            <th style="padding: 10px; width: 80px;">Sufixo (Lote)</th>
-                            <th style="padding: 10px;">Proprietário</th>
-                            <th style="padding: 10px;">Endereço/Complemento</th>
-                            <th style="padding: 10px;">Matrícula</th>
-                            <th style="padding: 10px;">RIP</th>
+                            <th style="padding: 10px; width: 80px;">Sufixo</th>
+                            <th style="padding: 10px; width: 180px;">Proprietário</th>
+                            <th style="padding: 10px; width: 140px;">CPF/CNPJ</th>
+                            <th style="padding: 10px;">Complemento (Apto/Torre)</th>
+                            <th style="padding: 10px; width: 100px;">Matrícula</th>
+                            <th style="padding: 10px; width: 80px;">RIP</th>
                             <th style="padding: 10px; text-align: center; width: 50px;">Ação</th>
                         </tr>
                     </thead>
@@ -737,10 +751,17 @@
                 loading.style.display = 'none';
                 loading.classList.add('hidden');
             }
-            // Só libera o login se o sistema de Auth confirmar que estamos logados
-            if (localStorage.getItem('guaruja_auth') !== 'true') {
+            
+            // Só libera o login se NÃO estivermos logados E a Landing Page NÃO estiver ativa
+            const isLogged = localStorage.getItem('guaruja_auth') === 'true';
+            const isLandingActive = !!document.getElementById('landing-overlay');
+
+            if (!isLogged && !isLandingActive && !window.isGuest) {
                  const login = document.getElementById('loginOverlay');
                  if (login) login.style.display = 'flex';
+                 console.log("🛡️ Visibility Recovery: Forced Login display.");
+            } else {
+                 console.log("🛡️ Visibility Recovery: Auth or Landing already handling UI.");
             }
             document.body.style.backgroundColor = ''; 
         }, 8000);

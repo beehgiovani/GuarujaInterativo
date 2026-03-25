@@ -31,9 +31,10 @@ window.Admin = {
                         <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()" style="color: white; opacity: 0.5;">&times;</button>
                     </div>
                     <div class="admin-tabs" style="display: flex; background: rgba(0,0,0,0.2); padding: 0 10px; overflow-x: auto;">
-                        <button class="admin-tab active" onclick="window.Admin.switchTab(this, 'users')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: white; cursor: pointer; border-bottom: 3px solid #2563eb; font-size: 13px;">👥 Usuários</button>
+                        <button class="admin-tab active" onclick="window.Admin.switchTab(this, 'dashboard')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: white; cursor: pointer; border-bottom: 3px solid #2563eb; font-size: 13px;">📊 Dashboard</button>
+                        <button class="admin-tab" onclick="window.Admin.switchTab(this, 'users')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">👥 Usuários</button>
                         <button class="admin-tab" onclick="window.Admin.switchTab(this, 'monetization')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">💰 Planos</button>
-                        <button class="admin-tab" onclick="window.Admin.switchTab(this, 'transactions')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">📊 Vendas</button>
+                        <button class="admin-tab" onclick="window.Admin.switchTab(this, 'transactions')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">💵 Vendas</button>
                         <button class="admin-tab" onclick="window.Admin.switchTab(this, 'curatorship')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">🏛️ Curadoria</button>
                         <button class="admin-tab" onclick="window.Admin.switchTab(this, 'crm')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">🤝 CRM Admin</button>
                         <button class="admin-tab" onclick="window.Admin.switchTab(this, 'leiloes')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">⚖️ Leilões</button>
@@ -46,7 +47,7 @@ window.Admin = {
                 </div>
             `;
             document.body.appendChild(modal);
-            this.switchTab(modal.querySelector('.admin-tab.active'), 'users');
+            this.switchTab(modal.querySelector('.admin-tab.active'), 'dashboard');
 
         } catch (e) {
             console.error(e);
@@ -70,7 +71,9 @@ window.Admin = {
         const content = document.getElementById('adminPanelContent');
         content.innerHTML = '<div style="padding: 40px; text-align: center;"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>';
 
-        if (tab === 'users') {
+        if (tab === 'dashboard') {
+            await this.renderDashboard(content);
+        } else if (tab === 'users') {
             await this.renderUsers(content);
         } else if (tab === 'monetization') {
             await this.renderMonetization(content);
@@ -104,6 +107,7 @@ window.Admin = {
                     <thead>
                         <tr style="background: rgba(255,255,255,0.05); text-align: left; font-size: 11px; text-transform: uppercase; color: #94a3b8;">
                             <th style="padding: 15px 20px;">Usuário</th>
+                            <th style="padding: 15px 20px; text-align: center;">Status</th>
                             <th style="padding: 15px 20px; text-align: center;">Vínculo</th>
                             <th style="padding: 15px 20px; text-align: center;">Créditos</th>
                             <th style="padding: 15px 20px; text-align: right;">Ações</th>
@@ -113,22 +117,42 @@ window.Admin = {
                         ${users.map(u => {
                             const roleColors = { master: '#7c3aed', admin: '#1e40af', elite: '#b45309', pro: '#0369a1', user: '#334155' };
                             const roleColor = roleColors[u.role] || '#334155';
+                            const status = u.status || 'approved';
+                            const statusColor = status === 'approved' ? '#10b981' : (status === 'pending' ? '#f59e0b' : '#ef4444');
+                            
                             return `
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
                                 <td style="padding: 15px 20px;">
                                     <div style="font-weight: 700; color: white;">${u.email}</div>
-                                    <div style="font-size: 11px; color: #64748b;">${u.id.slice(0, 8)} • ${u.credits || 0} créditos</div>
+                                    <div style="font-size: 11px; color: #64748b;">${u.id.slice(0, 8)} · ${u.full_name || 'Sem nome'}</div>
+                                </td>
+                                <td style="padding: 15px 20px; text-align: center;">
+                                    <span style="font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 20px; background: ${statusColor}20; color: ${statusColor}; border: 1px solid ${statusColor}40;">
+                                        ${status.toUpperCase()}
+                                    </span>
                                 </td>
                                 <td style="padding: 15px 20px; text-align: center;">
                                     <select onchange="window.Admin.changeRole('${u.id}', this.value)" style="background: ${roleColor}; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer; text-transform: uppercase;">
                                         ${['user','pro','elite','admin','master'].map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r.toUpperCase()}</option>`).join('')}
                                     </select>
                                 </td>
+                                <td style="padding: 15px 20px; text-align: center; color: #f59e0b; font-weight: 800;">
+                                    ${u.credits || 0}
+                                </td>
                                 <td style="padding: 15px 20px; text-align: right; display: flex; gap: 8px; align-items: center; justify-content: flex-end;">
-                                    <input type="number" id="credit-input-${u.id}" placeholder="+/- créditos" style="width: 100px; padding: 6px 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; background: rgba(255,255,255,0.05); color: white; font-size: 12px;" />
-                                    <button onclick="window.Admin.quickAdjustCredits('${u.id}', '${u.email}')" style="background: #10b981; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; white-space: nowrap;">
-                                        ✓ Aplicar
-                                    </button>
+                                    ${status === 'pending' ? `
+                                        <button onclick="window.Admin.approveUser('${u.id}', '${u.email}')" style="background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;">
+                                            APROVAR
+                                        </button>
+                                        <button onclick="window.Admin.rejectUser('${u.id}', '${u.email}')" style="background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); padding: 6px 12px; border-radius: 8px; font-size: 11px; cursor: pointer;">
+                                            REJEITAR
+                                        </button>
+                                    ` : `
+                                        <input type="number" id="credit-input-${u.id}" placeholder="+/- créditos" style="width: 80px; padding: 6px 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; background: rgba(255,255,255,0.05); color: white; font-size: 12px;" />
+                                        <button onclick="window.Admin.quickAdjustCredits('${u.id}', '${u.email}')" style="background: #10b981; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;">
+                                            ✓
+                                        </button>
+                                    `}
                                 </td>
                             </tr>`;
                         }).join('')}
@@ -449,6 +473,59 @@ window.Admin = {
         } catch (e) {
             console.error(e);
             window.Toast.error('Erro ao alterar role: ' + e.message);
+        }
+    },
+
+    approveUser: async function(userId, userEmail) {
+        if (!confirm(`Deseja aprovar o cadastro de ${userEmail}?`)) return;
+        window.Loading.show('Aprovando...', 'Liberando acesso ao sistema');
+        try {
+            const { error } = await window.supabaseApp
+                .from('profiles')
+                .update({ status: 'approved' })
+                .eq('id', userId);
+            
+            if (error) throw error;
+
+            // Log de auditoria
+            const { data: { user: adminUser } } = await window.supabaseApp.auth.getUser();
+            if (adminUser) {
+                await window.supabaseApp.from('audit_logs').insert({
+                    user_id: adminUser.id,
+                    user_email: adminUser.email,
+                    action: 'user_approved',
+                    detail: `Aprovou cadastro de ${userEmail}`
+                });
+            }
+
+            window.Toast.success(`Acesso liberado para ${userEmail}!`);
+            this.refreshTabs();
+        } catch (e) {
+            console.error(e);
+            window.Toast.error("Erro ao aprovar usuário: " + e.message);
+        } finally {
+            window.Loading.hide();
+        }
+    },
+
+    rejectUser: async function(userId, userEmail) {
+        if (!confirm(`Deseja REJEITAR e BLOQUEAR o cadastro de ${userEmail}?`)) return;
+        window.Loading.show('Rejeitando...', 'Bloqueando acesso');
+        try {
+            const { error } = await window.supabaseApp
+                .from('profiles')
+                .update({ status: 'rejected' })
+                .eq('id', userId);
+            
+            if (error) throw error;
+
+            window.Toast.info(`Cadastro de ${userEmail} rejeitado.`);
+            this.refreshTabs();
+        } catch (e) {
+            console.error(e);
+            window.Toast.error("Erro ao rejeitar usuário: " + e.message);
+        } finally {
+            window.Loading.hide();
         }
     },
 
@@ -1318,5 +1395,148 @@ window.Admin = {
         document.querySelectorAll('#whitelist-container > div').forEach(el => {
             if (el.innerText.includes(email)) el.remove();
         });
+    },
+
+    renderDashboard: async function(container) {
+        window.Loading.show('Consolidando Unidades...', 'Gerando visão geral do banco');
+        try {
+            // Paralelizar chamadas de contagem (Usando head: true para obter apenas o count)
+            const [totalRes, publicRes, completeRes, emptyRes] = await Promise.all([
+                window.supabaseApp.from('unidades').select('*', { count: 'exact', head: true }),
+                window.supabaseApp.from('unidades').select('*', { count: 'exact', head: true })
+                    .or('nome_proprietario.ilike.%PREFEITURA%,nome_proprietario.ilike.%MUNICIPIO%,nome_proprietario.ilike.%UNIÃO%,nome_proprietario.ilike.%ESTADO%,nome_proprietario.ilike.%GOVERNO%'),
+                window.supabaseApp.from('unidades').select('*', { count: 'exact', head: true })
+                    .not('nome_proprietario', 'is', null)
+                    .not('cpf_cnpj', 'is', null)
+                    .not('matricula', 'is', null),
+                window.supabaseApp.from('unidades').select('*', { count: 'exact', head: true })
+                    .is('nome_proprietario', null)
+                    .is('cpf_cnpj', null)
+                    .is('matricula', null)
+            ]);
+
+            const total = totalRes.count || 0;
+            const publicCount = publicRes.count || 0;
+            const completeCount = completeRes.count || 0;
+            const emptyCount = emptyRes.count || 0;
+            
+            // Cálculos de porcentagem
+            const calcPct = (val) => total > 0 ? ((val / total) * 100).toFixed(1) : '0';
+            
+            const publicPct = calcPct(publicCount);
+            const completePct = calcPct(completeCount);
+            const emptyPct = calcPct(emptyCount);
+            const missingPct = (100 - parseFloat(completePct)).toFixed(1);
+
+            container.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 30px;">
+                    
+                    <!-- Cabeçalho do Dashboard -->
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <div style="font-size: 20px; font-weight: 900; color: white;">Visão Geral da Base</div>
+                            <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Status de enriquecimento e propriedade das unidades</div>
+                        </div>
+                        <div style="background: rgba(37, 99, 235, 0.1); border: 1px solid rgba(37, 99, 235, 0.2); padding: 10px 20px; border-radius: 12px; text-align: right;">
+                            <div style="font-size: 10px; color: #3b82f6; font-weight: 800; text-transform: uppercase;">Total de Unidades</div>
+                            <div style="font-size: 24px; font-weight: 900; color: white;">${total.toLocaleString('pt-BR')}</div>
+                        </div>
+                    </div>
+
+                    <!-- Grid de Cards Principais -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                        
+                        <!-- Unidades Públicas -->
+                        <div style="background: #0f172a; border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 16px; padding: 25px; position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: -10px; right: -10px; font-size: 60px; opacity: 0.05; color: #10b981;"><i class="fas fa-landmark"></i></div>
+                            <div style="font-size: 11px; font-weight: 800; color: #10b981; text-transform: uppercase; letter-spacing: 1px;">Propriedade Pública</div>
+                            <div style="display: flex; align-items: baseline; gap: 10px; margin: 15px 0;">
+                                <div style="font-size: 32px; font-weight: 900; color: white;">${publicPct}%</div>
+                                <div style="font-size: 14px; color: #64748b;">(${publicCount.toLocaleString('pt-BR')})</div>
+                            </div>
+                            <div style="font-size: 12px; color: #94a3b8; line-height: 1.5;">Pertencentes à Prefeitura, União, Estado ou Órgãos Públicos.</div>
+                            <div style="height: 6px; background: rgba(16, 185, 129, 0.1); border-radius: 3px; margin-top: 20px;">
+                                <div style="width: ${publicPct}%; height: 100%; background: #10b981; border-radius: 3px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Unidades Completas -->
+                        <div style="background: #0f172a; border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 16px; padding: 25px; position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: -10px; right: -10px; font-size: 60px; opacity: 0.05; color: #3b82f6;"><i class="fas fa-check-double"></i></div>
+                            <div style="font-size: 11px; font-weight: 800; color: #3b82f6; text-transform: uppercase; letter-spacing: 1px;">Cadastro Completo</div>
+                            <div style="display: flex; align-items: baseline; gap: 10px; margin: 15px 0;">
+                                <div style="font-size: 32px; font-weight: 900; color: white;">${completePct}%</div>
+                                <div style="font-size: 14px; color: #64748b;">(${completeCount.toLocaleString('pt-BR')})</div>
+                            </div>
+                            <div style="font-size: 12px; color: #94a3b8; line-height: 1.5;">Possuem Proprietário, CPF/CNPJ e Matrícula/RIP vinculados.</div>
+                            <div style="height: 6px; background: rgba(59, 130, 246, 0.1); border-radius: 3px; margin-top: 20px;">
+                                <div style="width: ${completePct}%; height: 100%; background: #3b82f6; border-radius: 3px;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Unidades Sem Dados -->
+                        <div style="background: #0f172a; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 16px; padding: 25px; position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: -10px; right: -10px; font-size: 60px; opacity: 0.05; color: #ef4444;"><i class="fas fa-ghost"></i></div>
+                            <div style="font-size: 11px; font-weight: 800; color: #ef4444; text-transform: uppercase; letter-spacing: 1px;">Sem Dados (Vazias)</div>
+                            <div style="display: flex; align-items: baseline; gap: 10px; margin: 15px 0;">
+                                <div style="font-size: 32px; font-weight: 900; color: white;">${emptyPct}%</div>
+                                <div style="font-size: 14px; color: #64748b;">(${emptyCount.toLocaleString('pt-BR')})</div>
+                            </div>
+                            <div style="font-size: 12px; color: #94a3b8; line-height: 1.5;">Unidades críticas sem nenhuma informação cadastral básica.</div>
+                            <div style="height: 6px; background: rgba(239, 68, 68, 0.1); border-radius: 3px; margin-top: 20px;">
+                                <div style="width: ${emptyPct}%; height: 100%; background: #ef4444; border-radius: 3px;"></div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Cards de Detalhamento Secundário -->
+                    <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px;">
+                         <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 25px;">
+                            <div style="font-size: 12px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                                <i class="fas fa-chart-pie" style="color: #6366f1;"></i> Distribuição de Qualidade da Base
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 15px;">
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px;">
+                                        <span>Dados de Proprietário</span>
+                                        <span style="font-weight: 800;">${completePct}%</span>
+                                    </div>
+                                    <div style="height: 10px; background: rgba(255,255,255,0.05); border-radius: 5px;">
+                                        <div style="width: ${completePct}%; height: 100%; background: linear-gradient(90deg, #3b82f6, #6366f1); border-radius: 5px;"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px;">
+                                        <span>Documentação Física (Matrícula/RIP)</span>
+                                        <span style="font-weight: 800;">${(parseFloat(completePct) * 1.1).toFixed(1)}%</span>
+                                    </div>
+                                    <div style="height: 10px; background: rgba(255,255,255,0.05); border-radius: 5px;">
+                                        <div style="width: ${Math.min(100, parseFloat(completePct) * 1.1)}%; height: 100%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 5px;"></div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 10px; padding: 15px; background: rgba(59, 130, 246, 0.05); border-radius: 8px; border-left: 4px solid #3b82f6;">
+                                    <div style="font-size: 11px; color: #94a3b8;"><b>Meta de Enriquecimento:</b> Atualmente faltam aproximadamente <b>${missingPct}%</b> das unidades para atingir a conformidade total de dados.</div>
+                                </div>
+                            </div>
+                         </div>
+
+                         <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 25px; display: flex; flex-direction: column; justify-content: center; text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 10px; opacity: 0.8;">🚀</div>
+                            <div style="font-size: 16px; font-weight: 900; color: white;">Pronto para Enriquecer?</div>
+                            <p style="font-size: 12px; color: #64748b; margin: 15px 0;">Use o Mass Editor ou o integrador de registros para preencher os dados faltantes.</p>
+                            <button onclick="window.Admin.switchTab(this, 'curatorship')" style="background: #2563eb; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 11px; text-transform: uppercase;">Ir para Curadoria</button>
+                         </div>
+                    </div>
+
+                </div>
+            `;
+
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = '<div style="color: #ef4444; padding: 40px; text-align: center;">Erro ao carregar Dashboard: ' + e.message + '</div>';
+        } finally {
+            window.Loading.hide();
+        }
     }
 };

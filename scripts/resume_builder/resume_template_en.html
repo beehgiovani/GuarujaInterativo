@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume - Bruno Giovani Pereira</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 40px auto; padding: 20px; }
+        .header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 20px; }
+        .header h1 { margin: 0; color: #1e3a8a; font-size: 28px; }
+        .contact-info { font-size: 14px; color: #64748b; margin-top: 5px; }
+        .contact-info a { color: #2563eb; text-decoration: none; }
+        h2 { color: #1e3a8a; border-left: 4px solid #2563eb; padding-left: 10px; margin-top: 25px; font-size: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
+        .summary { font-style: italic; background: #f8fafc; padding: 15px; border-radius: 8px; margin-top: 10px; }
+        .experience-item { margin-bottom: 18px; }
+        .experience-header { display: flex; justify-content: space-between; align-items: baseline; font-weight: bold; }
+        .experience-title { color: #1e40af; font-size: 16px; }
+        .experience-title a { color: inherit; text-decoration: none; }
+        .experience-title a:hover { text-decoration: underline; }
+        .description { font-style: italic; color: #475569; margin: 3px 0 3px 0; font-size: 13px; }
+        .period { color: #64748b; font-size: 13px; white-space: nowrap; margin-left: 10px; }
+        ul { margin-top: 4px; padding-left: 20px; }
+        li { margin-bottom: 3px; font-size: 14px; }
+        .skill-row { margin-bottom: 4px; font-size: 14px; }
+        .skill-category { font-weight: bold; color: #1e40af; }
+        a { color: #2563eb; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Bruno Giovani Pereira</h1>
+        <div class="contact-info">
+            Guaruja, SP &mdash; Brazil &nbsp;|&nbsp; brunogp.corretor@gmail.com &nbsp;|&nbsp; +55 (13) 99124-8146<br>
+            <a href="https://www.linkedin.com/in/beehgiovani/">linkedin.com/in/beehgiovani/</a>
+            &nbsp;|&nbsp;
+            <a href="https://github.com/beehgiovani/">github.com/beehgiovani/</a>
+        </div>
+    </div>
+
+    <div class="summary">
+        Full-Stack Software Engineer specialized in <strong>GIS / Geospatial Technology</strong>, <strong>Advanced Automation (OSINT / LegalTech)</strong>, and <strong>Native Mobile Development</strong>. Proven track record building high-impact, production-ready systems — from GIS-powered real estate intelligence platforms to industrial-scale PWAs for major brands. Self-taught, product-minded, and driven by solving real-world problems end-to-end.
+    </div>
+
+    <h2>Experience & Technical Achievements</h2>
+
+    <div class="experience-item">
+        <div class="experience-header">
+            <span class="experience-title">Senior Consultant (Kotlin) | Soo Tech</span>
+            <span class="period">Jan 2024 &ndash; Present</span>
+        </div>
+        <p class="description">High-value Kotlin consulting for the Agilidade client via Soo Tech.</p>
+        <ul>
+            <li>Optimized critical performance modules in Kotlin, reducing processing latency.</li>
+            <li>Developed new features and maintained codebase following agile methodologies for fast, high-quality delivery.</li>
+            <li>Applied advanced Kotlin design patterns to ensure software scalability and maintainability.</li>
+            <li>Collaborated closely with the product team to translate business requirements into precise technical specifications.</li>
+        </ul>
+    </div>
+
+    <div class="experience-item">
+        <div class="experience-header">
+            <span class="experience-title">Founder &amp; Lead Developer &mdash; GuaruGeo &nbsp;<a href="https://guarujainterativo.web.app/">guarujainterativo.web.app</a></span>
+            <span class="period">2023 &ndash; Present</span>
+        </div>
+        <p class="description">GIS intelligence platform for the real estate market on the coast of São Paulo, Brazil.</p>
+        <ul>
+            <li>Full-stack architecture: React, Node.js, Supabase (PostgreSQL + Realtime) and Firebase Hosting.</li>
+            <li>Advanced GeoJSON visualization using Google Maps API and Overpass API; spatial indexing via RBush for high performance.</li>
+            <li>OSINT engine for ownership identification, legal status lookup and data enrichment across entire city lots.</li>
+            <li>Admin dashboard with real-time analytics, integrated CRM and automated legal certificate issuance.</li>
+        </ul>
+    </div>
+
+    <div class="experience-item">
+        <div class="experience-header">
+            <span class="experience-title">Lead Developer | Cimed Experience (Portfolio Project) &nbsp;<a href="https://cimedexperience.web.app/">cimedexperience.web.app</a></span>
+            <span class="period">2024 &ndash; 2025</span>
+        </div>
+        <p class="description">Independent concept project built to demonstrate industrial-scale PWA capabilities. No formal affiliation with Cimed.</p>
+        <ul>
+            <li>Full stack: React 19, TypeScript, Vite, Framer Motion, Zustand, Supabase and Firebase.</li>
+            <li>Social Hub with live leaderboards, gamified missions (Drive-to-Store), and AI assistant "Claud.ia".</li>
+            <li>Video scraping pipeline; installable PWA with native-like experience on iOS and Android — no app stores needed.</li>
+        </ul>
+    </div>
+
+    <div class="experience-item">
+        <div class="experience-header">
+            <span class="experience-title">Automation &amp; Data Engineering Specialist</span>
+            <span class="period">2021 &ndash; Present</span>
+        </div>
+        <p class="description">High-performance data extraction and critical process automation (LegalTech / GovTech).</p>
+        <ul>
+            <li><strong>2-Stage Real Estate Scraper:</strong> HTTP + Playwright pipeline with Tor multi-port IP rotation and a custom-trained CAPTCHA OCR model (PyTorch / CRNN).</li>
+            <li><strong>Certibot (LegalTech):</strong> Bot for automated legal certificate issuance across 6+ government portals (TRF3, TJSP, TST, TRT2, Receita Federal, CJF).</li>
+            <li><strong>GIS Data Mining:</strong> Automated extraction and normalization of zoning polygons (urban planning PDFs/CAD files) into structured geospatial databases.</li>
+        </ul>
+    </div>
+
+    <div class="experience-item">
+        <div class="experience-header">
+            <span class="experience-title">Native Android Developer</span>
+            <span class="period">2021 &ndash; 2023</span>
+        </div>
+        <p class="description">High-quality mobile solutions in Kotlin with AI and hardware integrations.</p>
+        <ul>
+            <li><strong><a href="https://github.com/beehgiovani/NidusCare">NidusCare:</a></strong> MVVM + Hilt + Coroutines; Google Gemini Vision AI for medication prescription scanning via photo; Firebase backend.</li>
+            <li><strong><a href="https://github.com/beehgiovani/MarketPoster">MarketPoster:</a></strong> ML-powered background removal for retail design; Bluetooth thermal printing integration.</li>
+            <li><strong>PharmaFlow:</strong> Pharmacy delivery ecosystem with native Android app and React/Firebase admin dashboard.</li>
+        </ul>
+    </div>
+
+    <h2>Technical Skills</h2>
+    <div class="skill-row"><span class="skill-category">Languages:</span> JavaScript (React / Node.js), TypeScript, Python, Kotlin (Jetpack Compose), SQL.</div>
+    <div class="skill-row"><span class="skill-category">Cloud &amp; Infra:</span> Supabase, Firebase, Docker, PostgreSQL, Linux Server, DigitalOcean.</div>
+    <div class="skill-row"><span class="skill-category">Frontend:</span> React 19, Vite, Framer Motion, Zustand, Leaflet.js, Google Maps API.</div>
+    <div class="skill-row"><span class="skill-category">Automation / AI:</span> PyTorch (CRNN OCR), Playwright, ddddocr, Tor, Gemini API, Vertex AI.</div>
+    <div class="skill-row"><span class="skill-category">Specialties:</span> OSINT, GIS, LegalTech, PWA, Anti-Bot Scraping, Computer Vision, Gamification.</div>
+
+    <h2>Education</h2>
+    <ul>
+        <li>Bachelor's Degree in Pharmacy (In progress) &mdash; Foundation for HealthTech solutions.</li>
+        <li>Software Development &mdash; Self-taught with advanced specializations in Full-Stack and Data Engineering.</li>
+    </ul>
+</body>
+</html>

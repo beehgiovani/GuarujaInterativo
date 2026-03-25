@@ -3,6 +3,18 @@
 // ==========================================
 // Core utilities: Toast, Loading, formatDocument, UTM conversions, etc.
 
+// --- PRODUCTION LOG SUPPRESSION ---
+// Only allow console logs on localhost to keep production console clean.
+window.DEBUG_MODE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+if (!window.DEBUG_MODE) {
+    const noOp = () => {};
+    console.log = noOp;
+    console.info = noOp;
+    console.debug = noOp;
+    // console.warn and console.error are preserved for critical tracing
+}
+
 // ========================================
 // TOAST NOTIFICATION SYSTEM
 // ========================================
