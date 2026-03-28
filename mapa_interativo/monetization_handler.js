@@ -9,6 +9,7 @@ window.Monetization = {
     unlockedLots: new Set(),
     unlockedPersons: new Set(), // Persistent set for CPFs/CNPJs unlocked by this user
     pixConfig: null,
+    plansConfig: null, // Dynamic configuration from app_settings
 
     // Early declaration to avoid racing
     isUnlockedPerson: function(cpf_cnpj) {
@@ -23,6 +24,7 @@ window.Monetization = {
         await this.loadUserProfile();
         await this.loadUnlocks();
         await this.loadPixConfig();
+        await this.loadPlansConfig();
         this.updateBalanceUI();
         
         // Dispatch event for other handlers to know tiers are ready
@@ -70,6 +72,16 @@ window.Monetization = {
         } catch (e) { console.error("Error loading pix config:", e); }
     },
 
+    loadPlansConfig: async function() {
+        try {
+            const { data } = await window.supabaseApp.from('app_settings').select('value').eq('key', 'plans_config').maybeSingle();
+            if (data && data.value) {
+                this.plansConfig = data.value;
+                console.log("💰 Plans Configuration Loaded:", this.plansConfig);
+            }
+        } catch (e) { console.error("Error loading plans config:", e); }
+    },
+
     loadUserProfile: async function() {
         if (window.isGuest) {
             this.userProfile = { credits: 0, role: 'guest', full_name: 'Visitante' };
@@ -93,8 +105,10 @@ window.Monetization = {
             this.userRole = String(data.role || 'user').toLowerCase();
             console.log("👤 User Role Loaded:", this.userRole);
 
-            // Verificação de Perfil Completo (Nova Funcionalidade)
-            if (data.profile_completed === false && this.userRole !== 'admin') {
+            // Verificação de Perfil Completo (Garante CPF/CNPJ e agora Telefone)
+            const isMissingData = !data.profile_completed || !data.phone;
+            if (isMissingData && this.userRole !== 'admin' && this.userRole !== 'master') {
+                console.log("⚠️ Perfil incompleto detectado. Solicitando dados...");
                 setTimeout(() => this.showProfileCompletionModal(), 2000);
             }
 
@@ -239,9 +253,14 @@ window.Monetization = {
                             <input type="text" id="p-document" placeholder="000.000.000-00" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
                         </div>
 
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">WhatsApp (Celular)</label>
+                            <input type="text" id="p-phone" value="${this.userProfile?.phone || ''}" placeholder="(13) 90000-0000" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                        </div>
+
                         <div style="margin-bottom: 25px;">
                             <label style="display: block; font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Nome do Corretor / Imobiliária</label>
-                            <input type="text" id="p-broker" placeholder="Ex: João Silva ou Imobiliária Guarujá" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                            <input type="text" id="p-broker" value="${this.userProfile?.broker_name || ''}" placeholder="Ex: João Silva ou Imobiliária Guarujá" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
                             <small style="color: #94a3b8; font-size: 10px;">Este nome será usado em suas mensagens aos clientes.</small>
                         </div>
 
@@ -293,6 +312,7 @@ window.Monetization = {
         const personType = document.getElementById('p-person-type').value;
         const documentRaw = document.getElementById('p-document').value;
         const brokerName = document.getElementById('p-broker').value;
+        const phone = document.getElementById('p-phone').value;
 
         // Limpa documento para validar apenas números
         const documentVal = documentRaw.replace(/\D/g, '');
@@ -303,6 +323,10 @@ window.Monetization = {
         }
         if (!brokerName || brokerName.length < 3) {
             window.Toast.warning("Preencha o nome do corretor responsável.");
+            return;
+        }
+        if (!phone || phone.length < 8) {
+            window.Toast.warning("Preencha o seu WhatsApp corretamente.");
             return;
         }
 
@@ -316,6 +340,7 @@ window.Monetization = {
                     person_type: personType,
                     cpf_cnpj: documentVal,
                     broker_name: brokerName,
+                    phone: phone,
                     profile_completed: true
                 })
                 .eq('id', user.id);
@@ -343,13 +368,26 @@ window.Monetization = {
 
     // Limites mensais por tier (calculados para ROI > 2x com custo de R$ 2.00/ficha)
     getTierLimits: function() {
-        const limits = { user: 0, pro: 30, elite: 80, vip: 110, master: 10000, admin: Infinity };
-        const labels = { user: 'Gratuito', pro: 'Pro', elite: 'Elite', vip: 'Anual VIP', master: 'Master', admin: 'Master' };
-        const colors = { user: '#64748b', pro: '#2563eb', elite: '#7c3aed', vip: '#1e293b', master: '#b45309', admin: '#b45309' };
+        // Fallback hardcoded values (same as before)
+        const defaultLimits = { user: 0, pro: 30, elite: 80, vip: 110, master: 10000, admin: Infinity };
+        const defaultLabels = { user: 'Gratuito', pro: 'Pro', elite: 'Elite', vip: 'Anual VIP', master: 'Master', admin: 'Master' };
+        
         const role = this.userRole || 'user';
+        
+        // Use dynamic config if available
+        let limit = defaultLimits[role] ?? 0;
+        let label = defaultLabels[role] ?? 'Gratuito';
+        
+        if (this.plansConfig && this.plansConfig[role]) {
+            limit = this.plansConfig[role].credits ?? limit;
+            label = this.plansConfig[role].name ?? label;
+        }
+
+        const colors = { user: '#64748b', pro: '#2563eb', elite: '#7c3aed', vip: '#1e293b', master: '#b45309', admin: '#b45309' };
+        
         return {
-            limit: limits[role] ?? 0,
-            label: labels[role] ?? 'Gratuito',
+            limit: limit,
+            label: label,
             color: colors[role] ?? '#64748b'
         };
     },
@@ -789,31 +827,31 @@ window.Monetization = {
                         <div style="background: white; border: ${isCurrentPlan('pro') ? '2px solid #10b981' : '2px solid #2563eb'}; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; position: relative; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
                             ${currentBadge('pro')}
                             ${!isCurrentPlan('pro') && !isCurrentPlan('elite') && !isCurrentPlan('master') && !isCurrentPlan('admin') ? `<div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #2563eb; color: white; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 800;">MAIS VENDIDO</div>` : ''}
-                            <div style="font-size: 11px; font-weight: 800; color: #2563eb; text-transform: uppercase;">Pro</div>
-                            <div style="font-size: 24px; font-weight: 800; color: #1e293b; margin: 10px 0;">R$ 199<small style="font-size: 13px; font-weight: 400;">/mês</small></div>
+                            <div style="font-size: 11px; font-weight: 800; color: #2563eb; text-transform: uppercase;">${this.plansConfig?.pro?.name || 'Pro'}</div>
+                            <div style="font-size: 24px; font-weight: 800; color: #1e293b; margin: 10px 0;">R$ ${this.plansConfig?.pro?.price || 199}<small style="font-size: 13px; font-weight: 400;">/mês</small></div>
                             <ul style="list-style: none; padding: 0; margin: 16px 0; font-size: 12px; color: #475569; flex: 1; line-height: 1.8;">
-                                <li>✅ <b>30 fichas/mês inclusas</b></li>
+                                <li>✅ <b>${this.plansConfig?.pro?.credits || 30} fichas/mês inclusas</b></li>
                                 <li>✅ Radar Farol (básico)</li>
                                 <li>✅ Busca por proprietário</li>
                                 <li>✅ CRM pessoal</li>
                             </ul>
-                            <button onclick="window.Monetization.startSubscription('pro')" style="width: 100%; padding: 10px; border: none; border-radius: 8px; background: #2563eb; color: white; font-weight: 700; cursor: pointer; font-size: 12px; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">Assinar Pro</button>
+                            <button onclick="window.Monetization.startSubscription('pro')" style="width: 100%; padding: 10px; border: none; border-radius: 8px; background: #2563eb; color: white; font-weight: 700; cursor: pointer; font-size: 12px; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">Assinar ${this.plansConfig?.pro?.name || 'Pro'}</button>
                         </div>
 
                         <!-- Elite -->
                         <div style="background: linear-gradient(160deg, #faf5ff, #ede9fe); border: ${isCurrentPlan('elite') ? '2px solid #10b981' : '2px solid #7c3aed'}; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; position: relative; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
                             ${currentBadge('elite')}
                             ${!isCurrentPlan('elite') ? `<div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #f59e0b; color: #1e293b; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 800;">NOVO</div>` : ''}
-                            <div style="font-size: 11px; font-weight: 800; color: #7c3aed; text-transform: uppercase;">Elite</div>
-                            <div style="font-size: 24px; font-weight: 800; color: #1e293b; margin: 10px 0;">R$ 449<small style="font-size: 13px; font-weight: 400;">/mês</small></div>
+                            <div style="font-size: 11px; font-weight: 800; color: #7c3aed; text-transform: uppercase;">${this.plansConfig?.elite?.name || 'Elite'}</div>
+                            <div style="font-size: 24px; font-weight: 800; color: #1e293b; margin: 10px 0;">R$ ${this.plansConfig?.elite?.price || 449}<small style="font-size: 13px; font-weight: 400;">/mês</small></div>
                             <ul style="list-style: none; padding: 0; margin: 16px 0; font-size: 12px; color: #475569; flex: 1; line-height: 1.8;">
-                                <li>✅ <b>80 fichas/mês inclusas</b></li>
+                                <li>✅ <b>${this.plansConfig?.elite?.credits || 80} fichas/mês inclusas</b></li>
                                 <li>✅ Radar Farol completo</li>
                                 <li>✅ Dossiê PDF automático</li>
                                 <li>✅ Alertas de oportunidade</li>
                                 <li>✅ Relatórios avançados</li>
                             </ul>
-                            <button onclick="window.Monetization.startSubscription('elite')" style="width: 100%; padding: 10px; border: none; border-radius: 8px; background: #7c3aed; color: white; font-weight: 700; cursor: pointer; font-size: 12px; box-shadow: 0 4px 12px rgba(124,58,237,0.3);">Assinar Elite</button>
+                            <button onclick="window.Monetization.startSubscription('elite')" style="width: 100%; padding: 10px; border: none; border-radius: 8px; background: #7c3aed; color: white; font-weight: 700; cursor: pointer; font-size: 12px; box-shadow: 0 4px 12px rgba(124,58,237,0.3);">Assinar ${this.plansConfig?.elite?.name || 'Elite'}</button>
                         </div>
 
                         <!-- Anual VIP -->
@@ -848,10 +886,15 @@ window.Monetization = {
 
     startSubscription: function(plan) {
         let price = 0;
-        if (plan === 'pro') price = 199;
-        else if (plan === 'elite') price = 449;
-        else if (plan === 'annual') price = 4990;
-        else return;
+        if (this.plansConfig && this.plansConfig[plan]) {
+            price = this.plansConfig[plan].price;
+        } else {
+            // Fallbacks
+            if (plan === 'pro') price = 199;
+            else if (plan === 'elite') price = 449;
+            else if (plan === 'annual') price = 4990;
+            else return;
+        }
 
         // Open Pix Checkout for Plan
         const modal = document.createElement('div');

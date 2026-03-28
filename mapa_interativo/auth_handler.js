@@ -115,14 +115,15 @@ window.Auth = {
         window.Toast.success("Login realizado!");
     },
 
-    signUp: async function(email, password, fullName) {
-        window.Loading.show("Criando conta...", "Aguarde a aprovação");
+    signUp: async function(email, password, fullName, phone) {
+        window.Loading.show("Criando conta...", "Aguarde a ativação");
         const { data, error } = await window.supabaseApp.auth.signUp({
             email: email,
             password: password,
             options: {
                 data: {
                     full_name: fullName,
+                    phone: phone
                 }
             }
         });
@@ -229,14 +230,19 @@ window.Auth = {
             await window.Monetization.loadUserProfile(user.id);
         }
 
-        // 2. Verificar Status de Aprovação (Manual Approval Gate)
+        // 2. Verificar Status de Aprovação (Manual Approval Gate - RELAXED)
         const profile = window.Monetization ? window.Monetization.userProfile : null;
-        const status = profile ? profile.status : 'approved'; // Default approved para evitar lock se profile falhar? Melhor 'pending'?
+        const status = profile ? profile.status : 'pending'; 
 
-        if (status === 'pending' || status === 'rejected') {
+        if (status === 'rejected') {
             console.warn("⚠️ Acesso bloqueado: Status =", status);
             this.showPendingApprovalUI(status);
             return;
+        }
+
+        // Se status for 'pending', permitimos acesso ao mapa básico, mas alguns recursos (planos) podem estar limitados
+        if (status === 'pending') {
+            console.info("ℹ️ Usuário em status 'pending'. Acesso permitido ao mapa básico.");
         }
 
         // 3. Proceder com Inicialização
@@ -303,6 +309,7 @@ window.Auth = {
         const btn = document.getElementById('btnLogin');
         const toggleLink = document.getElementById('toggleAuthLink');
         const nameField = document.getElementById('loginNameField');
+        const phoneField = document.getElementById('loginPhoneField');
         const passField = document.getElementById('loginPassField');
         const forgotLink = document.getElementById('forgotPasswordLink');
         const resendLink = document.getElementById('resendConfirmationLink');
@@ -315,6 +322,7 @@ window.Auth = {
             title.innerText = "Criar Conta";
             btn.innerText = "Cadastrar";
             nameField.style.display = 'block';
+            if (phoneField) phoneField.style.display = 'block';
             if (passField) passField.style.display = 'block';
             if (forgotLink) forgotLink.style.display = 'none';
             if (resendLink) resendLink.style.display = 'flex';
@@ -323,7 +331,8 @@ window.Auth = {
             btn.onclick = () => this.signUp(
                 document.getElementById('loginUser').value,
                 document.getElementById('loginPass').value,
-                document.getElementById('loginName').value
+                document.getElementById('loginName').value,
+                document.getElementById('loginPhone').value
             );
         } else if (mode === 'forgot') {
             title.innerText = "Recuperar Senha";
@@ -364,6 +373,7 @@ window.Auth = {
             title.innerText = 'Acesso Restrito';
             btn.innerText = 'Entrar';
             nameField.style.display = 'none';
+            if (phoneField) phoneField.style.display = 'none';
             if (passField) passField.style.display = 'block';
             if (forgotLink) forgotLink.style.display = 'block';
             if (resendLink) resendLink.style.display = 'none';

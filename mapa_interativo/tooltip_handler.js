@@ -489,9 +489,10 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
     `;
 
     tooltipHTML += `
-    <div class="lot-tooltip-header" style="flex: 0 0 auto; background: ${headerGradient}; color: white; padding: 16px 20px; display: flex; flex-direction: column; border-radius: 12px 12px 0 0; gap: 12px; min-width: 350px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
-            <div style="flex: 1; min-width: 180px;">
+    <div id="lot-tooltip-header" class="lot-tooltip-header" style="position: relative;">
+        <button id="lot-tooltip-close-btn" class="lot-tooltip-close" title="Fechar">×</button>
+        <div class="header-content-flex">
+            <div class="header-text-info">
                 <div style="font-weight: 700; font-size: 16px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
                     <i class="fas fa-building" style="color: #60a5fa;"></i> 
                     ${headerTitle}
@@ -507,7 +508,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
                 </div>` : ''}
                 ${unitsStatsHtml}
             </div>
-            <div class="header-buttons-wrapper" style="display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; justify-content: flex-end; flex-shrink: 0;">
+            <div id="lot-tooltip-actions" class="header-buttons-wrapper">
                 ${navigateBtn}
                 ${cameraBtn}
                 ${streetViewBtn}
@@ -564,18 +565,10 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
                 </button>
                 ` : ''}
 
-                <button class="lot-tooltip-close" style="background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0 4px; line-height: 1; margin-left: 4px;">×</button>
             </div>
         </div>
 
-        <!-- Trigger Badge Check -->
-        <script>
-            setTimeout(() => {
-                if(window.AnunciosHandler) window.AnunciosHandler.checkBadge('${lote.inscricao}');
-            }, 500);
-        </script>
-
-        <!-- TAB BAR -->
+        <!-- TAB BAR (Now inside the dark header) -->
         <div class="lot-tooltip-tabs">
             <button onclick="window.switchLotTab('geral')" id="tab-btn-geral" class="lot-tab-btn ${activeTab === 'geral' ? 'active' : ''}">
                 <i class="fas fa-info-circle"></i> Visão Geral
@@ -584,8 +577,9 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
                 <i class="fas fa-file-invoice"></i> Documentação Profissional
             </button>
         </div>
+    </div> <!-- Close lot-tooltip-header -->
 
-        <div class="lot-tooltip-body">
+    <div class="lot-tooltip-body">
     `;
 
     // 1. TAB GERAL

@@ -84,9 +84,7 @@ window.setupSearchAndFilters = function () {
             if (!window.google || !window.google.maps) return;
             
             try {
-                const { AutocompleteService, PlacesService } = await google.maps.importLibrary("places");
-                const autocompleteService = new AutocompleteService();
-                const placesService = new PlacesService(document.createElement('div'));
+                const { AutocompleteSuggestion, Place } = await google.maps.importLibrary("places");
                 
                 const input = document.getElementById('searchInput');
                 const suggestionsBox = document.getElementById('googleSuggestions');
@@ -108,24 +106,26 @@ window.setupSearchAndFilters = function () {
                         return;
                     }
 
-                    googleTimeout = setTimeout(() => {
-                        autocompleteService.getPlacePredictions({
-                            input: query,
-                            locationBias: guarujaBounds,
-                            origin: guarujaBounds.getCenter(),
-                            componentRestrictions: { country: 'br' }
-                        }, (predictions, status) => {
-                            if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) {
+                    googleTimeout = setTimeout(async () => {
+                        try {
+                            const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+                                input: query,
+                                locationBias: guarujaBounds,
+                                origin: guarujaBounds.getCenter(),
+                                region: 'br'
+                            });
+
+                            if (!suggestions || suggestions.length === 0) {
                                 suggestionsBox.innerHTML = '';
                                 suggestionsBox.classList.add('hidden');
                                 return;
                             }
 
                             // Filtro extra manual para garantir que o resultado seja no Guarujá
-                            const filtered = predictions.filter(p => 
-                                p.description.toLowerCase().includes('guaruja') || 
-                                p.description.toLowerCase().includes('guarujá')
-                            );
+                            const filtered = suggestions.filter(s => {
+                                const text = s.placePrediction.text.text.toLowerCase();
+                                return text.includes('guaruja') || text.includes('guarujá');
+                            });
 
                             if (filtered.length > 0) {
                                 renderGoogleSuggestions(filtered);
@@ -133,47 +133,57 @@ window.setupSearchAndFilters = function () {
                                 suggestionsBox.innerHTML = '';
                                 suggestionsBox.classList.add('hidden');
                             }
-                        });
+                        } catch (err) {
+                            console.error("Autocomplete fetch failed", err);
+                        }
                     }, 300);
                 });
 
-                function renderGoogleSuggestions(predictions) {
+                function renderGoogleSuggestions(suggestions) {
                     suggestionsBox.innerHTML = '';
                     
-                    predictions.forEach(prediction => {
+                    suggestions.forEach(suggestion => {
+                        const prediction = suggestion.placePrediction;
                         const item = document.createElement('div');
                         item.className = 'suggestion-item';
                         item.innerHTML = `
                             <i class="fas fa-map-marker-alt"></i>
                             <div class="suggestion-text">
-                                <span class="suggestion-main">${prediction.structured_formatting.main_text}</span>
-                                <span class="suggestion-sub">${prediction.structured_formatting.secondary_text}</span>
+                                <span class="suggestion-main">${prediction.mainText.text}</span>
+                                <span class="suggestion-sub">${prediction.secondaryText.text}</span>
                             </div>
                         `;
-                        item.onclick = () => selectGoogleSuggestion(prediction);
+                        item.onclick = () => selectGoogleSuggestion(suggestion);
                         suggestionsBox.appendChild(item);
                     });
 
                     suggestionsBox.classList.remove('hidden');
                 }
 
-                async function selectGoogleSuggestion(prediction) {
-                    input.value = prediction.description;
+                async function selectGoogleSuggestion(suggestion) {
+                    const prediction = suggestion.placePrediction;
+                    input.value = prediction.text.text;
                     suggestionsBox.innerHTML = '';
                     suggestionsBox.classList.add('hidden');
 
-                    placesService.getDetails({
-                        placeId: prediction.place_id,
-                        fields: ['geometry', 'address_components']
-                    }, (place, status) => {
-                        if (status === google.maps.places.PlacesServiceStatus.OK && place.geometry && place.geometry.location) {
-                            const lat = place.geometry.location.lat();
-                            const lng = place.geometry.location.lng();
+                    try {
+                        const place = new Place({
+                            id: prediction.placeId,
+                            requestedLanguage: 'pt-BR'
+                        });
+
+                        await place.fetchFields({
+                            fields: ['location', 'addressComponents']
+                        });
+
+                        if (place.location) {
+                            const lat = place.location.lat();
+                            const lng = place.location.lng();
 
                             // EXTRA VALIDATION: Check if address is actually in Guarujá
-                            const isGuaruja = place.address_components.some(c => 
+                            const isGuaruja = place.addressComponents.some(c => 
                                 (c.types.includes("locality") || c.types.includes("administrative_area_level_2")) &&
-                                (c.long_name.toLowerCase().includes("guaruja") || c.long_name.toLowerCase().includes("guarujá"))
+                                (c.longText.toLowerCase().includes("guaruja") || c.longText.toLowerCase().includes("guarujá"))
                             );
 
                             if (!isGuaruja) {
@@ -195,12 +205,15 @@ window.setupSearchAndFilters = function () {
                             }
 
                             // 3. Trigger local search for the street too
-                            const route = place.address_components.find(c => c.types.includes("route"));
+                            const route = place.addressComponents.find(c => c.types.includes("route"));
                             if (route) {
-                                window.performSearch(route.long_name);
+                                window.performSearch(route.longText);
                             }
                         }
-                    });
+                    } catch (err) {
+                        console.error("Place details fetch failed", err);
+                        window.Toast.error("Erro ao obter detalhes do endereço.");
+                    }
                 }
 
                 // Close suggestions on outside click

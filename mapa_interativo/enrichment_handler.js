@@ -109,6 +109,14 @@ window.Enrichment = {
                 if (savedProp && window.ProprietarioTooltip) {
                     window.ProprietarioTooltip.show(savedProp.id);
                 }
+                // 🕸️ GRAFO RELACIONAL: processar familiares/sócios retornados
+                if (savedProp && window.EnrichmentRelationsUI) {
+                    window.EnrichmentRelationsUI.process(
+                        savedProp.id,
+                        savedProp.nome_completo || result.name || result.company_name,
+                        result
+                    );
+                }
             } else {
                 window.Toast.info('Nenhum dado encontrado na base externa. Seus créditos foram preservados.');
             }
@@ -269,6 +277,15 @@ window.Enrichment = {
 
                 // Efeito Radar: destacar todos os imóveis deste proprietário
                 this.highlightOwnerPortfolio(cpfLimpo, proprietario.nome_completo);
+
+                // 🕸️ GRAFO RELACIONAL: processar familiares/sócios retornados
+                if (window.EnrichmentRelationsUI) {
+                    window.EnrichmentRelationsUI.process(
+                        proprietario.id,
+                        proprietario.nome_completo,
+                        result
+                    );
+                }
 
                 if (window.ProprietarioTooltip && window.currentTooltip) {
                     window.ProprietarioTooltip.show(proprietario.id);

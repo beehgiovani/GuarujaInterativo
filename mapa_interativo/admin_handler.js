@@ -124,11 +124,12 @@ window.Admin = {
                             <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
                                 <td style="padding: 15px 20px;">
                                     <div style="font-weight: 700; color: white;">${u.email}</div>
-                                    <div style="font-size: 11px; color: #64748b;">${u.id.slice(0, 8)} · ${u.full_name || 'Sem nome'}</div>
+                                    <div style="font-size: 11px; color: #64748b;">${u.id.slice(0, 8)}${u.full_name ? ' · ' + u.full_name : ''}</div>
+                                    ${u.phone ? `<div style="font-size: 11px; color: #10b981; margin-top: 2px;"><i class="fab fa-whatsapp"></i> ${u.phone}</div>` : ''}
                                 </td>
                                 <td style="padding: 15px 20px; text-align: center;">
                                     <span style="font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 20px; background: ${statusColor}20; color: ${statusColor}; border: 1px solid ${statusColor}40;">
-                                        ${status.toUpperCase()}
+                                        ${(status || 'pending').toUpperCase()}
                                     </span>
                                 </td>
                                 <td style="padding: 15px 20px; text-align: center;">
@@ -531,23 +532,29 @@ window.Admin = {
 
     renderMonetization: async function(container) {
         // Carrega dados em paralelo
-        let cupons = [], pendingPlans = [], pendingCredits = [], pixConfig = null;
+        let cupons = [], pendingPlans = [], pendingCredits = [], pixConfig = null, plansConfig = null;
         try {
             const [
                 cuponsRes,
                 plansRes,
                 creditsRes,
-                pixRes
+                settingsRes
             ] = await Promise.all([
                 window.supabaseApp.from('cupons_desconto').select('*').order('created_at', { ascending: false }),
                 window.supabaseApp.from('pending_plan_activations').select('*, profiles(email)').eq('status', 'pending').order('created_at', { ascending: false }),
                 window.supabaseApp.from('pending_credit_releases').select('*, profiles(email)').eq('status', 'pending').order('created_at', { ascending: false }),
-                window.supabaseApp.from('app_settings').select('*').eq('key', 'pix_config').maybeSingle()
+                window.supabaseApp.from('app_settings').select('*').in('key', ['pix_config', 'plans_config'])
             ]);
             cupons = cuponsRes.data || [];
             pendingPlans = plansRes.data || [];
             pendingCredits = creditsRes.data || [];
-            pixConfig = pixRes.data?.value || null;
+            
+            const settings = settingsRes.data || [];
+            pixConfig = settings.find(s => s.key === 'pix_config')?.value || null;
+            plansConfig = settings.find(s => s.key === 'plans_config')?.value || {
+                pro: { name: 'Pro', price: 199, credits: 30 },
+                elite: { name: 'Elite', price: 449, credits: 80 }
+            };
         } catch(e) { /* tabelas podem não existir ainda */ }
 
         const totalPending = pendingPlans.length + pendingCredits.length;
@@ -629,9 +636,13 @@ window.Admin = {
                                         </div>
                                         ${p.valor_pago ? `<div style="font-size: 11px; color: #10b981; margin-top: 2px;">Valor pago: R$ ${p.valor_pago}</div>` : ''}
                                     </div>
-                                    <div style="display: flex; gap: 8px; flex-shrink: 0;">
+                                    <div style="display: flex; gap: 8px; flex-shrink: 0; align-items: center;">
+                                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                                            <label style="font-size: 9px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">Bônus (Créditos)</label>
+                                            <input type="number" id="plan-bonus-${p.id}" value="0" style="width: 60px; padding: 4px 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: white; font-size: 11px;" />
+                                        </div>
                                         <button onclick="window.Admin.rejectPlan('${p.id}')" style="background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.2); padding: 6px 12px; border-radius: 8px; font-size: 11px; cursor: pointer;">Recusar</button>
-                                        <button onclick="window.Admin.approvePlan('${p.id}', '${p.user_id}', '${p.plano_solicitado}')" style="background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;">✓ Ativar</button>
+                                        <button onclick="window.Admin.approvePlan('${p.id}', '${p.user_id}', '${p.plano_solicitado}', document.getElementById('plan-bonus-${p.id}').value)" style="background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;">✓ Ativar</button>
                                     </div>
                                 </div>
                             `).join('')}
@@ -664,9 +675,13 @@ window.Admin = {
                                             ${c.comprovante_url ? `· <a href="${c.comprovante_url}" target="_blank" style="color: #3b82f6;">Comprovante</a>` : ''}
                                         </div>
                                     </div>
-                                    <div style="display: flex; gap: 8px; flex-shrink: 0;">
+                                    <div style="display: flex; gap: 8px; flex-shrink: 0; align-items: center;">
+                                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                                            <label style="font-size: 9px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">Qtd. Final</label>
+                                            <input type="number" id="credit-qty-${c.id}" value="${c.quantidade}" style="width: 60px; padding: 4px 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: white; font-size: 11px;" />
+                                        </div>
                                         <button onclick="window.Admin.rejectCredit('${c.id}')" style="background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.2); padding: 6px 12px; border-radius: 8px; font-size: 11px; cursor: pointer;">Recusar</button>
-                                        <button onclick="window.Admin.approveCredit('${c.id}', '${c.user_id}', ${c.quantidade})" style="background: #3b82f6; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;">✓ Liberar</button>
+                                        <button onclick="window.Admin.approveCredit('${c.id}', '${c.user_id}', document.getElementById('credit-qty-${c.id}').value)" style="background: #3b82f6; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;">✓ Liberar</button>
                                     </div>
                                 </div>
                             `).join('')}
@@ -723,6 +738,39 @@ window.Admin = {
                     `}
                 </div>
 
+                <!-- SEÇÃO 4: GESTÃO DE PREÇOS E LIMITES (NOVO) -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px;">
+                    <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 700; margin-bottom: 20px; letter-spacing: 1px;">💰 Gestão de Preços e Limites de Planos</div>
+                    <div id="plans-config-container" style="display: flex; flex-direction: column; gap: 16px;">
+                        <div style="display: grid; grid-template-columns: 100px 1fr 1fr 1fr; gap: 15px; align-items: center; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase;">
+                            <div>ID Plano</div>
+                            <div>Nome Público</div>
+                            <div>Preço (R$)</div>
+                            <div>Fichas/mês</div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 100px 1fr 1fr 1fr; gap: 15px; align-items: center;">
+                            <div style="font-weight: 700; color: #2563eb;">PRO</div>
+                            <input id="plan-name-pro" type="text" value="${plansConfig?.pro?.name || 'Pro'}" style="padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; font-size: 12px;" />
+                            <input id="plan-price-pro" type="number" value="${plansConfig?.pro?.price || 199}" style="padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; font-size: 12px;" />
+                            <input id="plan-credits-pro" type="number" value="${plansConfig?.pro?.credits || 30}" style="padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; font-size: 12px;" />
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 100px 1fr 1fr 1fr; gap: 15px; align-items: center;">
+                            <div style="font-weight: 700; color: #7c3aed;">ELITE</div>
+                            <input id="plan-name-elite" type="text" value="${plansConfig?.elite?.name || 'Elite'}" style="padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; font-size: 12px;" />
+                            <input id="plan-price-elite" type="number" value="${plansConfig?.elite?.price || 449}" style="padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; font-size: 12px;" />
+                            <input id="plan-credits-elite" type="number" value="${plansConfig?.elite?.credits || 80}" style="padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; font-size: 12px;" />
+                        </div>
+
+                        <div style="margin-top: 10px;">
+                            <button onclick="window.Admin.savePlansConfig()" style="background: #2563eb; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer;">
+                                <i class="fas fa-save"></i> Atualizar Preços e Limites
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         `;
     },
@@ -750,15 +798,60 @@ window.Admin = {
         }
     },
 
-    approvePlan: async function(pendingId, userId, plano) {
-        if (!confirm(`Ativar plano "${plano.toUpperCase()}" para este usuário?`)) return;
-        window.Loading.show('Ativando plano...', 'Atualizando role no banco');
+    savePlansConfig: async function() {
+        window.Loading.show("Salvando...", "Atualizando preços e limites");
         try {
-            await Promise.all([
-                window.supabaseApp.from('profiles').update({ role: plano }).eq('id', userId),
+            const config = {
+                pro: {
+                    name: document.getElementById('plan-name-pro').value,
+                    price: parseFloat(document.getElementById('plan-price-pro').value),
+                    credits: parseInt(document.getElementById('plan-credits-pro').value)
+                },
+                elite: {
+                    name: document.getElementById('plan-name-elite').value,
+                    price: parseFloat(document.getElementById('plan-price-elite').value),
+                    credits: parseInt(document.getElementById('plan-credits-elite').value)
+                }
+            };
+
+            const { error } = await window.supabaseApp.from('app_settings').upsert({
+                key: 'plans_config',
+                value: config,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'key' });
+
+            if (error) throw error;
+
+            window.Toast.success("Configuração de planos atualizada!");
+        } catch(e) {
+            console.error(e);
+            window.Toast.error("Erro ao salvar planos: " + e.message);
+        } finally {
+            window.Loading.hide();
+        }
+    },
+
+    approvePlan: async function(pendingId, userId, plano, bonusRaw) {
+        const bonus = parseInt(bonusRaw) || 0;
+        if (!confirm(`Ativar plano "${plano.toUpperCase()}" para este usuário?${bonus > 0 ? ` (Bônus: ${bonus} créditos)` : ''}`)) return;
+        window.Loading.show('Ativando plano...', 'Atualizando role e créditos');
+        try {
+            const updates = [
+                window.supabaseApp.from('profiles').update({ 
+                    role: plano,
+                    status: 'approved',
+                    subscription_period_start: new Date().toISOString(),
+                    monthly_unlocks_used: 0
+                }).eq('id', userId),
                 window.supabaseApp.from('pending_plan_activations').update({ status: 'approved', approved_at: new Date().toISOString() }).eq('id', pendingId)
-            ]);
-            window.Toast.success(`Plano ${plano.toUpperCase()} ativado!`);
+            ];
+
+            if (bonus > 0) {
+                updates.push(window.supabaseApp.rpc('adjust_credits_admin', { target_user_id: userId, amount_to_adjust: bonus }));
+            }
+
+            await Promise.all(updates);
+            window.Toast.success(`Plano ${plano.toUpperCase()} ativado!${bonus > 0 ? ` (+${bonus} créditos)` : ''}`);
             const activeTab = document.querySelector('.admin-tab.active');
             if (activeTab) this.switchTab(activeTab, 'monetization');
         } catch(e) {

@@ -56,6 +56,12 @@
 }
 ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
+}html, body { 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    height: 100% !important; 
+    width: 100% !important;
+    overflow: hidden !important;
 }
 
 body {
@@ -71,11 +77,16 @@ body {
 
 #app-container {
     display: flex;
-    height: 100vh;
+    height: 100% !important;
     width: 100vw;
-    position: relative;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
     visibility: visible !important;
     background: #0f172a; /* Dark background while map loads */
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 10;
 }
 
 #map {
@@ -363,8 +374,90 @@ textarea {
 
 /* Search-box moved to sidebar_styles.css */
 /* ============================================================
-   PWA PROMOTION CARD
+   LOT TOOLTIP HEADER & BUTTONS
    ============================================================ */
+.lot-tooltip-header {
+    flex: 0 0 auto;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    color: white;
+    padding: 24px 24px 0 24px; /* Bottom padding removed for tabs */
+    display: flex;
+    flex-direction: column;
+    border-radius: 16px 16px 0 0;
+    gap: 16px;
+    min-width: 350px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+.header-content-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.header-text-info {
+    flex: 1;
+    min-width: 180px;
+}
+
+.header-buttons-wrapper {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    flex-shrink: 0;
+}
+
+/* Fix desktop overlap with close button */
+@media (min-width: 769px) {
+    .header-buttons-wrapper {
+        padding-right: 40px;
+    }
+}
+
+.tooltip-action-btn {
+    flex-shrink: 0;
+}
+
+.lot-tooltip-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 20px;
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    z-index: 100;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.lot-tooltip-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.lot-tooltip-tabs {
+    display: flex;
+    background: rgba(255, 255, 255, 0.03);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 0 15px;
+    margin: 0 -24px; /* Pull to edges of header */
+    gap: 5px;
+}
+
 .pwa-promo-card {
     position: fixed;
     bottom: 20px;
@@ -377,6 +470,35 @@ textarea {
     z-index: 10002;
     border: 1px solid #e2e8f0;
     animation: slideUp 0.5s ease-out;
+}
+
+.lot-tab-btn {
+    padding: 14px 22px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.lot-tab-btn:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.lot-tab-btn.active {
+    color: #60a5fa;
+    border-bottom-color: #60a5fa;
+    background: rgba(96, 165, 250, 0.1);
 }
 
 .pwa-promo-header {

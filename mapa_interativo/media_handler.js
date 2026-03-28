@@ -7,10 +7,8 @@ window.MediaHandler = (function() {
     let placesService = null;
 
     function initService() {
-        if (!placesService && window.google && window.google.maps) {
-            placesService = new google.maps.places.PlacesService(window.map);
-        }
-        return placesService;
+        // legacy PlacesService is kept only as fallback if needed, but modern API doesn't need it.
+        return true; 
     }
 
     /**
@@ -25,25 +23,29 @@ window.MediaHandler = (function() {
             return lote._googlePhotos;
         }
 
-        const runQuery = (q) => {
-            return new Promise((resolve) => {
+        const runQuery = async (q) => {
+            try {
+                if (!window.google || !window.google.maps || !window.google.maps.places || !window.google.maps.places.Place) {
+                    console.warn('[MediaHandler] Modern Places API not available');
+                    return null;
+                }
+
+                const { Place } = await google.maps.importLibrary("places");
                 const request = {
-                    query: q,
-                    fields: ['photos', 'place_id', 'name', 'formatted_address'],
+                    textQuery: q,
+                    fields: ['photos', 'id', 'displayName', 'formattedAddress'],
                     locationBias: { 
-                        lat: parseFloat(lote._lat), 
-                        lng: parseFloat(lote._lng) 
+                        center: { lat: parseFloat(lote._lat), lng: parseFloat(lote._lng) },
+                        radius: 500 // Search within 500m
                     }
                 };
                 
-                placesService.findPlaceFromQuery(request, (results, status) => {
-                    if (status === google.maps.places.PlacesServiceStatus.OK && results && results[0]) {
-                        resolve(results[0]);
-                    } else {
-                        resolve(null);
-                    }
-                });
-            });
+                const { places } = await Place.searchByText(request);
+                return (places && places.length > 0) ? places[0] : null;
+            } catch (e) {
+                console.error('[MediaHandler] Place Search Error:', e);
+                return null;
+            }
         };
 
         const name = (lote.building_name || lote.nome_edificio || '').trim();
@@ -95,9 +97,19 @@ window.MediaHandler = (function() {
         }
 
         if (place && place.photos && place.photos.length > 0) {
-            const urls = place.photos.slice(0, 15).map(p => p.getUrl({ maxWidth: 1200, maxHeight: 800 }));
+            const urls = place.photos.slice(0, 15).map(p => {
+                try {
+                    // Modern API (v1) uses getURI, legacy used getUrl
+                    if (typeof p.getURI === 'function') return p.getURI({ maxWidth: 1200, maxHeight: 800 });
+                    if (typeof p.getUrl === 'function') return p.getUrl({ maxWidth: 1200, maxHeight: 800 });
+                } catch (err) {
+                    console.warn('[MediaHandler] Error getting photo URI:', err);
+                }
+                return null;
+            }).filter(u => u !== null);
+
             lote._googlePhotos = urls;
-            console.log(`[MediaHandler] Success! Found ${urls.length} photos for ${place.name} at ${place.formatted_address}`);
+            console.log(`[MediaHandler] Success! Found ${urls.length} photos for ${place.displayName?.text || 'Place'} at ${place.formattedAddress}`);
             return urls;
         }
 

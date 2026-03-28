@@ -35,20 +35,18 @@ window.OSMHandler = (function() {
         `;
 
         const query = `
-            [out:json][timeout:25];
+            [out:json][timeout:20];
             (
-              nwr["amenity"~"school|pharmacy|bakery|restaurant|cafe|marketplace"](around:400,${lat},${lng});
-              nwr["shop"~"supermarket|convenience|bakery"](around:400,${lat},${lng});
+              node["amenity"~"school|pharmacy|bakery|restaurant|cafe"](around:400,${lat},${lng});
+              node["shop"~"supermarket|convenience|bakery"](around:400,${lat},${lng});
             );
-            out center body;
+            out body;
         `;
 
         for (const mirrorUrl of MIRRORS) {
             try {
-                console.log(`📡 Tentando mirror OSM: ${mirrorUrl}`);
-                
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s per mirror
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s instead of 25s
 
                 const response = await fetch(mirrorUrl, {
                     method: 'POST',
@@ -57,6 +55,12 @@ window.OSMHandler = (function() {
                 });
                 
                 clearTimeout(timeoutId);
+
+                // Handle 429, 504 and other non-OKs
+                if (response.status === 429 || response.status === 504 || response.status === 502) {
+                    console.log(`[OSM] Mirror ${response.status} (Server Busy): ${mirrorUrl}. Trying next...`);
+                    continue; 
+                }
 
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -135,11 +139,11 @@ window.OSMHandler = (function() {
 
     function renderWidget(groups, container) {
         let html = `
-            <div style="margin-top: 10px; border-top: 1px dashed #e2e8f0; paddingTop: 12px;">
-                <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">
-                    📍 Vizinhança (Raio 400m)
+            <div style="margin-top: 15px; border-top: 2px solid #f1f5f9; padding-top: 15px;">
+                <div style="font-size: 11px; color: #1e293b; font-weight: 800; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-map-marked-alt" style="color: #3b82f6;"></i> Vizinhança (Raio 400m)
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
         `;
 
         let hasData = false;

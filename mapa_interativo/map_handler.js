@@ -363,57 +363,37 @@ window.initMap = async function () {
         if (!mapDiv) throw new Error("Container 'map' não encontrado no DOM");
 
         window.PREMIUM_MAP_STYLE = [
-            { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#0e213b" }] },
-            { "featureType": "landscape", "elementType": "geometry", "stylers": [{ "color": "#f5f5f5" }] },
-            { "featureType": "poi", "elementType": "labels", "stylers": [{ "visibility": "off" }] },
+            { "featureType": "poi", "stylers": [{ "visibility": "off" }] },
+            { "featureType": "transit", "stylers": [{ "visibility": "off" }] },
+            { "featureType": "road", "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
+            { "featureType": "business", "stylers": [{ "visibility": "off" }] },
+            { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#a2daf2" }] },
+            { "featureType": "landscape", "elementType": "geometry", "stylers": [{ "color": "#fafafa" }] },
             { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#ffffff" }] },
-            { "featureType": "road", "elementType": "labels.text.fill", "stylers": [{ "color": "#757575" }] },
-            { "featureType": "road.highway", "elementType": "geometry", "stylers": [{ "color": "#dadada" }] },
-            { "featureType": "transit", "elementType": "geometry", "stylers": [{ "color": "#e5e5e5" }] },
-            { "featureType": "administrative", "elementType": "geometry", "stylers": [{ "color": "#cfd8dc" }] },
-            { "featureType": "administrative.locality", "elementType": "labels.text.fill", "stylers": [{ "color": "#2c3e50" }] },
-            { "featureType": "poi.park", "elementType": "geometry", "stylers": [{ "color": "#e8f5e9" }] },
-            { "featureType": "poi.park", "elementType": "labels.text.fill", "stylers": [{ "color": "#2e7d32" }] }
+            { "featureType": "road", "elementType": "labels.text.fill", "stylers": [{ "color": "#8a8a8a" }] },
+            { "featureType": "administrative", "elementType": "labels.text.fill", "stylers": [{ "color": "#444444" }] }
         ];
 
         const mapOptions = {
             center: { lat: -23.9934, lng: -46.2567 },
             zoom: 13,
             minZoom: 12,
-            mapTypeId: 'roadmap', // Changed to roadmap for premium style
-            styles: window.PREMIUM_MAP_STYLE,
-            tilt: 45, // Inicia automaticamente em 45º (3D perspective)
+            mapTypeId: 'roadmap',
+            tilt: 45, // 3D perspective
             heading: 0,
-            mapId: window.GoogleMapsConfig.MAP_ID || 'DEMO_MAP_ID',
+            mapId: window.GoogleMapsConfig?.MAP_ID || 'DEMO_MAP_ID', // Requerido para Marcadores Avançados
             disableDefaultUI: false,
             gestureHandling: 'greedy',
             streetViewControl: true,
             mapTypeControl: true
         };
 
-        // mapBackBtn already declared at top of initMap
-        if (mapBackBtn) mapBackBtn.onclick = () => window.goUpLevel();
-
-        if (window.map) {
-            // Se já existia um mapa (ex: Leaflet), removemos o container interno
-            const mapDiv = document.getElementById('map');
-            mapDiv.innerHTML = ''; 
-        }
-
-        // --- SAFETY WAIT LOOP PARA O MAPA ---
-        if (!window.google || !window.google.maps || !window.google.maps.Map) {
-            console.warn("⏳ Google Maps SDK atrasado. Aguardando construtor...");
-            await new Promise((resolve) => {
-                const mapCheck = setInterval(() => {
-                    if (window.google && window.google.maps && window.google.maps.Map) {
-                        clearInterval(mapCheck);
-                        resolve();
-                    }
-                }, 100);
-            });
-        }
-
         window.map = new google.maps.Map(document.getElementById('map'), mapOptions);
+
+        // Resolve o erro de conflito: "A Map's styles property cannot be set when a mapId is present."
+        // Como o usuário quer o estilo padrão (claro) da imagem de referência, 
+        // removemos o suporte a estilos locais via código quando há um Map ID.
+        console.log("[MapHandler] Inicializado com Map ID:", mapOptions.mapId);
 
         // --- NATIVE CONTROL INTEGRATION ---
         
@@ -618,7 +598,7 @@ window.initMap = async function () {
             }
 
             // Ativa os modos suportados
-            drawingManagerControl.drawingModes = ['polygon', 'polyline', 'circle', 'rectangle', 'marker'];
+            drawingManagerControl.drawingModes = ['polygon', 'polyline', 'circle', 'rectangle', 'marker'];  
             
             // Configurações visuais (opcional, se a biblioteca permitir via props ou CSS)
             // No momento, o controle Web Component usa estilos padrão do Google.
@@ -1232,7 +1212,7 @@ function processDataHierarchy() {
     }
 
     // --- Multi-Centroid Calculation for Large Zones ---
-    const GRID_SIZE = 0.01; // ~1.2km grid for Clustering
+    const GRID_SIZE = 0.008; // Cluster muito maior para evitar "mar de etiquetas" no nível 0
 
     for (const zoneKey in window.cityData) {
         const zone = window.cityData[zoneKey];
@@ -1354,23 +1334,58 @@ window.renderHierarchy = function() {
             zone.displayPoints.forEach(pt => {
                 const zoneColor = window.getZoneColor(zoneKey);
                 
-                // Conteúdo HTML para o marcador 3D
+                // Inject premium animations if not already present
+                if (!window._zoneStylesInjected) {
+                    const style = document.createElement('style');
+                    style.innerHTML = `
+                        @keyframes zone-entry {
+                            from { opacity: 0; transform: scale(0.9); }
+                            to { opacity: 1; transform: scale(1); }
+                        }
+                        .zone-label-premium {
+                            animation: zone-entry 0.3s ease-out forwards;
+                            transition: all 0.2s ease-in-out !important;
+                            cursor: pointer;
+                        }
+                        .zone-label-premium:hover {
+                            transform: scale(1.15) !important;
+                            z-index: 1000 !important;
+                            filter: brightness(1.05);
+                        }
+                    `;
+                    document.head.appendChild(style);
+                    window._zoneStylesInjected = true;
+                }
+
+                // Config de estilo do rótulo
+                const hex = zoneColor.replace('#', '');
+                const r = parseInt(hex.substring(0, 2), 16);
+                const g = parseInt(hex.substring(2, 4), 16);
+                const b = parseInt(hex.substring(4, 6), 16);
+                const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                const textColor = brightness < 160 ? '#ffffff' : '#0f172a';
+                const borderColor = brightness < 160 ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.2)';
                 const content = document.createElement('div');
+                content.className = 'zone-label-premium';
                 content.innerHTML = `<div style="
-                    background-color:${zoneColor};
-                    color: white;
-                    border-radius: 8px;
-                    padding: 2px 6px;
+                    background-color: ${zoneColor}; 
+                    color: ${textColor};
+                    border: 1.5px solid ${borderColor};
+                    border-radius: 20px;
+                    padding: 4px 12px;
                     display: table;
                     white-space: nowrap;
                     text-align: center;
-                    font-weight: bold;
-                    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+                    font-weight: 800;
+                    font-size: 10px;
+                    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
                     cursor: pointer;
-                    border: 2px solid white;
                     transform: translate(-50%, -50%);
+                    font-family: 'Outfit', sans-serif;
+                    text-transform: uppercase;
+                    letter-spacing: 0.8px;
                 ">
-                    <div style="font-size:12px;">ZONA ${zone.id}</div>
+                    ZONA ${zone.id}
                 </div>`;
 
                 try {
@@ -1423,23 +1438,36 @@ window.renderHierarchy = function() {
             const centerLng = sector.lngSum / sector.count;
 
             const zoneColor = window.getZoneColor(window.currentZone);
+            
+            // Determinar contraste para o Setor
+            const hex = zoneColor.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            const textColor = brightness < 160 ? '#ffffff' : '#0f172a';
+            const borderColor = brightness < 160 ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.2)';
+
             const content = document.createElement('div');
+            content.className = 'zone-label-premium';
             content.innerHTML = `<div style="
                 background-color:${zoneColor};
-                color: white;
-                border-radius: 6px;
-                padding: 1px 4px;
+                color: ${textColor};
+                border: 1.5px solid ${borderColor};
+                border-radius: 20px;
+                padding: 3px 10px;
                 display: table;
                 white-space: nowrap;
                 text-align: center;
-                font-weight: bold;
-                box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+                font-weight: 800;
+                font-size: 10px;
+                box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
                 cursor: pointer;
-                border: 1.5px solid white;
                 transform: translate(-50%, -50%);
-                opacity: 0.9;
+                font-family: 'Outfit', sans-serif;
+                letter-spacing: 0.5px;
             ">
-                <div style="font-size:11px;">${sector.id}</div>
+                ${sector.id}
             </div>`;
 
             try {
@@ -1532,12 +1560,38 @@ window.renderHierarchy = function() {
                 displayLabel = `🔥 ${displayLabel}`;
             }
 
+            // Determinar contraste para o Lote
+            const hexLote = color.replace('#', '');
+            const rL = parseInt(hexLote.substring(0, 2), 16) || 0;
+            const gL = parseInt(hexLote.substring(2, 4), 16) || 0;
+            const bL = parseInt(hexLote.substring(4, 6), 16) || 0;
+            const brightnessL = (rL * 299 + gL * 587 + bL * 114) / 1000;
+            const textColorL = brightnessL < 160 ? '#ffffff' : '#0f172a';
+            const borderColorL = brightnessL < 160 ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.15)';
+
             const content = document.createElement('div');
+            content.className = 'zone-label-premium';
             content.innerHTML = `<div style="
-                background-color:${color}; color: white; border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: bold;
-                box-shadow: 0 0 2px rgba(0, 0, 0, 0.5); cursor: pointer; border: 1px solid white; transform: translate(-50%, -50%);
-                display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;
-                max-width: 90px; white-space: normal; line-height: 1.2; text-align: center;
+                background-color: ${color}; 
+                color: ${textColorL}; 
+                border-radius: 20px; 
+                padding: 3px 10px; 
+                font-size: 10px; 
+                font-weight: 700;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); 
+                cursor: pointer; 
+                border: 1.5px solid ${borderColorL}; 
+                transform: translate(-50%, -50%);
+                display: -webkit-box; 
+                -webkit-line-clamp: 2; 
+                -webkit-box-orient: vertical; 
+                overflow: hidden; 
+                text-overflow: ellipsis;
+                max-width: 120px; 
+                white-space: normal; 
+                line-height: 1.2; 
+                text-align: center;
+                font-family: 'Outfit', sans-serif;
             ">${displayLabel}</div>`;
 
             const marker = new google.maps.marker.AdvancedMarkerElement({
@@ -1549,7 +1603,10 @@ window.renderHierarchy = function() {
 
             marker.addListener('gmp-click', async () => {
                 const fullLote = await window.fetchLotDetails(lote.inscricao);
-                if (fullLote) window.showLotTooltip(fullLote, 0, 0);
+                if (fullLote) {
+                    // Decouple rendering from touchend event to avoid performance violations (1s+ lag)
+                    setTimeout(() => window.showLotTooltip(fullLote, 0, 0), 10);
+                }
             });
 
             content.addEventListener('contextmenu', (e) => {
@@ -1617,7 +1674,9 @@ window.renderHierarchy = function() {
 
                 marker.addListener('gmp-click', async () => {
                     const fullLote = await window.fetchLotDetails(lote.inscricao);
-                    if (fullLote) window.showLotTooltip(fullLote, 0, 0);
+                    if (fullLote) {
+                        setTimeout(() => window.showLotTooltip(fullLote, 0, 0), 10);
+                    }
                 });
 
                 googleMarkers.push(marker);

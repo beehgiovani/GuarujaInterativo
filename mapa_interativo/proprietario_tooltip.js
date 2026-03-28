@@ -320,8 +320,8 @@ window.ProprietarioTooltip = {
                             <span style="background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 4px; font-weight: 600;">${tipoPessoa}</span>
                             <span>
                                 CPF/CNPJ: 
-                                <span class="doc-value" style="font-family: monospace; font-weight: 700;">${window.formatDocument(prop.cpf_cnpj, window.Monetization.isUnlockedPerson(prop.cpf_cnpj))}</span>
-                                <i class="fas ${window.Monetization.isUnlockedPerson(prop.cpf_cnpj) ? 'fa-eye' : 'fa-lock'}" style="cursor: pointer; margin-left: 6px; opacity: 0.8;" 
+                                <span class="doc-value" style="font-family: monospace; font-weight: 700;">${window.formatDocument(prop.cpf_cnpj, window.Monetization?.isUnlockedPerson?.(prop.cpf_cnpj))}</span>
+                                <i class="fas ${window.Monetization?.isUnlockedPerson?.(prop.cpf_cnpj) ? 'fa-eye' : 'fa-lock'}" style="cursor: pointer; margin-left: 6px; opacity: 0.8;" 
                                    onclick="window.toggleCpfVisibility(this, '${prop.cpf_cnpj}')" title="Mostrar/Ocultar"></i>
                             </span>
                         </div>

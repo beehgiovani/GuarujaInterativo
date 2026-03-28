@@ -110,9 +110,15 @@
 - [ ] Final Codebase-wide Privacy Scan
 - [ ] Create application preview
     - [ ] Start local server and capture recordings
-    - [ ] Generate GIFs and update `walkthrough.md`
-    - [ ] Capture "User" flow (Restricted)
-    - [ ] Capture "Master" flow (Professional/Clean)
+    - [x] Final verification and walkthrough <!-- id: 11 -->
+- [x] Force #app-container to top:0 to fix persistent gap <!-- id: 12 -->
+- [x] Fix media_handler.js TypeError (getUrl -> getURI) <!-- id: 17 -->
+- [x] Resolve Map ID vs Styles conflict in map_handler.js <!-- id: 18 -->
+- [x] Migrate AutocompleteService to modern Places API (v1) <!-- id: 19 -->
+- [x] Fix desktop close button overlap in layout.css <!-- id: 20 -->
+- [x] Optimize OSM resilience for 504 Gateway Timeouts <!-- id: 21 -->
+- [ ] Capture "User" flow (Restricted)
+- [ ] Capture "Master" flow (Professional/Clean)
 
 ## 7. Branding Profisisonal (LinkedIn & CV)
 - [x] Gerar novo currículo e bio.
