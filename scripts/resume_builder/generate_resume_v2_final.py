@@ -84,7 +84,6 @@ CERTIFICATIONS = [
 ]
 
 EDUCATION = [
-    "Bacharelado em Farmácia (Cursando) - Base para soluções HealthTech e Analytics Farmacêutico.",
     "Desenvolvimento de Sistemas - Especialização autônoma em Full-Stack e Engenharia de Dados de Alta Performance."
 ]
 

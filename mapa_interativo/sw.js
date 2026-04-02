@@ -1,4 +1,4 @@
-const CACHE_NAME = 'guarugeo-cache-v1.4';
+const CACHE_NAME = 'guarugeo-cache-v1.5';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -47,6 +47,7 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
+    // We don't skipWaiting() automatically anymore to allow user to save work
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             console.log('[Service Worker] Caching app shell');
@@ -55,17 +56,48 @@ self.addEventListener('install', (event) => {
     );
 });
 
-self.addEventListener('fetch', (event) => {
-    // Only handle GET requests
-    if (event.request.method !== 'GET') return;
 
-    // Skip Supabase/External APIs - Let them handle their own resilience
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        Promise.all([
+            // Clean up old caches
+            caches.keys().then((keyList) => {
+                return Promise.all(keyList.map((key) => {
+                    if (key !== CACHE_NAME) {
+                        console.log('[Service Worker] Removing old cache', key);
+                        return caches.delete(key);
+                    }
+                }));
+            }),
+            // Take control of all pages immediately
+            self.clients.claim()
+        ])
+    );
+});
+
+self.addEventListener('fetch', (event) => {
+    if (event.request.method !== 'GET') return;
     if (event.request.url.includes('supabase.co') || event.request.url.includes('googleapis.com')) return;
 
+    // Special logic for the big JSON - Cache First
+    if (event.request.url.includes('lotes_merged.json')) {
+        event.respondWith(
+            caches.match(event.request).then((cachedResponse) => {
+                if (cachedResponse) return cachedResponse;
+                return fetch(event.request).then((networkResponse) => {
+                    const responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
+                    return networkResponse;
+                });
+            })
+        );
+        return;
+    }
+
+    // Default strategy: Stale-While-Revalidate
     event.respondWith(
         caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
             const fetchPromise = fetch(event.request).then((networkResponse) => {
-                // Update cache if successful
                 if (networkResponse && networkResponse.status === 200) {
                     const responseToCache = networkResponse.clone();
                     caches.open(CACHE_NAME).then((cache) => {
@@ -74,15 +106,8 @@ self.addEventListener('fetch', (event) => {
                 }
                 return networkResponse;
             }).catch((err) => {
-                console.error('[SW] Network error for:', event.request.url, err);
-                // Return cache if we have it
                 if (cachedResponse) return cachedResponse;
-                // Last resort: Return a generic failure response instead of throwing
-                return new Response('Network error occurred and no cache available', {
-                    status: 503,
-                    statusText: 'Service Unavailable',
-                    headers: new Headers({ 'Content-Type': 'text/plain' })
-                });
+                return new Response('Network error occurred', { status: 503, headers: { 'Content-Type': 'text/plain' } });
             });
 
             return cachedResponse || fetchPromise;
@@ -90,15 +115,10 @@ self.addEventListener('fetch', (event) => {
     );
 });
 
-self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then((keyList) => {
-            return Promise.all(keyList.map((key) => {
-                if (key !== CACHE_NAME) {
-                    console.log('[Service Worker] Removing old cache', key);
-                    return caches.delete(key);
-                }
-            }));
-        })
-    );
+// Listener for manual update triggering from index.html
+self.addEventListener('message', (event) => {
+    if (event.data === 'SKIP_WAITING') {
+        self.skipWaiting();
+    }
 });
+

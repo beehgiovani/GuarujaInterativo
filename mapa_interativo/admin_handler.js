@@ -1536,7 +1536,30 @@ window.Admin = {
                         </div>
                     </div>
 
+                    <!-- Visitor & Online Stats -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                        <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 16px; padding: 20px; display: flex; align-items: center; gap: 15px;">
+                            <div style="width: 44px; height: 44px; background: rgba(59, 130, 246, 0.1); color: #3b82f6; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                <i class="fas fa-fingerprint"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">Visitantes Únicos</div>
+                                <div id="admin-visit-count" style="font-size: 24px; font-weight: 900; color: white;">...</div>
+                            </div>
+                        </div>
+                        <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 16px; padding: 20px; display: flex; align-items: center; gap: 15px;">
+                            <div style="width: 44px; height: 44px; background: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">Usuários Online</div>
+                                <div id="admin-online-count" style="font-size: 24px; font-weight: 900; color: #10b981;">...</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Grid de Cards Principais -->
+
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
                         
                         <!-- Unidades Públicas -->
@@ -1624,6 +1647,16 @@ window.Admin = {
 
                 </div>
             `;
+
+            // Atualizar contadores de rastreamento (Assíncrono)
+            if (window.Tracking) {
+                window.Tracking.getStats().then(stats => {
+                    const vEl = document.getElementById('admin-visit-count');
+                    const oEl = document.getElementById('admin-online-count');
+                    if (vEl) vEl.innerText = stats.uniqueVisitors.toLocaleString('pt-BR');
+                    if (oEl) oEl.innerText = stats.onlineUsers.toLocaleString('pt-BR');
+                });
+            }
 
         } catch (e) {
             console.error(e);

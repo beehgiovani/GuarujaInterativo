@@ -61,6 +61,9 @@ window.Auth = {
             localStorage.removeItem('guaruja_auth');
             document.getElementById('loginOverlay').style.display = 'flex';
             document.getElementById('loginOverlay').classList.remove('hidden');
+            
+            // Puxar as estatísticas reais para a vitrine do login
+            this.loadLiveStats();
         }
 
         // Initialize Default State (apenas se não logado ainda)
@@ -215,9 +218,25 @@ window.Auth = {
     },
 
     logout: async function() {
+        console.log("🚪 Iniciando Logout...");
         localStorage.removeItem('guaruja_auth');
-        await window.supabaseApp.auth.signOut();
+        
+        // Desativa a flag de inicialização para evitar que o listener de auth tente re-inicializar
+        this._appInitialized = false;
+
+        try {
+            const { error } = await window.supabaseApp.auth.signOut();
+            if (error) console.error("Erro no signOut do Supabase:", error);
+            
+            // Forçamos o reload manual caso o onAuthStateChange não dispare rápido o suficiente
+            console.log("♻️ Recarregando página para limpar estado...");
+            window.location.href = window.location.origin + window.location.pathname;
+        } catch (e) {
+            console.error("Erro crítico no logout:", e);
+            window.location.reload();
+        }
     },
+
 
     handleAuthenticatedUser: async function(user) {
         if (this._appInitialized) {
@@ -383,6 +402,43 @@ window.Auth = {
                 document.getElementById('loginUser').value,
                 document.getElementById('loginPass').value
             );
+        }
+    },
+
+    // Função para carregar os números reais do banco na tela de login
+    loadLiveStats: async function() {
+        console.log("📊 Buscando números reais para a vitrine...");
+        try {
+            // Contagem total de lotes
+            const { count: totalLotes } = await window.supabaseApp
+                .from('lotes')
+                .select('*', { count: 'exact', head: true });
+
+            // Contagem de lotes públicos (exemplo: zona 0 ou filtro específico)
+            const { count: publicLotes } = await window.supabaseApp
+                .from('lotes')
+                .select('*', { count: 'exact', head: true })
+                .eq('zona', '0');
+
+            // Contagem de matrículas (unidades que possuem o campo matrícula preenchido)
+            const { count: totalMatriculas } = await window.supabaseApp
+                .from('unidades')
+                .select('*', { count: 'exact', head: true })
+                .not('matricula', 'is', null);
+
+            // Atualizando os elementos na tela
+            if (document.getElementById('home-total-count')) 
+                document.getElementById('home-total-count').innerText = (totalLotes || 0).toLocaleString('pt-BR');
+            
+            if (document.getElementById('home-public-count')) 
+                document.getElementById('home-public-count').innerText = (publicLotes || 0).toLocaleString('pt-BR');
+
+            if (document.getElementById('home-matricula-count')) 
+                document.getElementById('home-matricula-count').innerText = (totalMatriculas || 0).toLocaleString('pt-BR');
+
+            console.log("✅ Vitrine atualizada com sucesso!");
+        } catch (err) {
+            console.error("❌ Erro ao carregar estatísticas da vitrine:", err);
         }
     }
 };

@@ -47,65 +47,224 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('Service Worker registered! Scope:', reg.scope))
-                    .catch(err => console.log('Service Worker registration failed:', err));
+                navigator.serviceWorker.register('./sw.js').then(reg => {
+                    console.log('Service Worker registered! Scope:', reg.scope);
+
+                    // Detect Updates
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        newWorker.onstatechange = () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // New version ready! Show update Toast
+                                if (window.Toast) {
+                                    const updateToast = window.Toast.info(
+                                        "Uma nova versão está pronta para uso.", 
+                                        "Atualização Disponível", 
+                                        0 // Stick until click
+                                    );
+                                    
+                                    // Inject Update Button
+                                    const updateBtn = document.createElement('button');
+                                    updateBtn.innerText = 'Atualizar Agora';
+                                    updateBtn.style.cssText = 'background:#2563eb; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px; margin-top:10px; width:100%; box-shadow: 0 4px 6px rgba(37,99,235,0.2);';
+                                    updateBtn.onclick = () => {
+                                        newWorker.postMessage('SKIP_WAITING');
+                                        updateToast.remove();
+                                    };
+                                    
+                                    const content = updateToast.querySelector('.toast-content');
+                                    if (content) content.appendChild(updateBtn);
+                                }
+                            }
+                        };
+                    });
+                }).catch(err => {
+                    console.log('Service Worker registration failed:', err);
+                });
+            });
+
+            // Listen for new controller - reload page
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                window.location.reload();
+                refreshing = true;
             });
         }
     </script>
+
 </head>
 
 <body>
-    <!-- Login Overlay -->
     <div id="loginOverlay">
-        <div class="login-box">
-            <img src="logo.png" alt="Guarugeo" style="max-width: 220px; margin-bottom: 24px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));">
-            <h2>Bem-vindo ao Guarugeo</h2>
-            <p style="color: #475569; font-size: 14px; margin-bottom: 32px; font-weight: 500;">Inteligência de Dados e Mapas do Guarujá</p>
-            <form onsubmit="event.preventDefault();">
-                <!-- Campo Nome (só no cadastro) -->
-                <div id="loginNameField" style="display: none; margin-bottom: 10px;">
-                    <input type="text" id="loginName" placeholder="Seu Nome Completo" title="Seu nome completo" aria-label="Nome completo">
-                </div>
-                <!-- Campo Telefone (só no cadastro) -->
-                <div id="loginPhoneField" style="display: none; margin-bottom: 10px;">
-                    <input type="text" id="loginPhone" placeholder="WhatsApp (Celular)" title="Seu WhatsApp ou celular" aria-label="WhatsApp">
-                </div>
-                <!-- E-mail -->
-                <input type="email" id="loginUser" placeholder="E-mail" autocomplete="email" title="Seu endereço de e-mail" aria-label="E-mail" style="margin-bottom: 10px;">
-                <!-- Senha (oculta no modo "esqueci") -->
-                <div id="loginPassField">
-                    <input type="password" id="loginPass" placeholder="Senha" autocomplete="current-password" title="Sua senha de acesso" aria-label="Senha" style="margin-bottom: 5px; width: 100%;">
-                    <!-- Link Esqueci a Senha -->
-                    <div id="forgotPasswordLink" style="text-align: right; margin-bottom: 15px;">
-                        <span onclick="window.Auth.toggleAuthMode('forgot')" 
-                              style="font-size: 12px; color: #3b82f6; cursor: pointer; font-weight: 600;">
-                            Esqueci minha senha
-                        </span>
+        <style>
+            #loginOverlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: #0f172a;
+                z-index: 99999;
+                overflow: hidden;
+            }
+
+            .login-container {
+                display: grid;
+                grid-template-columns: 1fr;
+                width: 100%;
+                height: 100%;
+            }
+
+            @media (min-width: 1024px) {
+                .login-container {
+                    grid-template-columns: 1.2fr 1fr;
+                }
+            }
+
+            .login-splash-side {
+                display: none; /* Hidden on mobile */
+                background: radial-gradient(circle at top left, #1e293b, #0f172a);
+                padding: 60px;
+                position: relative;
+                overflow: hidden;
+                color: white;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .login-form-side {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #0f172a;
+                padding: 20px;
+                min-height: 100vh;
+            }
+        </style>
+        <div class="login-container">
+            <!-- Splash Side (Featured on Desktop) -->
+            <div class="login-splash-side">
+                <div class="splash-content">
+                    <div class="splash-badge">MASTER PLATFORM</div>
+                    <h1 class="splash-title">Inteligência Imobiliária <br><span>em Tempo Real</span></h1>
+                    <p class="splash-description">Navegue pela infraestrutura tributária e imobiliária do Guarujá com precisão cirúrgica e dados enriquecidos.</p>
+                    
+                    <!-- Animação Lottie Local (Garantido que não vai quebrar por erro externo) -->
+                    <div class="lottie-wrapper">
+                        <lottie-player src="./city_animation.json" background="transparent" speed="0.8" style="width: 100%; max-width: 450px; height: 350px;" loop autoplay></lottie-player>
+                    </div>
+
+                    <!-- Cards de Destaque -->
+                    <div class="splash-features">
+                        <div class="feature-item">
+                            <div class="feat-icon"><i class="fas fa-layer-group"></i></div>
+                            <div class="feat-text">
+                                <b>Camadas Geoespaciais</b>
+                                <span>Lotes, Quadras e Zoneamentos</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feat-icon"><i class="fas fa-search-dollar"></i></div>
+                            <div class="feat-text">
+                                <b>Enriquecimento Tributário</b>
+                                <span>Dívida Ativa e Inscrições</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feat-icon"><i class="fas fa-chart-line"></i></div>
+                            <div class="feat-text">
+                                <b>Painel de Curadoria</b>
+                                <span>Monitoramento de Equipe</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <!-- Botão Principal -->
-                <button id="btnLogin" type="button">Entrar</button>
-            </form>
-
-            <!-- Link Reenviar Confirmação (só no cadastro) -->
-            <div id="resendConfirmationLink" style="display: none; margin-top: 12px; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: #64748b;">
-                <i class="fas fa-envelope"></i> Não recebeu o e-mail?
-                <span onclick="window.Auth.resendConfirmation(document.getElementById('loginUser').value)"
-                      style="color: #3b82f6; font-weight: 700; cursor: pointer;">
-                    Reenviar confirmação
-                </span>
             </div>
 
-            <!-- Link de Alternância Login/Cadastro -->
-            <p id="toggleAuthLink" style="margin-top: 15px; font-size: 13px; cursor: pointer; color: #3b82f6;" onclick="window.Auth.toggleAuthMode('signup')">
-                Não tem conta? <b>Solicitar Acesso</b>
-            </p>
+            <!-- Login Form Side -->
+            <div class="login-form-side">
+                <div class="login-box">
+                    <img src="./logo.png" alt="Logo GuaruGeo" style="width: 140px; margin-bottom: 24px; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1));">
+                    <h2>Acesso Restrito</h2>
+                    <p>Inteligência de Dados e Mapas do Guarujá</p>
+                    
+                    <form onsubmit="event.preventDefault();" style="display: flex; flex-direction: column;">
+                        <!-- Campo de Nome (Apenas Cadastro) -->
+                        <div id="loginNameField" style="display: none; margin-bottom: 16px;">
+                            <input type="text" id="loginName" placeholder="Nome Completo">
+                        </div>
+                        <!-- Campo de Telefone (Apenas Cadastro) -->
+                        <div id="loginPhoneField" style="display: none; margin-bottom: 16px;">
+                            <input type="text" id="loginPhone" placeholder="Telefone/WhatsApp">
+                        </div>
+                        
+                        <input type="email" id="loginUser" placeholder="E-mail" required style="margin-bottom: 16px; width: 100%;">
+                        
+                        <div id="loginPassField" style="margin-bottom: 16px; width: 100%;">
+                            <input type="password" id="loginPass" placeholder="Senha" required style="width: 100%;">
+                        </div>
 
-            <!-- Mensagem de erro/sucesso -->
-            <p id="loginError" style="color: #ef4444; display: none; margin-top: 12px; font-size: 12px; border-radius: 8px;"></p>
+                        <span onclick="window.Auth.toggleAuthMode('forgot')" style="text-align: right; font-size: 11px; color: #3b82f6; cursor: pointer; font-weight: 700; display: block; margin-bottom: 16px;">Esqueci minha senha</span>
+                        
+                        <button id="btnLogin" type="button" onclick="window.Auth.handleLogin()" style="width: 100%;">Entrar</button>
+
+                        <div id="resendConfirmationLink" style="display: none; align-items: center; justify-content: center; gap: 8px; margin-top: 15px; font-size: 12px; color: #64748b;">
+                            <i class="fas fa-envelope"></i> Não recebeu? 
+                            <span onclick="window.Auth.resendConfirmation(document.getElementById('loginUser').value)" style="color: #3b82f6; font-weight: 700; cursor: pointer;">Reenviar e-mail</span>
+                        </div>
+
+                        <p id="toggleAuthLink" style="margin-top: 20px; font-size: 13px; cursor: pointer; color: #3b82f6;" onclick="window.Auth.toggleAuthMode('signup')">
+                            Não tem conta? <b>Solicitar Acesso</b>
+                        </p>
+                    </form>
+
+                    <!-- Mensagem de erro/sucesso -->
+                    <p id="loginError" style="color: #ef4444; display: none; margin-top: 12px; font-size: 12px; border-radius: 8px;"></p>
+                    
+                    <!-- Live Analytics Section (Dando um gás) -->
+                    <div class="live-stats-container">
+                        <div class="live-stats-title">
+                            <span class="badge-live">LIVE</span>
+                            <span>Inteligência de Dados em Tempo Real</span>
+                        </div>
+                        <div class="live-stats-grid">
+                            <!-- Stat 1: Online -->
+                            <div class="live-stat-card">
+                                <div class="live-stat-icon" style="color: #10b981;"><i class="fas fa-users"></i></div>
+                                <span id="home-online-count" class="live-stat-value">...</span>
+                                <span class="live-stat-label">Online Agora</span>
+                            </div>
+                            <!-- Stat 2: Visitantes -->
+                            <div class="live-stat-card">
+                                <div class="live-stat-icon" style="color: #3b82f6;"><i class="fas fa-eye"></i></div>
+                                <span id="home-visit-count" class="live-stat-value">...</span>
+                                <span class="live-stat-label">Acessos Hoje</span>
+                            </div>
+                            <!-- Stat 3: Unidades Públicas -->
+                            <div class="live-stat-card">
+                                <div class="live-stat-icon" style="color: #f59e0b;"><i class="fas fa-landmark"></i></div>
+                                <span id="home-public-count" class="live-stat-value">...</span>
+                                <span class="live-stat-label">Lotes Públicos</span>
+                            </div>
+                            <!-- Estatística 4: Matrículas -->
+                            <div class="live-stat-card">
+                                <div class="live-stat-icon" style="color: #6366f1;"><i class="fas fa-file-contract"></i></div>
+                                <span id="home-matricula-count" class="live-stat-value">...</span>
+                                <span class="live-stat-label">Com Matrícula</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; font-size: 11px; color: #94a3b8; font-weight: 500;">
+                            Base total: <b id="home-total-count">50.052</b> unidades mapeadas
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+
 
     <!-- Toast Notification Container -->
     <div id="toast-container"></div>
@@ -204,7 +363,7 @@
                             <i class="fas fa-bell"></i>
                             <span id="notifBadge" style="display: none; position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; font-size: 9px; padding: 2px 5px; border-radius: 10px;">0</span>
                         </button>
-                        <button type="button" onclick="window.logout()" style="background: #fef2f2; border: none; width: 32px; height: 32px; border-radius: 8px; color: #ef4444; cursor: pointer;" title="Sair" aria-label="Sair do sistema">
+                        <button type="button" onclick="window.Auth.logout()" style="background: #fef2f2; border: none; width: 32px; height: 32px; border-radius: 8px; color: #ef4444; cursor: pointer;" title="Sair" aria-label="Sair do sistema">
                             <i class="fas fa-sign-out-alt"></i>
                         </button>
                     </div>
@@ -279,8 +438,7 @@
                         <div class="filter-chip" data-search-type="building"
                             data-tooltip="Pesquisa por nomes de Condomínios e Edifícios">Edifício</div>
                         <div class="filter-chip master-only locked" data-search-type="owner"
-                            onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Recurso exclusivo para perfil Master.')"
-                            data-tooltip="Somente Masters podem buscar por nome de Proprietário">
+                            onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Somente Masters podem buscar por nome de Proprietário')">
                             Proprietários <span class="lock-icon">🔒</span>
                         </div>
                         <div class="filter-chip master-only locked" data-search-type="property"
@@ -459,7 +617,7 @@
         <div class="custom-modal">
             <div class="custom-modal-header">
                 <div class="custom-modal-title">
-                    <span>� Novo Cliente Interessado</span>
+                    <span>👤 Novo Cliente Interessado</span>
                 </div>
                 <button type="button" class="custom-modal-close" aria-label="Fechar" onclick="closeModal('modal-lead-form-overlay')">&times;</button>
             </div>
@@ -733,9 +891,14 @@
     <script src="client_mode_handler.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
 
-    <!-- Mobile Native -->
+    <!-- Lottie Animation Player -->
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+
+    <!-- PWA & Mobile Optimization -->
     <script src="camera_handler.js"></script>
+    <script src="tracking_handler.js"></script>
     <script src="streetview_handler.js"></script>
+
     <script src="regional_handler.js"></script>
     <script src="portfolio_handler.js"></script>
     <script src="weather_handler.js"></script>
@@ -769,8 +932,33 @@
                  console.log("🛡️ Visibility Recovery: Auth or Landing already handling UI.");
             }
             document.body.style.backgroundColor = ''; 
+            
+            // Inicializar Tracking
+            if (window.Tracking) {
+                window.Tracking.init().then(() => {
+                    // 1. Atualizar contadores de tráfego
+                    window.Tracking.getStats().then(stats => {
+                        const vEl = document.getElementById('home-visit-count');
+                        const oEl = document.getElementById('home-online-count');
+                        if (vEl) vEl.innerText = stats.uniqueVisitors.toLocaleString('pt-BR');
+                        if (oEl) oEl.innerText = stats.onlineUsers.toLocaleString('pt-BR');
+                    });
+                    
+                    // 2. Atualizar contadores de dados (Prefeitura, Matrículas, etc)
+                    window.Tracking.getPublicLiveStats().then(stats => {
+                        const pEl = document.getElementById('home-public-count');
+                        const mEl = document.getElementById('home-matricula-count');
+                        const tEl = document.getElementById('home-total-count');
+                        if (pEl) pEl.innerText = stats.unidadesPublicas.toLocaleString('pt-BR');
+                        if (mEl) mEl.innerText = stats.comMatricula.toLocaleString('pt-BR');
+                        if (tEl) tEl.innerText = stats.totalUnidades.toLocaleString('pt-BR');
+                    });
+                });
+            }
         }, 8000);
+
     </script>
 </body>
 
 </html>
+

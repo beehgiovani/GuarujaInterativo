@@ -84,7 +84,13 @@ async function init() {
     if (loginOverlay) loginOverlay.style.display = 'none';
 
     Toast.success('Bem-vindo ao Guarujá GeoMap!');
+
+    // Recomendação de dispositivo para fluidez (UX)
+    setTimeout(() => {
+        Toast.info("Para uma experiência mais fluida, recomendamos o uso em tablets ou celulares, devido ao grande volume de dados geoespaciais processados.", "Dica de Performance");
+    }, 2000);
 }
+
 
 async function loadInitialData() {
     Loading.show('Carregando Dados...', 'Baixando lotes do servidor');

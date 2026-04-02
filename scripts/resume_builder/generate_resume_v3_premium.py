@@ -24,6 +24,18 @@ SUMMARY = (
 
 EXPERIENCES = [
     {
+        "title": "Front-End Developer | PredictMed",
+        "period": "Março 2026 - Presente",
+        "description": "Projeto pessoal de alta escala (SaaS de Saúde) focado em automação e análise preditiva.",
+        "bullets": [
+            "Arquitetura moderna: React 19, TypeScript, Vite e Tailwind CSS para interface premium.",
+            "Backend as a Service: Integração com Supabase (PostgreSQL, Auth, Edge Functions) e Firebase Hosting.",
+            "Automação de fluxos complexos e integração de modelos de IA para sugestões preditivas.",
+            "Foco em UX/UI de alto impacto com micro-animações e design responsivo.",
+            "Projeto ao vivo: https://predictmed.web.app/"
+        ]
+    },
+    {
         "title": "Senior Consultant (Kotlin) | Soo Tech",
         "period": "Jan. 2024 - Presente",
         "description": "Prestação de serviços de alto valor em Kotlin para cliente Agilidade via Soo Tech.",
@@ -71,7 +83,7 @@ EXPERIENCES = [
 ]
 
 SKILLS = {
-    "Linguagens": "Javascript (React/Node), TypeScript, Angular, Python (Scraping/AI), Kotlin (Jetpack Compose), SQL.",
+    "Linguagens": "Javascript (React/Node), TypeScript, Angular, Python (Scraping/AI), Kotlin (Jetpack Compose), Java (Spring Boot), SQL.",
     "Cloud & Infra": "Supabase, Firebase, Docker, PostgreSQL, Linux Server, Git/GitHub, CI/CD.",
     "Data & Analytics": "Power BI, Geoprocessamento (GIS), Big Data, Web Scraping Anti-Bot.",
     "AI & Automation": "PyTorch (CRNN OCR), Playwright, ddddocr, Gemini API, Vertex AI, Computer Vision.",
@@ -79,10 +91,10 @@ SKILLS = {
 }
 
 CERTIFICATIONS = [
-    {"nome": "Angular", "org": "Loiane Training (28h)", "date": "Março 2026"},
-    {"nome": "Storytelling para Marketing Digital", "org": "Santander / University of Chicago", "date": "10 de Março 2026"},
-    {"nome": "Business English, Part 1", "org": "Santander Open Academy", "date": "Fevereiro 2026"},
-    {"nome": "Power BI", "org": "Santander Open Academy", "date": "Janeiro 2026"}
+    {"nome": "Angular", "org": "Loiane Training (28h)", "date": "26 de Março 2026"},
+    {"nome": "Storytelling para Marketing Digital", "org": "Santander / University of Chicago", "date": "20 de Março 2026"},
+    {"nome": "Business English, Part 1", "org": "Santander Open Academy", "date": "15 de Março 2026"},
+    {"nome": "Power BI", "org": "Santander Open Academy", "date": "10 de Março 2026"}
 ]
 
 EDUCATION = [

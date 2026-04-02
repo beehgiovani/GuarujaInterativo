@@ -56,6 +56,10 @@
 
 ## 🚀 Próximos Passos (Ação Requerida)
 
+- [ ] **Refatoração do Código**:
+    - [ ] Split `map_handler.js` (Hierarchy/Drawing).
+    - [ ] Split `tooltip_handler.js` (Tabs/Actions/Media).
+    - [ ] Update `index.html` dependencies.
 - [ ] **Deploy Geral**: Fazer deploy de todas as migrations e funções.
 
 ## 🛠️ O Que Foi Feito Hoje (Prospecção de Leads)
