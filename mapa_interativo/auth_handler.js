@@ -19,7 +19,7 @@ window.Auth = {
         // ============================================
         if (hashError) {
             window.history.replaceState(null, '', window.location.pathname); // Limpa URL
-            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('loginOverlay').style.display = 'block';
             this.toggleAuthMode('login');
 
             let friendlyMsg = 'Ocorreu um erro de autenticação.';
@@ -42,7 +42,7 @@ window.Auth = {
             
             if (session) {
                 // Sessão estabelecida via token de recovery — mostrar formulário de nova senha
-                document.getElementById('loginOverlay').style.display = 'flex';
+                document.getElementById('loginOverlay').style.display = 'block';
                 this.toggleAuthMode('new-password');
                 // Limpar token da URL sem recarregar a página
                 window.history.replaceState(null, '', window.location.pathname);
@@ -59,7 +59,7 @@ window.Auth = {
         } else {
             console.log("🔓 Nenhum usuário logado.");
             localStorage.removeItem('guaruja_auth');
-            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('loginOverlay').style.display = 'block';
             document.getElementById('loginOverlay').classList.remove('hidden');
             
             // Puxar as estatísticas reais para a vitrine do login

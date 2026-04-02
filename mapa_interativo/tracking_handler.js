@@ -33,8 +33,12 @@ window.Tracking = {
             });
 
             if (error) {
-                if (error.code === '23505') {
-                    // Já registrado hoje, ignorar erro silenciosamente (é o comportamento esperado)
+                // 23505 = PostgreSQL unique_violation
+                // 409 = Supabase HTTP Conflict (gerado antes do PG em alguns casos)
+                const isDuplicate = error.code === '23505' || error.status === 409 || 
+                                    (error.message && error.message.includes('duplicate'));
+                if (isDuplicate) {
+                    // Já registrado hoje — comportamento esperado, ignorar silenciosamente
                     sessionStorage.setItem('guaruja_visit_logged', 'true');
                     return;
                 }

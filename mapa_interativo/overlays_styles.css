@@ -8,11 +8,11 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
+    background: #0f172a;
+    z-index: 99999;
+    overflow: hidden;
+    /* Não usar display:flex aqui pois o .login-container é um grid que gerencia o layout */
+    display: none; /* Controlado via JS: style.display = 'block' */
 }
 
 .login-box {
