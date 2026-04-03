@@ -1,0 +1,23 @@
+{
+  "name": "Guarugeo - Inteligência Imobiliária",
+  "short_name": "Guarugeo",
+  "start_url": "./?mode=pwa",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1e293b",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "assets/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "description": "Ferramenta de análise de mercado imobiliário do Guarujá.",
+  "scope": "/"
+}

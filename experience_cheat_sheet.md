@@ -1,4 +1,4 @@
-# Experience Cheat Sheet - Bruno Giovani Pereira
+--------            -# Experience Cheat Sheet - Bruno Giovani Pereira
 
 Generated on 29/03/2026
 

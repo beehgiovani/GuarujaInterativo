@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -34,7 +35,10 @@ serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get('OPENWEATHER_API_KEY') || 'bae2c60e1d4d76016228188c9855a891';
+    const apiKey = Deno.env.get('OPENWEATHER_API_KEY');
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: 'OPENWEATHER_API_KEY is not configured' }), { status: 500 });
+    }
     const endpoint = type === 'forecast' ? 'forecast' : 'weather';
     const weatherUrl = `https://api.openweathermap.org/data/2.5/${endpoint}?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric&lang=pt_br`;
 

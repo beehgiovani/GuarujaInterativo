@@ -20,7 +20,7 @@ from datetime import datetime
 # ============================================
 SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://ijmgvsztgljribnogtsx.supabase.co')
 # Fallback to the known publishable key if env var is not set
-SUPABASE_KEY = os.getenv('SUPABASE_KEY', 'sb_publishable_tHrPQdJlE9sOPkAr_muBlQ_bGDx8pxU') 
+SUPABASE_KEY = os.getenv('SUPABASE_KEY') 
 
 if not SUPABASE_KEY:
     print("❌ ERRO: Configure SUPABASE_KEY como variável de ambiente")

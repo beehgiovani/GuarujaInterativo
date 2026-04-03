@@ -16,78 +16,79 @@ PRIMARY_COLOR_RGB = (0, 74, 153)
 PRIMARY_COLOR_HEX = RGBColor(0, 74, 153)
 
 SUMMARY = (
-    "Software Engineer Full-Stack com especialização em Geotecnologia (GIS), Automação Avançada (OSINT/LegalTech) "
-    "e Desenvolvimento Mobile Native. Expertise em arquiteturas de alto impacto: plataformas GIS de inteligência imobiliária, "
-    "sistemas de extração de Big Data com modelos OCR customizados (PyTorch) e PWAs de escala industrial. "
-    "Certificações recentes em Angular, Power BI e Storytelling pela University of Chicago. Criador do GuaruGeo e Cimed Experience."
+    "Software Engineer Sênior com sólida expertise em arquiteturas de alta performance, especialização em Geotecnologia (GIS), "
+    "Automação Avançada (OSINT/LegalTech) e Microsserviços. Experiência em sistemas de missão crítica, plataformas "
+    "de escala industrial com processamento assíncrono e motores de extração de Big Data. Proficiência em ecossistemas Java/Kotlin (Spring Boot), "
+    "otimização avançada de PostgreSQL e infraestrutura Cloud (AWS/Supabase). Certificações recentes pela University of Chicago e Loiane Training."
 )
 
 EXPERIENCES = [
     {
         "title": "Front-End Developer | PredictMed",
         "period": "Março 2026 - Presente",
-        "description": "Projeto pessoal de alta escala (SaaS de Saúde) focado em automação e análise preditiva.",
+        "description": "Projeto SaaS de saúde focado em automação, análise preditiva e infraestrutura serverless.",
         "bullets": [
-            "Arquitetura moderna: React 19, TypeScript, Vite e Tailwind CSS para interface premium.",
-            "Backend as a Service: Integração com Supabase (PostgreSQL, Auth, Edge Functions) e Firebase Hosting.",
-            "Automação de fluxos complexos e integração de modelos de IA para sugestões preditivas.",
-            "Foco em UX/UI de alto impacto com micro-animações e design responsivo.",
-            "Projeto ao vivo: https://predictmed.web.app/"
+            "Arquitetura moderna: React 19, TypeScript, Vite e Tailwind CSS para sistemas de alta complexidade.",
+            "Backend as a Service: Integração com Supabase (PostgreSQL, Auth), Edge Functions (Deno/Typescript).",
+            "Automação de fluxos complexos e integração de modelos de IA para análise preditiva de dados sensíveis.",
+            "Foco em segurança de dados e UX de alto impacto com design responsivo e micro-animações.",
+            "Deploy e CI/CD: Firebase Hosting e monitoramento de performance em tempo real."
         ]
     },
     {
-        "title": "Senior Consultant (Kotlin) | Soo Tech",
+        "title": "Senior Software Engineer (Kotlin/Java) | Soo Tech",
         "period": "Jan. 2024 - Presente",
-        "description": "Prestação de serviços de alto valor em Kotlin para cliente Agilidade via Soo Tech.",
+        "description": "Consultoria sênior em ecossistema JVM para projetos de alta performance e escala.",
         "bullets": [
-            "Otimização de módulos críticos de performance em Kotlin, reduzindo a latência de processamento em 30%.",
-            "Implementação de novas funcionalidades seguindo metodologias ágeis (Scrum/Kanban).",
-            "Aplicação de padrões avançados de design (SOLID) para escalabilidade e manutenibilidade.",
-            "Colaboração direta com equipes de produto para traduzir requisitos de negócio em soluções técnicas robustas."
+            "Desenvolvimento e otimização de módulos críticos em Java/Kotlin, focando em redução de latência e concorrência.",
+            "Liderança técnica na implementação de APIs RESTful robustas utilizando Spring Boot e padrões de microsserviços.",
+            "Garantia de qualidade via testes automatizados (JUnit, Mockito) e aplicação rigorosa de princípios SOLID e Clean Code.",
+            "Colaboração em ambientes ágeis (Scrum) para entrega contínua de funcionalidades de alto valor de negócio.",
+            "Desenvolvimento de integrações seguras e processamento de dados em ambientes de missão crítica."
         ]
     },
     {
         "title": "Founder & Lead Developer | GuaruGeo (Guarujá Geo Lab)",
         "period": "2023 - Presente",
-        "description": "Plataforma GIS de inteligência imobiliária proprietária para o litoral paulista.",
+        "description": "Plataforma GIS de inteligência imobiliária com backend PostgreSQL avançado.",
         "bullets": [
-            "Arquitetura Full-Stack: React 19, Node.js, Supabase (PostgreSQL + Realtime) e Firebase Hosting.",
-            "Visualização GeoJSON avançada com Google Maps API e Overpass API; índice espacial RBush para performance extrema.",
-            "Motor OSINT para identificação de titularidade, situação jurídica e enriquecimento de dados proprietários via API.",
-            "Admin Dashboard com analytics em tempo real, CRM integrado e sistema automatizado de emissão de certidões.",
-            "Projeto ao vivo: https://guarujainterativo.web.app/"
+            "Arquitetura Full-Stack: React, Node.js e PostgreSQL com foco em performance e otimização de queries complexas.",
+            "PostgreSQL Avançado: Implementação de Particionamento, Materialized Views, Triggers e índices espaciais (RBush/GIS).",
+            "Desenvolvimento de motor OSINT para enriquecimento de dados via APIs seguras e processamento em lote (Batch).",
+            "Dashboard de Analytics em tempo real com rastreamento de eventos e integração de auditoria de dados.",
+            "Infraestrutura híbrida escalável e sistema automatizado de monitoramento de integridade de dados."
         ]
     },
     {
         "title": "Lead Developer | Cimed Experience",
         "period": "2024 - Março 2026",
-        "description": "PWA de marketing e engajamento de escala industrial para a Cimed (Líder Nacional Farmacêutica).",
+        "description": "PWA de escala industrial para engajamento e gamificação (Líder Nacional Farmacêutica).",
         "bullets": [
-            "Stack: React 19, TypeScript, Vite, Framer Motion, Zustand e Supabase.",
-            "Social Hub com rankings em tempo real, feed gamificado e missões de Drive-to-Store.",
-            "Integração da IA 'Claud.ia' como assistente de saúde e produto; vídeo scraping e PWA nativo.",
-            "Projeto ao vivo: https://cimedexperience.web.app/"
+            "Stack: React 19, TypeScript, Vite e infraestrutura cloud com foco em alta disponibilidade.",
+            "Arquitetura baseada em eventos (Event-driven) para rankings em tempo real e feeds gamificados de alta concorrência.",
+            "Integração de IA generativa (Gemini/Claude) para assistência de produto e automação de engajamento.",
+            "Gestão de ambiente de larga escala com milhares de usuários ativos simultâneos e baixa latência."
         ]
     },
     {
         "title": "Especialista em Automação & Data Engineering",
         "period": "2021 - Presente",
-        "description": "Esteiras de extração de dados complexos e automação de processos críticos (LegalTech/GovTech).",
+        "description": "Esteiras de extração de dados (ETL) e automação de processos críticos (LegalTech/GovTech/Financial).",
         "bullets": [
-            "Scraper Imobiliário (2 estágios): HTTP + Playwright com Tor multi-porta e OCR customizado (PyTorch/CRNN).",
-            "Certibot (LegalTech): Bot de emissão automática de certidões em 6+ portais (TRF3, TJSP, TST, Receita Federal).",
-            "GIS Data Mining: Extração e normalização de polígonos de zoneamento a partir de documentos PDF/CAD.",
-            "Automação de Certidões: Sistema Full-Stack com Supabase Edge Functions e InfoSimples API."
+            "Engineering de Dados: Extração e normalização de Big Data com segurança (Tor multi-porta, proxy rotation).",
+            "LegalTech: Automação completa de certidões em 6+ portais governamentais com validação automática de PDFs.",
+            "OCR Customizado: Treinamento de modelos deep learning (PyTorch/CRNN) para quebra de captchas e leitura de documentos.",
+            "Integração de APIs de terceiros com tratamento de falhas (Circuit Breaker) e alta observabilidade."
         ]
     }
 ]
 
 SKILLS = {
-    "Linguagens": "Javascript (React/Node), TypeScript, Angular, Python (Scraping/AI), Kotlin (Jetpack Compose), Java (Spring Boot), SQL.",
-    "Cloud & Infra": "Supabase, Firebase, Docker, PostgreSQL, Linux Server, Git/GitHub, CI/CD.",
-    "Data & Analytics": "Power BI, Geoprocessamento (GIS), Big Data, Web Scraping Anti-Bot.",
-    "AI & Automation": "PyTorch (CRNN OCR), Playwright, ddddocr, Gemini API, Vertex AI, Computer Vision.",
-    "Soft Skills": "Storytelling para Marketing Digital, Business English (Advanced), Gestão de Projetos Ágeis."
+    "Linguagens": "Java (Spring Boot / Java 21), Kotlin (Jetpack Compose), Python (AI/Scraping), TypeScript, Javascript, SQL.",
+    "Arquitetura & Dev": "Microsserviços, Arquitetura baseada em eventos, REST APIs, SOLID, Clean Code, JUnit, Mockito.",
+    "Cloud & Bancos": "PostgreSQL (Otimização/Performance), AWS (S3/Lambda/DynamoDB), Supabase, Docker, GitHub Actions, CI/CD.",
+    "Inteligência & Dados": "BI (Power BI), Geoprocessamento (GIS), Web Scraping Anti-Bot, PyTorch (Computer Vision).",
+    "Soft Skills": "Storytelling para Negócios, Inglês Avançado, Gestão Ágil de Projetos de Software."
 }
 
 CERTIFICATIONS = [

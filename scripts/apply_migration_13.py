@@ -5,7 +5,7 @@ from supabase import create_client, Client
 
 # Config
 SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://ijmgvsztgljribnogtsx.supabase.co')
-SUPABASE_KEY = os.getenv('SUPABASE_KEY', 'sb_publishable_tHrPQdJlE9sOPkAr_muBlQ_bGDx8pxU') 
+SUPABASE_KEY = os.getenv('SUPABASE_KEY') 
 
 if not SUPABASE_KEY:
     print("Erro: SUPABASE_KEY nao definida")

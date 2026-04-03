@@ -1,11 +1,34 @@
 {
     "hosting": {
         "site": "guarujainterativo",
-        "public": "mapa_interativo",
+        "public": ".",
         "ignore": [
             "firebase.json",
+            ".firebaserc",
+            ".firebaseignore",
+            ".gitignore",
             "**/.*",
-            "**/node_modules/**"
+            "**/node_modules/**",
+            "_PRIVATE_BACKUP/**",
+            "database/**",
+            "docs/**",
+            "email_templates/**",
+            "git/**",
+            "scripts/**",
+            "migrations/**",
+            "scraper/**",
+            "scrapers/**",
+            "supabase/**",
+            "tests/**",
+            "task.md",
+            "README.md",
+            "LICENSE",
+            "package.json",
+            "package-lock.json",
+            "capacitor.config.json",
+            "**.py",
+            "**.sql",
+            "**.log"
         ],
         "rewrites": [
             {

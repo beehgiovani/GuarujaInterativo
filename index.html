@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Guarugeo - Inteligência Imobiliária</title>
+
+    <!-- Maps Engine Selection (Migration) -->
+    <!-- Turf.js (Geospatial Analysis) -->
+    <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome & Lottie -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+
+    <!-- Custom Module CSS (Restored & Modular) -->
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/sidebar_styles.css">
+    <link rel="stylesheet" href="css/map_styles.css">
+    <link rel="stylesheet" href="css/overlays_styles.css">
+    <link rel="stylesheet" href="css/neighborhood_styles.css">
+    <link rel="stylesheet" href="css/editor_styles.css">
+    <link rel="stylesheet" href="css/premium_styles.css">
+    <link rel="stylesheet" href="css/analytics_styles.css">
+    <link rel="stylesheet" href="css/carousel_styles.css">
+    <link rel="stylesheet" href="css/modal_styles.css">
+    <link rel="stylesheet" href="css/toast_styles.css">
+    <link rel="stylesheet" href="css/crm_styles.css">
+    <link rel="stylesheet" href="css/ai_chat_styles.css">
+    <link rel="stylesheet" href="css/mobile_styles.css">
+    <link rel="stylesheet" href="css/image_viewer.css">
+
+    <!-- Intro.js (User Onboarding) -->
+    <link rel="stylesheet" href="css/introjs.min.css">
+    <link rel="stylesheet" href="css/onboarding_styles.css">
+
+    <!-- PWA Manifest & Meta -->
+    <link rel="manifest" href="manifest.json">
+    <!-- Apple Touch Icon (iOS PWA) -->
+    <link rel="apple-touch-icon" href="assets/logo.png">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(reg => {
+                    console.log('Service Worker registered! Scope:', reg.scope);
+
+                    // Detect Updates
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        newWorker.onstatechange = () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // New version ready! Show update Toast
+                                if (window.Toast) {
+                                    const updateToast = window.Toast.info(
+                                        "Uma nova versão está pronta para uso.", 
+                                        "Atualização Disponível", 
+                                        0 // Stick until click
+                                    );
+                                    
+                                    
+                                    // Inject Update Button
+                                    const updateBtn = document.createElement('button');
+                                    updateBtn.innerText = 'Atualizar Agora';
+                                    updateBtn.style.cssText = 'background:#2563eb; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:11px; margin-top:10px; width:100%; box-shadow: 0 4px 6px rgba(37,99,235,0.2);';
+                                    updateBtn.onclick = () => {
+                                        newWorker.postMessage('SKIP_WAITING');
+                                        updateToast.remove();
+                                    };
+                                    
+                                    const content = updateToast.querySelector('.toast-content');
+                                    if (content) content.appendChild(updateBtn);
+                                }
+                            }
+                        };
+                    });
+                }).catch(err => {
+                    console.log('Service Worker registration failed:', err);
+                });
+            });
+
+            // Listen for new controller - reload page
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                window.location.reload();
+                refreshing = true;
+            });
+        }
+    </script>
+
+</head>
+
+<body>
+    <div id="loginOverlay">
+        <style>
+            #loginOverlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: #0f172a;
+                z-index: 99999;
+                overflow: hidden;
+            }
+
+            .login-container {
+                display: grid;
+                grid-template-columns: 1fr;
+                width: 100%;
+                height: 100%;
+            }
+
+            @media (min-width: 1024px) {
+                .login-container {
+                    grid-template-columns: 1.3fr 1fr;
+                }
+                .login-splash-side {
+                    display: flex !important;
+                }
+            }
+
+            .login-splash-side {
+                display: none;
+                background: radial-gradient(circle at top left, #1e293b, #0f172a);
+                padding: 60px;
+                position: relative;
+                overflow: hidden;
+                color: white;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                border-right: 1px solid rgba(255,255,255,0.05);
+            }
+
+            .login-form-side {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                height: 100%;
+                min-height: 100vh;
+                background: #0f172a;
+                padding: 20px;
+                overflow-y: auto;
+                box-sizing: border-box;
+            }
+        </style>
+        <div class="login-container">
+            <!-- Splash Side (Featured on Desktop) -->
+            <div class="login-splash-side">
+                <div class="splash-content">
+                    <div class="splash-badge">MASTER PLATFORM</div>
+                    <h1 class="splash-title">Inteligência Imobiliária <br><span>em Tempo Real</span></h1>
+                    <p class="splash-description">Navegue pela infraestrutura tributária e imobiliária do Guarujá com precisão cirúrgica e dados enriquecidos.</p>
+                    
+                    <!-- Animação Lottie Local (Garantido que não vai quebrar por erro externo) -->
+                    <div class="lottie-wrapper">
+                        <lottie-player src="assets/city_animation.json" background="transparent" speed="0.8" style="width: 100%; max-width: 450px; height: 350px;" loop autoplay></lottie-player>
+                    </div>
+
+                    <!-- Cards de Destaque -->
+                    <div class="splash-features">
+                        <div class="feature-item">
+                            <div class="feat-icon"><i class="fas fa-layer-group"></i></div>
+                            <div class="feat-text">
+                                <b>Camadas Geoespaciais</b>
+                                <span>Lotes, Quadras e Zoneamentos</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feat-icon"><i class="fas fa-search-dollar"></i></div>
+                            <div class="feat-text">
+                                <b>Enriquecimento Tributário</b>
+                                <span>Dívida Ativa e Inscrições</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feat-icon"><i class="fas fa-chart-line"></i></div>
+                            <div class="feat-text">
+                                <b>Painel de Curadoria</b>
+                                <span>Monitoramento de Equipe</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Login Form Side -->
+            <div class="login-form-side">
+                <div class="login-box">
+                    <img src="./assets/logo.png" alt="Logo GuaruGeo" style="width: 140px; margin-bottom: 24px; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1));">
+                    <h2>Acesso Restrito</h2>
+                    <p>Inteligência de Dados e Mapas do Guarujá</p>
+                    
+                    <form onsubmit="event.preventDefault();" style="display: flex; flex-direction: column;">
+                        <!-- Campo de Nome (Apenas Cadastro) -->
+                        <div id="loginNameField" style="display: none; margin-bottom: 16px;">
+                            <input type="text" id="loginName" placeholder="Nome Completo">
+                        </div>
+                        <!-- Campo de Telefone (Apenas Cadastro) -->
+                        <div id="loginPhoneField" style="display: none; margin-bottom: 16px;">
+                            <input type="text" id="loginPhone" placeholder="Telefone/WhatsApp">
+                        </div>
+                        <!-- NOVO: Campo de CPF (Apenas Cadastro - Trava Duo-Account) -->
+                        <div id="loginCpfField" style="display: none; margin-bottom: 16px;">
+                            <input type="text" id="loginCpf" placeholder="CPF (000.000.000-00)">
+                        </div>
+                        
+                        <input type="email" id="loginUser" placeholder="E-mail" required style="margin-bottom: 16px; width: 100%;">
+                        
+                        <div id="loginPassField" style="margin-bottom: 16px; width: 100%;">
+                            <input type="password" id="loginPass" placeholder="Senha" required style="width: 100%;">
+                        </div>
+
+                        <span onclick="window.Auth.toggleAuthMode('forgot')" style="text-align: right; font-size: 11px; color: #3b82f6; cursor: pointer; font-weight: 700; display: block; margin-bottom: 16px;">Esqueci minha senha</span>
+                        
+                        <button id="btnLogin" type="button" onclick="window.Auth.handleLogin()" style="width: 100%;">Entrar</button>
+
+                        <div id="resendConfirmationLink" style="display: none; align-items: center; justify-content: center; gap: 8px; margin-top: 15px; font-size: 12px; color: #64748b;">
+                            <i class="fas fa-envelope"></i> Não recebeu? 
+                            <span onclick="window.Auth.resendConfirmation(document.getElementById('loginUser').value)" style="color: #3b82f6; font-weight: 700; cursor: pointer;">Reenviar e-mail</span>
+                        </div>
+
+                        <p id="toggleAuthLink" style="margin-top: 20px; font-size: 13px; cursor: pointer; color: #3b82f6;" onclick="window.Auth.toggleAuthMode('signup')">
+                            Não tem conta? <b>Solicitar Acesso</b>
+                        </p>
+                    </form>
+
+                    <!-- Mensagem de erro/sucesso -->
+                    <p id="loginError" style="color: #ef4444; display: none; margin-top: 12px; font-size: 12px; border-radius: 8px;"></p>
+                    
+                    <!-- Live Analytics Section (Dando um gás) -->
+                    <div class="live-stats-container">
+                        <div class="live-stats-title">
+                            <span class="badge-live">LIVE</span>
+                            <span>Inteligência de Dados em Tempo Real</span>
+                        </div>
+                        <div class="live-stats-grid">
+                            <!-- Stat 1: Online -->
+                            <div class="live-stat-card">
+                                <div class="live-stat-icon" style="color: #10b981;"><i class="fas fa-users"></i></div>
+                                <span id="home-online-count" class="live-stat-value">...</span>
+                                <span class="live-stat-label">Online Agora</span>
+                            </div>
+                            <!-- Stat 2: Visitantes -->
+                            <div class="live-stat-card">
+                                <div class="live-stat-icon" style="color: #3b82f6;"><i class="fas fa-eye"></i></div>
+                                <span id="home-visit-count" class="live-stat-value">...</span>
+                                <span class="live-stat-label">Acessos Hoje</span>
+                            </div>
+                            <!-- Stat 3: Unidades Públicas -->
+                            <div class="live-stat-card">
+                                <div class="live-stat-icon" style="color: #f59e0b;"><i class="fas fa-landmark"></i></div>
+                                <span id="home-public-count" class="live-stat-value">...</span>
+                                <span class="live-stat-label">Lotes Públicos</span>
+                            </div>
+                            <!-- Estatística 4: Matrículas -->
+                            <div class="live-stat-card">
+                                <div class="live-stat-icon" style="color: #6366f1;"><i class="fas fa-file-contract"></i></div>
+                                <span id="home-matricula-count" class="live-stat-value">...</span>
+                                <span class="live-stat-label">Com Matrícula</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; font-size: 11px; color: #94a3b8; font-weight: 500;">
+                            Base total: <b id="home-total-count">50.052</b> unidades mapeadas
+                        </div>
+                        
+                        <!-- Footer Compacto no Login -->
+                        <div class="compliance-footer">
+                            <a href="termos_uso.html">Termos</a> | <a href="privacidade.html">Privacidade</a>
+                            <div style="margin-top:5px; opacity: 0.6;">(13) 99205-8836<br>brunoadmin@guarujainterativo.com.br</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden" style="z-index: 20000;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-text">Carregando Dados...</div>
+            <div class="loading-subtext">Processando lotes e geometrias</div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="image-modal" class="image-modal" onclick="closeImageModal()">
+        <div class="modal-window-frame" onclick="event.stopPropagation()">
+            <div class="modal-header-bar">
+                <span class="close-modal-btn" onclick="closeImageModal()" title="Fechar">&times;</span>
+            </div>
+            <img class="modal-content" id="modal-image" alt="Imagem ampliada">
+        </div>
+    </div>
+
+    <!-- HTML Certificate Viewer (New) -->
+    <div id="html-cert-modal" class="image-modal" style="display: none; z-index: 10001;">
+        <div
+            style="background: white; width: 23cm; height: 90vh; margin: 2vh auto; position: relative; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.5);">
+            <div
+                style="padding: 10px; background: #333; color: white; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: bold;">Visualização de Certidão</span>
+                <div>
+                    <button type="button" onclick="window.printCertFrame()"
+                        style="padding: 5px 10px; cursor: pointer; border: none; background: #2563eb; color: white; border-radius: 4px; margin-right: 10px;">🖨️
+                        Imprimir</button>
+                    <button type="button" onclick="document.getElementById('html-cert-modal').style.display='none'"
+                        style="padding: 5px 10px; cursor: pointer; border: none; background: #dc2626; color: white; border-radius: 4px;">❌
+                        Fechar</button>
+                </div>
+            </div>
+            <iframe id="cert-frame"
+                style="flex: 1; border: none; width: 100%; height: 100%; background: white;"></iframe>
+        </div>
+    </div>
+
+    <!-- Context Menu (Right Click) -->
+    <div id="context-menu" class="context-menu">
+        <div class="context-menu-item" id="ctx-create-lote" onclick="window.handleContextAction('create')">📍 Criar Novo
+            Edifício/Lote</div>
+        <div class="context-menu-item" id="ctx-add-unit" onclick="window.handleContextAction('add-unit')">➕ Adicionar
+            Unidade
+        </div>
+        <div class="context-menu-item" id="ctx-move-lote" onclick="window.handleContextAction('move')">✥ Mover
+            Localização
+        </div>
+        <div class="context-menu-item" id="ctx-edit-details" onclick="window.handleContextAction('edit')">✏️ Editar
+            Detalhes
+        </div>
+        <div class="context-menu-item" id="ctx-delete-lote" onclick="window.handleContextAction('delete')"
+            style="color: #e53935;">🗑️ Excluir Lote</div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item" id="ctx-add-lead" onclick="window.openAddLeadTooltip()" style="color: #4CAF50;">
+            👤 Adicionar Cliente CRM</div>
+        <div class="context-menu-item" id="ctx-report-discrepancy" onclick="window.handleContextAction('report')" style="color: #6d28d9;">
+            🚩 Reportar Erro/Divergência</div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item" onclick="window.hideContextMenu()">Cancelar</div>
+    </div>
+
+    <!-- Sidebar Toggle Button (Mobile) -->
+    <button type="button" id="sidebarToggle" class="sidebar-toggle" aria-label="Abrir menu lateral">
+        <div class="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </button>
+
+    <!-- Sidebar Backdrop (Mobile) -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop"></div>
+
+    <!-- Main App (Initially Hidden via CSS if desired, or covered by Overlay) -->
+    <div id="app-container">
+        <!-- Sidebar -->
+        <aside id="sidebar">
+            <div class="sidebar-header" style="background: rgba(255,255,255,0.02); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);">
+                <!-- Linha 1: Logo e Ações de Conta -->
+                <div class="header-top-row" style="margin-bottom: 20px; align-items: center;">
+                    <div class="sidebar-logo-container" style="padding: 0; flex: 1; display: flex; justify-content: flex-start;">
+                        <img src="assets/logo.png" alt="Guarugeo" style="height: 32px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
+                    </div>
+                    <div class="header-account-actions" style="display: flex; align-items: center; gap: 8px;">
+                        <button type="button" id="btnNotifications" title="Notificações" aria-label="Ver notificações" onclick="window.NotificationsHandler && window.NotificationsHandler.toggleDropdown(event)" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 8px; color: #64748b; position: relative; cursor: pointer;">
+                            <i class="fas fa-bell"></i>
+                            <span id="notifBadge" style="display: none; position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; font-size: 9px; padding: 2px 5px; border-radius: 10px;">0</span>
+                        </button>
+                        <button type="button" onclick="window.Auth.logout()" style="background: #fef2f2; border: none; width: 32px; height: 32px; border-radius: 8px; color: #ef4444; cursor: pointer;" title="Sair" aria-label="Sair do sistema">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Linha 2: Barra de Ferramentas Estratégica -->
+                <div class="strategy-bar" style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 15px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                    <div style="display: flex; gap: 15px;">
+                        <i class="fas fa-users" onclick="window.showLeadsPanel()" title="CRM Clientes" style="color: #475569; cursor: pointer;"></i>
+                        <i class="fas fa-chart-line" onclick="window.AnalyticsDashboard.show()" title="Analytics" style="color: #6366f1; cursor: pointer;"></i>
+                        <i class="fas fa-info-circle" onclick="window.Institutional?.showMenu(event)" title="Info & Suporte" style="color: #64748b; cursor: pointer;"></i>
+                        <i class="fas fa-user-shield" id="btnAdminPanel" onclick="window.Admin && window.Admin.showAdminPanel()" title="Painel Admin" style="color: #1e293b; cursor: pointer; display: none;"></i>
+                    </div>
+                    <div id="user-credits-display" onclick="window.Monetization && window.Monetization.showSubscriptionPlans()" style="display: flex; align-items: center; gap: 5px; font-weight: 800; font-size: 11px; color: #2563eb; cursor: pointer;">
+                        <i class="fas fa-crown"></i> <span>0</span>
+                    </div>
+                </div>
+                
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="O que você busca no Guarujá?" title="Buscar ruas, imóveis ou edifícios" aria-label="Campo de busca" autocomplete="off">
+                    <div id="googleSuggestions" class="google-suggestions-box hidden"></div>
+                    <button type="button" id="searchBtn" aria-label="Pesquisar" title="Pesquisar">🔍</button>
+                    <button type="button" id="searchClearBtn" class="search-clear-btn" aria-label="Limpar busca" title="Limpar" style="display: none;">×</button>
+                </div>
+
+                <!-- Abas de Navegação -->
+                <div class="sidebar-tabs" style="margin: 20px -24px -24px; padding: 0 24px; display: flex; border-bottom: 1px solid #e2e8f0; gap: 4px; overflow-x: auto; white-space: nowrap;">
+                    <button type="button" class="tab-btn active" onclick="window.switchSidebarTab('map')" style="flex: 1; font-size: 10px; padding: 10px 5px;">📍 Mapa</button>
+                    <button type="button" class="tab-btn" onclick="window.switchSidebarTab('prospecting')" style="flex: 1; font-size: 10px; padding: 10px 5px;">🔥 Oportunidades</button>
+                    <button type="button" class="tab-btn" onclick="window.switchSidebarTab('crm')" style="flex: 1; font-size: 10px; padding: 10px 5px;">👥 CRM</button>
+                    <button type="button" class="tab-btn" onclick="window.switchSidebarTab('wallet')" style="flex: 1; font-size: 10px; padding: 10px 5px;">📦 Carteira</button>
+                </div>
+            </div>
+
+            <!-- TAB: MAP CONTENT (Wrapped existing content) -->
+            <div id="tab-map" class="sidebar-tab-content active">
+
+                <!-- Filter Section -->
+                <div class="filter-section">
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="filter-title" style="margin-bottom: 0;">Filtro de Zona</div>
+                            <select id="opportunityZoneSelect" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 11px; padding: 4px 8px; font-weight: 700; color: #1e293b; outline: none;">
+                                <option value="">Todas as Zonas</option>
+                                <option value="0">Zona 00</option>
+                                <option value="1">Zona 01</option>
+                                <option value="2">Zona 02</option>
+                                <option value="3">Zona 03</option>
+                                <option value="4">Zona 04</option>
+                                <option value="5">Zona 05</option>
+                                <option value="6">Zona 06</option>
+                            </select>
+                        </div>
+                        <div id="typeFilterRow" style="display: none; flex-direction: column; gap: 8px; background: #fffbeb; padding: 12px; border-radius: 12px; border: 1px solid #fef3c7; margin-bottom: 4px;">
+                            <div class="filter-title" style="margin-bottom: 0; color: #92400e; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Foco da Prospecção</div>
+                            <div class="opportunity-type-chips" style="display: flex; gap: 8px;">
+                                <button type="button" class="opt-chip active" data-type="all" onclick="window.switchOpportunityType('all')" style="flex: 1; border: 1px solid #fcd34d; background: white; border-radius: 8px; padding: 8px; font-size: 11px; font-weight: 800; color: #92400e; cursor: pointer; transition: all 0.2s;">🎯 Todos</button>
+                                <button type="button" class="opt-chip" data-type="seller" onclick="window.switchOpportunityType('seller')" style="flex: 1; border: 1px solid transparent; background: rgba(255,255,255,0.5); border-radius: 8px; padding: 8px; font-size: 11px; font-weight: 700; color: #92400e; cursor: pointer; transition: all 0.2s;">🚩 Venda</button>
+                                <button type="button" class="opt-chip" data-type="buyer" onclick="window.switchOpportunityType('buyer')" style="flex: 1; border: 1px solid transparent; background: rgba(255,255,255,0.5); border-radius: 8px; padding: 8px; font-size: 11px; font-weight: 700; color: #92400e; cursor: pointer; transition: all 0.2s;">💰 Compra</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="filter-title">Tipo de Busca</div>
+                    <div class="filter-grid">
+                        <div class="filter-chip master-only locked" data-search-type="all"
+                            onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Recurso exclusivo para perfil Master.')"
+                            data-tooltip="Busca completa (Master)">
+                            Todos <span class="lock-icon">🔒</span>
+                        </div>
+                        <div class="filter-chip active" data-search-type="street"
+                            data-tooltip="Pesquisa apenas por nomes de Ruas e Logradouros">Rua</div>
+                        <div class="filter-chip" data-search-type="building"
+                            data-tooltip="Pesquisa por nomes de Condomínios e Edifícios">Edifício</div>
+                        <div class="filter-chip master-only locked" data-search-type="owner"
+                            onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Somente Masters podem buscar por nome de Proprietário')">
+                            Proprietários <span class="lock-icon">🔒</span>
+                        </div>
+                        <div class="filter-chip master-only locked" data-search-type="property"
+                             onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Pesquisa por Imóveis exclusiva para perfil Master.')"
+                             data-tooltip="Pesquisa na base do Cadastro Imobiliário">Imóveis <span class="lock-icon">🔒</span></div>
+                        <div class="filter-chip master-only locked" data-search-type="opportunity"
+                            style="border-style: dashed; background: #fffbeb; color: #b45309;"
+                            data-tooltip="Radar Farol [BETA]: Inteligência de Venda Profissional">
+                            ✨ Farol Oportunidades [BETA] <span class="lock-icon">🔒</span>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <div id="searchResults" class="search-results hidden" style="margin-top: -15px;">
+                    <!-- Search items injected here -->
+                </div>
+            </div>
+
+            <!-- TAB: PROSPECTING (NEW) -->
+            <div id="tab-prospecting" class="sidebar-tab-content" style="display: none;">
+                <div style="padding: 20px; text-align: center;">
+                    <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 16px; padding: 25px; margin-bottom: 20px;">
+                        <i class="fas fa-fire" style="font-size: 44px; color: #f59e0b; margin-bottom: 15px; filter: drop-shadow(0 4px 6px rgba(245,158,11,0.3));"></i>
+                        <h3 style="color: #92400e; margin-bottom: 8px; font-weight: 900;">Radar Oportunidades [BETA] 🔥</h3>
+                        <p style="font-size: 12px; color: #b45309; line-height: 1.6; font-weight: 500;">
+                            Nossa IA analisa em tempo real o comportamento dos proprietários para identificar quem tem mais chance de vender ou aceitar propostas.
+                        </p>
+                        <button onclick="window.switchSidebarTab('map'); document.querySelector('[data-search-type=\'opportunity\']').click();" 
+                                class="btn-primary-rich" style="margin-top: 20px; background: #f59e0b; width: 100%; border-radius: 10px; font-weight: 800; font-size: 12px; height: 44px;">
+                            <i class="fas fa-search-dollar"></i> Rodar Diagnóstico Agora
+                        </button>
+                    </div>
+                    <div id="prospecting-leads-list" style="text-align: left;">
+                        <div style="padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px dashed #e2e8f0; color: #94a3b8; font-size: 11px; text-align: center;">
+                            Ative o Radar acima para ver a lista de investidores e oportunidades quentes.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: MEU CRM (NEW PERSONALIZED) -->
+            <!-- TAB: WALLET (Minha Carteira de Desbloqueios) -->
+            <div id="tab-wallet" class="sidebar-tab-content" style="display: none;">
+                <div style="padding: 24px 0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                        <div>
+                            <h3 style="font-size: 18px; font-weight: 800; color: #1e293b; margin: 0;">Minha Carteira</h3>
+                            <p style="font-size: 11px; color: #64748b; margin: 2px 0 0;">Seus imóveis desbloqueados</p>
+                        </div>
+                        <div id="wallet-stats" style="text-align: right;">
+                            <div style="font-size: 14px; font-weight: 800; color: #2563eb;">0</div>
+                            <div style="font-size: 9px; color: #94a3b8; text-transform: uppercase;">Total</div>
+                        </div>
+                    </div>
+
+                    <div id="wallet-list" class="sidebar-crm-list" style="max-height: calc(100vh - 350px); overflow-y: auto;">
+                        <!-- Injetado via JS -->
+                        <div style="padding: 40px; text-align: center; color: #94a3b8;">
+                            <i class="fas fa-box-open" style="font-size: 30px; margin-bottom: 15px; opacity: 0.3;"></i>
+                            <p style="font-size: 13px;">Sua carteira está vazia.<br><small>Desbloqueie fichas no mapa para que elas apareçam aqui.</small></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-crm" class="sidebar-tab-content" style="display: none;">
+                <div style="padding: 20px 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <div>
+                            <h3 style="color: #1e293b; margin: 0; font-size: 18px; font-weight: 800;">Meu CRM</h3>
+                            <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 0;">Gestão Pessoal de Carteira</p>
+                        </div>
+                        <button onclick="window.openAddLeadTooltip()" style="background: #2563eb; color: white; border: none; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(37,99,235,0.3);" title="Novo Lead">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <input type="text" id="crmSearchInput" placeholder="🔍 Filtrar por nome ou celular..." 
+                            style="width: 100%; padding: 10px 14px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 13px;">
+                    </div>
+
+                    <div id="sidebarCRMList" style="display: flex; flex-direction: column; gap: 12px; padding-bottom: 80px;">
+                        <!-- Lead cards injected here -->
+                        <div style="padding: 40px 20px; text-align: center; color: #94a3b8;">
+                            <i class="fas fa-user-friends" style="font-size: 32px; opacity: 0.2; margin-bottom: 12px; display: block;"></i>
+                            <p style="font-size: 12px;">Nenhum lead carregado.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="editorPanel" class="editor-panel hidden">
+                <div class="panel-header">
+                    <h3>Editar Lote</h3>
+                    <button type="button" id="closeEditor" aria-label="Fechar editor" title="Fechar">×</button>
+                </div>
+                <div id="formContainer">
+                    <!-- Form injected by JS -->
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="saveBtn" class="btn primary">Salvar Alterações</button>
+                    <button type="button" id="exportBtn" class="btn secondary">Baixar Arquivo</button>
+                </div>
+            </div>
+
+            <!-- Zone Legend -->
+
+
+
+
+            <!-- Stats Panel moved to map -->
+
+        </aside>
+
+        <!-- Map -->
+        <main id="map" style="position: relative;">
+            <!-- Novo Componente de Desenho (Modernizado) -->
+            <gmp-drawing-manager id="main-drawing-manager"></gmp-drawing-manager>
+            
+            <button type="button" id="mapBackBtn" class="map-back-btn hidden" aria-label="Voltar nível anterior">⬅ Voltar</button>
+
+            <!-- Unified Dashboard Panel (Floating Bottom Left) -->
+            <div id="statsPanel" class="stats-panel collapsed">
+                <button type="button" class="stats-toggle-btn" aria-label="Mostrar/ocultar estatísticas" onclick="this.parentElement.classList.toggle('collapsed')">
+                    <i class="fas fa-chart-pie"></i>
+                </button>
+                <div class="stats-collapsible-content">
+                    <div class="stat-item">
+                        <div class="stat-label">LOTES VISÍVEIS</div>
+                        <div id="totalLotes" class="stat-value">50.052 Lotes (Cache)</div>
+                    </div>
+
+                    <!-- Integrated Zone Legend -->
+                    <div id="zoneLegendContainer" class="zone-legend"></div>
+
+                    <div class="dashboard-actions">
+                        <!-- Neighborhood Toggle Button -->
+                        <button type="button" id="btnToggleNeighborhoods" class="dashboard-btn primary"
+                            onclick="window.toggleNeighborhoods(this)">
+                            <i class="fas fa-map"></i> Bairros
+                        </button>
+                        <!-- KML Export Button -->
+                        <button type="button" id="btnExportKML" class="dashboard-btn"
+                            onclick="window.GoogleEarthHandler.exportAllToKML()"
+                            title="Exportar KML"
+                            style="background: #10b981; color: white; border: 1px solid #059669;">
+                            <i class="fas fa-file-export"></i> KML
+                        </button>
+                        <!-- Edit Button -->
+                        <button type="button" id="btnEditNeighborhoods" class="dashboard-btn secondary" style="display:none;"
+                            title="Editar bairros" aria-label="Ativar edição de bairros"
+                            onclick="window.toggleNeighborhoodEditMode(this)">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <!-- Presentation/Landing Re-trigger Button -->
+                        <button type="button" class="dashboard-btn" 
+                            onclick="if(window.Landing) window.Landing.show();" 
+                            title="Ver Apresentação do Projeto"
+                            style="background: #6366f1; color: white; border: 1px solid #4f46e5;">
+                            <i class="fas fa-presentation-screen"></i> Apresentação
+                        </button>
+                    </div>
+                </div>
+            </div>
+            </div>
+        </main>
+
+        <!-- Injeção do Rodapé FORA do container do mapa (Para o Google não apagar) -->
+        <div class="map-compliance-footer">
+            <span>&copy; 2026 Guaruja Interativo</span>
+            <a href="termos_uso.html">Termos de Uso</a>
+            <a href="privacidade.html">Privacidade</a>
+            <span><i class="fab fa-whatsapp"></i> (13) 99205-8836</span>
+            <span><i class="fas fa-envelope"></i> brunoadmin@guarujainterativo.com.br</span>
+        </div>
+    </div>
+
+    <!-- Rodapé de Compliance no Mapa (Estilo Google) -->
+    <style>
+        .map-compliance-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.85);
+            -webkit-backdrop-filter: blur(5px);
+            backdrop-filter: blur(5px);
+            border-top: 1px solid #e2e8f0;
+            padding: 6px 15px;
+            font-size: 10px;
+            color: #64748b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            z-index: 1000; /* Acima do mapa, abaixo de modais */
+            pointer-events: auto;
+        }
+        .map-compliance-footer a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 700;
+        }
+        /* Ajustar o painel de stats para não cobrir o rodapé */
+        #statsPanel {
+            bottom: 30px !important; /* Desceu de 40 para 30 para ficar mais harmônico */
+        }
+        /* Ajustar botões nativos do Google Maps */
+        .gmnoprint, .gm-style-cc {
+            margin-bottom: 22px !important; /* Desceu de 30 para 22 */
+        }
+    </style>
+
+    <!-- ========================================== -->
+    <!-- MODALS (Hidden by default) -->
+    <!-- ========================================== -->
+
+    <!-- 1. CRM: Add Lead Modal -->
+    <div id="modal-lead-form-overlay" class="custom-modal-overlay">
+        <div class="custom-modal">
+            <div class="custom-modal-header">
+                <div class="custom-modal-title">
+                    <span>👤 Novo Cliente Interessado</span>
+                </div>
+                <button type="button" class="custom-modal-close" aria-label="Fechar" onclick="closeModal('modal-lead-form-overlay')">&times;</button>
+            </div>
+            <div class="custom-modal-body">
+                <div class="form-group">
+                    <label class="form-label">Nome do Cliente</label>
+                    <input type="text" id="lead-name" class="form-input" placeholder="Ex: Ana Silva">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">CPF do Cliente</label>
+                    <input type="text" id="lead-cpf" class="form-input" placeholder="000.000.000-00">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">WhatsApp (Celular)</label>
+                        <input type="text" id="lead-contact" class="form-input" placeholder="(11) 99999-9999">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label" for="lead-status">Interesse</label>
+                        <select id="lead-status" class="form-select" title="Selecione o nível de interesse do cliente">
+                            <option value="Quente">🔥 Muito Interessado</option>
+                            <option value="Morno" selected>🌊 Olhando</option>
+                            <option value="Frio">❄️ Apenas Curioso</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="lead-budget">Preço Máximo (R$)</label>
+                    <input type="number" id="lead-budget" class="form-input" placeholder="Ex: 500.000" title="Orçamento máximo do cliente">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label" for="lead-rooms">Mín. Quartos</label>
+                        <input type="number" id="lead-rooms" class="form-input" value="2" title="Número mínimo de quartos">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label" for="lead-neighborhoods">Bairros de Interesse</label>
+                        <input type="text" id="lead-neighborhoods" class="form-input"
+                            placeholder="Ex: Pitangueiras, Centro" title="Bairros de interesse do cliente">
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-ghost" onclick="closeModal('modal-lead-form-overlay')">Cancelar</button>
+                    <button type="button" class="btn-primary-rich" onclick="submitLeadForm()">Salvar Cliente</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MAP: New Lot Modal -->
+    <div id="modal-lot-form-overlay" class="custom-modal-overlay">
+        <div class="custom-modal">
+            <div class="custom-modal-header">
+                <div class="custom-modal-title">
+                    <span>🏗️ Novo Lote/Empreendimento</span>
+                </div>
+                <button type="button" class="custom-modal-close" aria-label="Fechar" onclick="closeModal('modal-lot-form-overlay')">&times;</button>
+            </div>
+            <div class="custom-modal-body">
+                <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label" for="new-lot-zona">Zona (Z)</label>
+                        <input type="text" id="new-lot-zona" class="form-input" placeholder="Ex: 1" maxlength="1" onkeyup="window.updateLotPreview()">
+                    </div>
+                    <div class="form-group" style="flex: 2;">
+                        <label class="form-label" for="new-lot-setor">Setor (SSSS)</label>
+                        <input type="text" id="new-lot-setor" class="form-input" placeholder="Ex: 0001" maxlength="4" onkeyup="window.updateLotPreview()">
+                    </div>
+                    <div class="form-group" style="flex: 2;">
+                        <label class="form-label" for="new-lot-lote">Lote (LLL)</label>
+                        <input type="text" id="new-lot-lote" class="form-input" placeholder="Ex: 001" maxlength="3" onkeyup="window.updateLotPreview()">
+                    </div>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 20px; text-align: center;">
+                    <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Inscrição Base (Lote) a ser Criada</div>
+                    <div id="lot-full-preview" style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 4px; letter-spacing: 2px;">--------</div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-ghost" onclick="closeModal('modal-lot-form-overlay')">Cancelar</button>
+                    <button type="button" class="btn-primary-rich" onclick="submitNewLot()">Criar Lote</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. MAP: Mass Unit Manager Modal (Admin Only) -->
+    <div id="modal-mass-unit-manager" class="custom-modal-overlay">
+        <div class="custom-modal" style="max-width: 1000px; width: 95%;">
+            <div class="custom-modal-header">
+                <div class="custom-modal-title">
+                    <span>🏢 Gerenciador de Unidades: <span id="mass-manager-lote-id"></span></span>
+                </div>
+                <button type="button" class="custom-modal-close" aria-label="Fechar" onclick="closeModal('modal-mass-unit-manager')">&times;</button>
+            </div>
+            <div class="custom-modal-body" style="padding: 10px; max-height: 70vh; overflow-y: auto;">
+                <div style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 15px;">
+                    <div style="flex: 1;">
+                        <label style="display: block; font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 5px;">📍 Endereço Coletivo (Aplicar a todas as unidades)</label>
+                        <input type="text" id="mass-collective-address" placeholder="Ex: Rua das Flores, 123 - Centro" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-weight: 600;">
+                    </div>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+                    <thead>
+                        <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                            <th style="padding: 10px; width: 80px;">Sufixo</th>
+                            <th style="padding: 10px; width: 180px;">Proprietário</th>
+                            <th style="padding: 10px; width: 140px;">CPF/CNPJ</th>
+                            <th style="padding: 10px;">Complemento (Apto/Torre)</th>
+                            <th style="padding: 10px; width: 100px;">Matrícula</th>
+                            <th style="padding: 10px; width: 80px;">RIP</th>
+                            <th style="padding: 10px; text-align: center; width: 50px;">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mass-unit-table-body">
+                        <!-- Handled by JS -->
+                    </tbody>
+                </table>
+                <div style="margin-top: 15px;">
+                    <button onclick="window.addMassUnitRow()" class="btn-ghost" style="font-size: 12px; padding: 6px 12px;"><i class="fas fa-plus"></i> Adicionar Linha Vazia</button>
+                    <button onclick="window.addSequenceMassUnitRows()" class="btn-ghost" style="font-size: 12px; padding: 6px 12px; margin-left: 10px;"><i class="fas fa-list-ol"></i> Gerar Sequência</button>
+                </div>
+            </div>
+            <div class="custom-modal-header" style="justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); border-bottom: none;">
+                <button type="button" class="btn-ghost" onclick="closeModal('modal-mass-unit-manager')">Cancelar</button>
+                <button type="button" class="btn-primary-rich" onclick="window.saveMassUnits()"><i class="fas fa-save"></i> Salvar Tudo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAP: New Unit Modal -->
+    <div id="modal-unit-form-overlay" class="custom-modal-overlay">
+        <div class="custom-modal">
+            <div class="custom-modal-header">
+                <div class="custom-modal-title">
+                    <span>🏢 Nova Unidade</span>
+                </div>
+                <button type="button" class="custom-modal-close" aria-label="Fechar" onclick="closeModal('modal-unit-form-overlay')">&times;</button>
+            </div>
+            <div class="custom-modal-body">
+                <input type="hidden" id="new-unit-lot-ref">
+                <div class="form-group">
+                    <label class="form-label" for="new-unit-suffix">Sufixo da Unidade (3 dígitos)</label>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="background: #f1f5f9; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; font-weight: 700; color: #64748b; display: flex; align-items: center;" id="unit-prefix-preview">
+                            --------
+                        </div>
+                        <input type="text" id="new-unit-suffix" class="form-input" placeholder="Ex: 001" maxlength="3" style="flex: 1;" onkeyup="document.getElementById('unit-full-preview').innerText = document.getElementById('unit-prefix-preview').innerText + this.value">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="new-unit-owner">Nome do Proprietário (Opcional)</label>
+                    <input type="text" id="new-unit-owner" class="form-input" placeholder="Ex: João da Silva">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="new-unit-address">Complemento (Apto/Sala)</label>
+                    <input type="text" id="new-unit-address" class="form-input" placeholder="Ex: Apto 101, Cobertura">
+                </div>
+
+                <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 20px; text-align: center;">
+                    <div style="font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase;">Inscrição Final a ser Criada</div>
+                    <div id="unit-full-preview" style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 4px; letter-spacing: 2px;">--------...</div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-ghost" onclick="closeModal('modal-unit-form-overlay')">Cancelar</button>
+                    <button type="button" class="btn-primary-rich" onclick="submitNewUnit()"><i class="fas fa-save"></i> Criar Unidade</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RBush (Spatial Index) - Local -->
+    <script src="js/rbush.min.js"></script>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js';
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: '', // Insira sua Firebase/Maps Key via painel do console
+            authDomain: "mapaguaruja-23d2a.firebaseapp.com",
+            projectId: "mapaguaruja-23d2a",
+            storageBucket: "mapaguaruja-23d2a.firebasestorage.app",
+            messagingSenderId: "1020579666949",
+            appId: "1:1020579666949:web:a6149a0845a55815c0d06c",
+            measurementId: "G-YF7TN6WSH8"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+
+        // Make available globally
+        window.firebaseApp = app;
+        window.firebaseAnalytics = analytics;
+    </script>
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/utils.js?v=1.16"></script>
+    <script src="js/supabase_client.js"></script>
+    <script src="js/auth_handler.js"></script>
+ 
+    <!-- Google Maps Engine (Migration Target) -->
+    <script type="module" src="https://unpkg.com/@googlemaps/extended-component-library@0.6"></script>
+    <script src="js/google_maps_loader.js?v=1.16"></script>
+
+    <!-- Stripe JS SDK -->
+    <script src="https://js.stripe.com/v3/"></script>
+    
+    <!-- App Logic -->
+    <!-- <script src="google_earth_handler.js?v=1.16"></script> -->
+
+    <!-- Anuncios Module (LOADER REMOVIDO: Arquivo não existe) -->
+    <link rel="stylesheet" href="css/anuncios_styles.css?v=1.16">
+    
+    <script src="js/monetization_handler.js?v=1.16"></script>
+    <script src="js/search_handler.js?v=1.16"></script>
+    <script src="js/tooltip_handler.js?v=1.16"></script>
+    <script src="js/neighborhood_handler.js?v=1.16"></script>
+    <script src="js/osm_handler.js?v=1.16"></script>
+    <script src="js/map_handler.js?v=1.16"></script>
+    <script src="js/editor_handler.js?v=1.16"></script>
+    <script src="js/enrichment_relations_ui.js?v=1.0"></script>
+    <script src="js/enrichment_handler.js?v=1.16"></script>
+    <script src="js/admin_handler.js?v=1.16"></script>
+    <script src="js/report_handler.js?v=1.16"></script>
+    <script src="js/crm_handler.js?v=1.16"></script>
+    <script src="js/insights_handler.js?v=1.16"></script>
+    <script src="js/app.js?v=1.16"></script>
+
+    <!-- New Modules (Analytics & Owners) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script src="js/analytics_tracker.js"></script>
+    <script src="js/analytics_dashboard.js"></script>
+    <script src="js/proprietario_tooltip.js"></script>
+    <!-- <script src="js/infosimples_handler.js"></script> -->
+    <script src="js/gemini_chat_handler.js"></script>
+    <script src="js/ai_history_handler.js"></script>
+    <script src="js/notifications_handler.js"></script>
+    <script src="js/media_handler.js"></script>
+    <script src="js/image_viewer_handler.js"></script>
+    <script src="js/institutional_handler.js"></script>
+    <script src="js/zoning_handler.js"></script>
+    <script src="js/relationship_handler.js"></script>
+    <script src="js/graph_handler.js"></script>
+    <script src="js/predictive_handler.js"></script>
+
+    <!-- Onboarding / Tour -->
+    <script src="js/intro.min.js"></script>
+    <script src="js/onboarding_handler.js"></script>
+    <script src="js/location_handler.js"></script>
+
+    <!-- Analytics & Heatmap -->
+    <script src="js/analytics_handler.js"></script>
+
+    <!-- Legal Engines -->
+    <script src="js/contract_templates.js"></script>
+    <script src="js/leilao_staging_handler.js"></script>
+    <script src="js/renovation_radar.js"></script>
+    <script src="js/push_handler.js"></script>
+    
+    <!-- UX Improvements V1.2 (Cleanup duplicates) -->
+    <script src="js/advanced_maps_handler.js"></script>
+    <script src="js/report_handler.js"></script>
+    <script src="js/client_mode_handler.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+
+
+    <!-- PWA & Mobile Optimization -->
+    <script src="js/camera_handler.js"></script>
+    <script src="js/tracking_handler.js"></script>
+    <script src="js/streetview_handler.js"></script>
+
+    <script src="js/regional_handler.js"></script>
+    <script src="js/portfolio_handler.js"></script>
+    <script src="js/weather_handler.js"></script>
+
+    <style>
+        /* Fix for Google Maps 'content-visibility' console warnings */
+        #map, gmp-map-3d {
+            content-visibility: visible !important;
+        }
+    </style>
+
+    <script>
+        // NUCLEAR VISIBILITY RECOVERY
+        setTimeout(() => {
+            console.log("🛡️ Running Visibility Recovery...");
+            const loading = document.getElementById('loading-overlay');
+            if (loading) {
+                loading.style.display = 'none';
+                loading.classList.add('hidden');
+            }
+            
+            // Só libera o login se NÃO estivermos logados E a Landing Page NÃO estiver ativa
+            this.apiKey = localStorage.getItem('gemini_api_key') || "";
+            const isLandingActive = !!document.getElementById('landing-overlay');
+
+            if (!isLogged && !isLandingActive && !window.isGuest) {
+                 const login = document.getElementById('loginOverlay');
+                 if (login) login.style.display = 'flex';
+                 console.log("🛡️ Visibility Recovery: Forced Login display.");
+            } else {
+                 console.log("🛡️ Visibility Recovery: Auth or Landing already handling UI.");
+            }
+            document.body.style.backgroundColor = ''; 
+            
+            // Inicializar Tracking
+            if (window.Tracking) {
+                window.Tracking.init().then(() => {
+                    // 1. Atualizar contadores de tráfego
+                    window.Tracking.getStats().then(stats => {
+                        const vEl = document.getElementById('home-visit-count');
+                        const oEl = document.getElementById('home-online-count');
+                        
+                        if (vEl) vEl.innerText = stats.uniqueVisitors.toLocaleString('pt-BR');
+                        
+                        if (oEl) {
+                            oEl.innerText = stats.onlineUsers.toLocaleString('pt-BR');
+                            
+                            // Mostrar o real apenas para Master (no título ou entre parênteses)
+                            const isMaster = window.Monetization && (window.Monetization.userRole === 'admin' || window.Monetization.userRole === 'master');
+                            if (isMaster) {
+                                oEl.title = `Real: ${stats.realOnline}`;
+                                oEl.style.cursor = 'help';
+                            }
+                        }
+                    });
+                    
+                    // 2. Atualizar contadores de dados (Prefeitura, Matrículas, etc)
+                    window.Tracking.getPublicLiveStats().then(stats => {
+                        const pEl = document.getElementById('home-public-count');
+                        const mEl = document.getElementById('home-matricula-count');
+                        const tEl = document.getElementById('home-total-count');
+                        if (pEl) pEl.innerText = stats.unidadesPublicas.toLocaleString('pt-BR');
+                        if (mEl) mEl.innerText = stats.comMatricula.toLocaleString('pt-BR');
+                        if (tEl) tEl.innerText = stats.totalUnidades.toLocaleString('pt-BR');
+                    });
+                });
+            }
+        }, 8000);
+
+    </script>
+</body>
+
+</html>
+

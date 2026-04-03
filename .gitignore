@@ -1,75 +1,61 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+# --- CONFIGURAÇÕES DE SEGURANÇA E PRIVACIDADE (GuaruGeo) ---
 
-# Virtual Environment
-venv/
-.venv/
-env/
-ENV/
+# Backup e Dados Privados (CRÍTICO)
+**/.env
+**/secrets.json
+**/service-account.json
+**/*.env.local
+**/venv/
+**/node_modules/
+**/__pycache__/
+_PRIVATE_BACKUP/
+*.rar
+*.zip
+*.7z
+*.pdf
+!docs/*.pdf
 
-# OS
+# Logs e Cache
+*.log
+npm-debug.log*
+yarn-debug.log*
+.firebase/
+.mypy_cache/
 .DS_Store
 Thumbs.db
-ehthumbs.db
-Desktop.ini
+__pycache__/
+*.pyc
 
-# Node.js
+# Scripts e Ferramentas Internas (Scripts de Dev)
+scripts/
+migrations/
+scraper/
+scrapers/
+database/
+supabase/
+tests/
+email_templates/
+
+# Documentos em Markdown (Exceto os Principais)
+*.md
+!README.md
+!SECURITY.md
+!docs/
+
+# Dependências
 node_modules/
-npm-debug.log
-yarn-error.log
 package-lock.json
 
-# Tooling/IDE
+# IDEs e Editores
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# Firebase
-.firebase/
-firebase-debug.log
-
-# Project Specific - Large/Legacy/Garbage
-_legacy/
-_trash/
-backups/
-
-# Environment variables and secrets
-.env
-.env.local
-.env.*
-service-account.json
-credentials.json
-*.pem
-*.key
-
-# Large data files
-mapa_interativo/lotes_merged.json
-Antigos/*.json
-Antigos/*.html
-Antigos/*.db
-Antigos/*.docx
-Antigos/*.pdf
-Antigos/*.log
-Antigos/*.txt
-
-# Logs
-*.log
+# Builds e Temporários
+dist/
+build/
+tmp/
+out/
+bin/
+obj/

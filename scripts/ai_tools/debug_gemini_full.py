@@ -3,7 +3,9 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyCMDj4RXAJheWLJX61Vbt6WG_M6eQ_nPrE")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY não configurada no ambiente.")
 
 genai.configure(api_key=GEMINI_API_KEY)
 

@@ -1,9 +1,11 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 // Configuração Infosimples
 const INFOSIMPLES_API_URL = 'https://api.infosimples.com/api/v2/consultas';
 const INFOSIMPLES_ADMIN_URL = 'https://api.infosimples.com/api/admin/account';
-const API_TOKEN = 'agXwchZZhp6xqsRfYLj6wd8oQWBNXPsW47Aly6R6';
+const API_TOKEN = Deno.env.get('INFOSIMPLES_API_TOKEN');
+if (!API_TOKEN) throw new Error('INFOSIMPLES_API_TOKEN is not configured');
 
 // Configuração de certidões disponíveis
 const CERTIDOES_CONFIG: Record<string, { endpoint: string; preco: number; nome: string; allowedParams?: string[] }> = {

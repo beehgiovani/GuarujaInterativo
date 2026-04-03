@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 # Carrega variáveis de ambiente (.env) se existir, ou usa a chave fixa do planejamento
 load_dotenv()
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyCMDj4RXAJheWLJX61Vbt6WG_M6eQ_nPrE")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 class GeminiAssistant:
     def __init__(self, key=GEMINI_API_KEY):

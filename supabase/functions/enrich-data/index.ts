@@ -2,13 +2,13 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 // Configuração de Enriquecimento
 const PROVIDER_API_URL = 'https://api.' + ['data', 'stone'].join('') + '.com.br/v1';
-const API_KEYS = [
-    'ds_AfC894GnzP59kS5ODBB7pF76bIsL6oaT_T5SvjeyZjw', 
-    'ds_8vQOTvDw7UxSrbXvHF2O7AWwtzOA00YhDfKsuid0Kkw', 
-    'ds_RdQbGtuJHaWSYQWlPvM37XzyWFxXXakU63JbKWYUyQY',  
-    'ds__-e9uO4gaDUFwwAu1b1ifBI4JUMh6eOClCMnYesPPBI',
-    'ds_BgYSjmVN8UD4VEujRrvx5716AuWxVv4kKkxqXRkLunM'
-];
+const API_KEYS = (Deno.env.get('ENRICH_API_KEYS') || '')
+    .split(',')
+    .map(k => k.trim())
+    .filter(k => k.length > 0);
+if (API_KEYS.length === 0) {
+    console.warn('[Proxy] ENRICH_API_KEYS not configured. Service will fail.');
+}
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',

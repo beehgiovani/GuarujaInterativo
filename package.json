@@ -9,7 +9,7 @@
         "electron": "electron mapa_interativo/electron-main.js",
         "dist": "electron-builder -w",
         "release": "python automate_release.py",
-        "test": "node tests/run_tests.node.js"
+        "test": "node tests/test_runner.js"
     },
     "keywords": [],
     "author": "Omega Imóveis",

@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS public.unlocked_lots (
 
 -- Segurança de Linha (RLS)
 ALTER TABLE public.unlocked_lots ENABLE ROW LEVEL SECURITY;
-
+    
 -- Usuários só podem ver o que eles mesmos desbloquearam
 CREATE POLICY "Ver proprios unlocks" ON public.unlocked_lots
     FOR SELECT USING (auth.uid() = user_id);

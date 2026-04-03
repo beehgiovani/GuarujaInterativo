@@ -124,7 +124,7 @@ def create_docx(path):
         
     # Certificações
     doc.add_heading('Certificações e Educação', level=1)
-    for cert in CERTIFICACOES: # Usei o nome em PT no loop anterior, corrigindo para CERTIFICATIONS
+    for cert in CERTIFICADOS: # Usei o nome em PT no loop anterior, corrigindo para CERTIFICATIONS
         doc.add_paragraph(f"{cert['nome']} ({cert['org']}) - {cert['date']}", style='List Bullet')
     for edu in EDUCATION:
         doc.add_paragraph(edu, style='List Bullet')

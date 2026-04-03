@@ -2,7 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 // These should be set in the environment or replaced with actual values for local testing
 const supabaseUrl = 'https://ijmgvsztgljribnogtsx.supabase.co';
-const supabaseKey = 'sb_secret_B6FJEtKvVNE-ANG9dccwEQ_oTgo_YNH';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
