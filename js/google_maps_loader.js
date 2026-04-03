@@ -5,7 +5,7 @@
 
 window.GoogleMapsConfig = {
 
-    API_KEY: '', // Chave removida por segurança. Configure via Referrer Restrictions.
+    API_KEY: 'AIzaSyBgZ2tcavsvESRqWJjZjSa3GGpTVxR9BVM', // Chave restaurada. Proteja via Referrer Restrictions no console Google.
     MAP_ID: null, // Desativado fotorrealismo 3D temporariamente
     VERSION: 'weekly' // Canal semanal estável
 };

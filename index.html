@@ -879,7 +879,7 @@
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
-            apiKey: '', // Insira sua Firebase/Maps Key via painel do console
+            apiKey: 'AIzaSyBtPbWKlq9YbXAI1NEsuoM7pjhtreskltU',
             authDomain: "mapaguaruja-23d2a.firebaseapp.com",
             projectId: "mapaguaruja-23d2a",
             storageBucket: "mapaguaruja-23d2a.firebasestorage.app",
@@ -996,7 +996,7 @@
             }
             
             // Só libera o login se NÃO estivermos logados E a Landing Page NÃO estiver ativa
-            this.apiKey = localStorage.getItem('gemini_api_key') || "";
+            const isLogged = localStorage.getItem('guaruja_auth') === 'true';
             const isLandingActive = !!document.getElementById('landing-overlay');
 
             if (!isLogged && !isLandingActive && !window.isGuest) {
