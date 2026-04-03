@@ -93,3 +93,85 @@
     -webkit-backdrop-filter: blur(2px);
     backdrop-filter: blur(2px);
 }
+
+/* Landing Splash Carousel Premium Styles */
+.landing-carousel-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 450px;
+    height: 350px;
+    margin: 30px auto;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.landing-carousel-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.landing-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 1s ease-in-out, transform 1.5s ease-out;
+    transform: scale(1.05); /* Slight zoom effect for dynamism */
+}
+
+.landing-slide.active {
+    opacity: 1;
+    transform: scale(1);
+    z-index: 10;
+}
+
+.carousel-dots {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 20;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dot.active {
+    background: #3b82f6;
+    width: 24px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+/* Responsive adjustment for Login Container */
+@media (max-width: 1023px) {
+    .login-container {
+        grid-template-columns: 1fr !important;
+        overflow-y: auto;
+    }
+    
+    .login-splash-side {
+        display: none !important; /* Hide splash on mobile/tablet to prioritize login */
+    }
+    
+    .login-form-side {
+        padding: 40px 20px !important;
+        height: auto;
+    }
+}

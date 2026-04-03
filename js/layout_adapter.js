@@ -38,8 +38,8 @@ window.LayoutAdapter = {
         let adjustment = 1;
         if (this.currentScale > 1.05) {
             // Formula: Linear compensation that keeps layout manageable
-            // If scale is 1.5 (24px), we might want UI elements to be 0.85x size.
-            adjustment = Math.max(0.7, 1 / (this.currentScale * 0.95));
+            // If scale is 1.5 (24px), we might want UI elements to be 0.8x size.
+            adjustment = Math.max(0.65, 1 / (this.currentScale * 0.98));
         }
 
         console.log(`📏 [LayoutAdapter] Detected Scale: ${this.currentScale.toFixed(2)}x. Applying Adjustment: ${adjustment.toFixed(2)}x`);
@@ -91,6 +91,23 @@ window.LayoutAdapter = {
             /* Fix for overlapping buttons in headers */
             .header-buttons-wrapper {
                 gap: calc(6px * var(--ui-scale)) !important;
+            }
+
+            /* Login Box Protection */
+            .login-box {
+                transform: scale(calc(0.95 + (0.05 * var(--ui-scale)))) !important;
+                transform-origin: center center !important;
+                max-height: 90vh !important;
+                overflow-y: auto !important;
+            }
+            
+            .splash-title {
+                font-size: calc(2.5rem * var(--ui-scale)) !important;
+                line-height: 1.1 !important;
+            }
+            
+            .live-stat-card {
+                padding: calc(10px * var(--ui-scale)) !important;
             }
         `;
     }
