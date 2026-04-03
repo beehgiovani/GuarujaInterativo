@@ -786,7 +786,7 @@ window.Monetization = {
 
     showPixOptions: function() {
         // STRIPE KEYS (TEST - SANDBOX)
-        const STRIPE_PK = ''; // Insira via ambiente ou config segura
+        const STRIPE_PK = 'pk_test_51TI0jtDABJhsHWnXjh9pUIz8kvuPYtBXC6GJLrYfuKnloUNHTI9ur7gmDk0xepYsgCxdv2CDFCfnnRo8AFkY60db00rPtzlas9';
         // STRIPE_SK removida para segurança
         
         const modal = document.createElement('div');
