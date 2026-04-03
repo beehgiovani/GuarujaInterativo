@@ -67,6 +67,11 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
         isRefresh: isRefresh
     });
 
+    // 1. CRM PESSOAL: Buscar status de carteira antes de renderizar
+    if (window.UserUnitStatusHandler) {
+        await window.UserUnitStatusHandler.fetchStatusMapForLot(lote.inscricao);
+    }
+
     // Determine which tab should be active
     let activeTab = 'geral'; 
     if (isRefresh && window.currentTooltip) {
@@ -514,7 +519,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
                 ${streetViewBtn}
                 ${googleEarthBtn}
                 
-                <button onclick="window.AnunciosHandler.openPanel('${lote.inscricao}')"
+                <button onclick="window.AdminHandler.openPanel('${lote.inscricao}')"
                     class="tooltip-action-btn"
                     style="background: #fbbf24; border: 1px solid rgba(255,255,255,0.2); color: #92400e; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px;"
                     onmouseover="this.style.background='#f59e0b'"
@@ -525,7 +530,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
                 </button>
 
                 ${window.Monetization.canAccess('link_cliente') ? `
-                <button onclick="window.ClientModeHandler.generateLink(lote)"
+                <button onclick="window.ClientModeHandler.generateLink(window.currentLoteForUnit)"
                     class="tooltip-action-btn"
                     title="Gerar Link Seguro para Cliente"
                     style="background: #10b981; border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px;"
@@ -1051,7 +1056,17 @@ function renderUnitItem(u, mode = 'residential') {
             style="background: ${bgColor}; border: 1px solid #e2e8f0; border-left: 4px solid ${statusColor}; border-radius: 6px; padding: 10px 12px; cursor: pointer; transition: all 0.15s; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 1px 1px rgba(0,0,0,0.05);">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; flex-direction: column;">
-                        <span style="font-weight: 800; color: #1e293b; font-size: 15px;">${unitNum}</span>
+                        <span style="font-weight: 800; color: #1e293b; font-size: 15px;">
+                            ${(function() {
+                                if (window.UserUnitStatusHandler) {
+                                    const pStatus = window.UserUnitStatusHandler.getStatus(u.inscricao);
+                                    const pConfig = window.UserUnitStatusHandler.getStatusConfig(pStatus);
+                                    return `<span title="${pConfig.label}">${pConfig.emoji}</span> `;
+                                }
+                                return '';
+                            })()}
+                            ${unitNum}
+                        </span>
                         ${(mode === 'residential') ? (u.metragem ? `<span style="font-size: 10px; color: #64748b;">${u.metragem}m²</span>` : '') : ''}
                     </div>
                     ${(mode !== 'residential') ? `<span style="font-size: 10px; color: #475569; background: white; padding: 2px 4px; border: 1px solid #e2e8f0; border-radius: 4px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${u.tipo || (mode === 'comercial' ? 'Loja' : 'Vaga')}</span>` : ''}
@@ -1402,8 +1417,24 @@ async function showUnitTooltip(unit, parentLote, x, y) {
                         </div>
                     </div>
                     <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px; border-radius: 14px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; justify-content: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                        <div style="font-size: 12px; color: #475569; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">Status da Unidade</div>
-                        <div style="font-size: 18px; color: #334155; font-weight: 700;">${unit.status_venda || 'Disponível'}</div>
+                        <div style="font-size: 12px; color: #475569; font-weight: 800; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">Seu Status Comercial</div>
+                        ${(function() {
+                            if (!window.UserUnitStatusHandler) return `<div style="font-size: 18px; color: #334155; font-weight: 700;">${unit.status_venda || 'Disponível'}</div>`;
+                            
+                            const pStatus = window.UserUnitStatusHandler.getStatus(unit.inscricao);
+                            const configs = window.UserUnitStatusHandler.STATUS_CONFIG;
+                            
+                            return `
+                            <select onchange="window.UserUnitStatusHandler.updateStatus('${unit.inscricao}', this.value)" 
+                                style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px; font-size: 14px; font-weight: 700; color: #1e293b; cursor: pointer; outline: none;">
+                                ${Object.keys(configs).map(k => `
+                                    <option value="${k}" ${pStatus === k ? 'selected' : ''}>
+                                        ${configs[k].emoji} ${configs[k].label}
+                                    </option>
+                                `).join('')}
+                            </select>
+                            `;
+                        })()}
                     </div>
                 </div>
 

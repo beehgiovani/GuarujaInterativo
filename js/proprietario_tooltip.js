@@ -49,6 +49,13 @@ window.ProprietarioTooltip = {
      * @param {number} proprietarioId - ID do proprietário
      */
     async show(proprietarioId, x = 0, y = 0) {
+        // SEGURANÇA: Validar se o ID é temporário ou inválido antes de consultar o Supabase
+        if (!proprietarioId || String(proprietarioId).startsWith('temp_') || isNaN(parseInt(proprietarioId))) {
+            console.warn("⚠️ [Propriedade] Tentativa de acesso a proprietário com ID temporário:", proprietarioId);
+            window.Toast.info('Dados do proprietário em processamento. Disponível em breve.');
+            return;
+        }
+
         window.Loading.show('Carregando...', 'Buscando dados do proprietário');
 
         try {

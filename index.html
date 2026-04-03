@@ -32,6 +32,7 @@
     <link rel="stylesheet" href="css/ai_chat_styles.css">
     <link rel="stylesheet" href="css/mobile_styles.css">
     <link rel="stylesheet" href="css/image_viewer.css">
+    <script src="js/layout_adapter.js"></script>
 
     <!-- Intro.js (User Onboarding) -->
     <link rel="stylesheet" href="css/introjs.min.css">
@@ -619,6 +620,15 @@
                             onclick="window.toggleNeighborhoodEditMode(this)">
                             <i class="fas fa-pen"></i>
                         </button>
+                        
+                        <button onclick="window.showLeadsPanel()" class="sidebar-btn" title="Meu CRM & Leads">
+                            <i class="fas fa-user-friends"></i>
+                        </button>
+                        
+                        <button onclick="window.LegendHandler.show()" class="sidebar-btn" title="Legenda de Zonas" style="background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;">
+                            <i class="fas fa-map-marked-alt"></i>
+                        </button>
+                        
                         <!-- Presentation/Landing Re-trigger Button -->
                         <button type="button" class="dashboard-btn" 
                             onclick="if(window.Landing) window.Landing.show();" 
@@ -925,6 +935,8 @@
     <script src="js/editor_handler.js?v=1.16"></script>
     <script src="js/enrichment_relations_ui.js?v=1.0"></script>
     <script src="js/enrichment_handler.js?v=1.16"></script>
+    <script src="js/user_unit_status_handler.js?v=1.16"></script>
+    <script src="js/legend_handler.js?v=1.16"></script>
     <script src="js/admin_handler.js?v=1.16"></script>
     <script src="js/report_handler.js?v=1.16"></script>
     <script src="js/crm_handler.js?v=1.16"></script>

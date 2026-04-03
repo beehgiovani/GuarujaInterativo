@@ -30,4 +30,4 @@ try:
     print(f"Resposta: {response.text}")
 
 except Exception as e:
-    print(f"\nERRO DETECTADO: {type(e).__name__}: {e}")
+    print(f"\nERRO DETECTADO: {type(e).__name__}: {e}") 

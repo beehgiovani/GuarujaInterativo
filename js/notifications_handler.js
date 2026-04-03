@@ -330,7 +330,7 @@ class NotificationsHandler {
             document.getElementById('notifDropdown').style.display = 'none';
 
             // Open Panel
-            window.AnunciosHandler.openPanel(loteInscricao);
+            window.AdminHandler.openPanel(loteInscricao);
 
             // Optional: Zoom to lote
             // window.mapHandler.zoomToLote(loteInscricao); 

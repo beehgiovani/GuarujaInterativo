@@ -174,7 +174,7 @@ window.maskName = function(name, showsFull = false) {
 // ========================================
 // CPF/CNPJ FORMATTING
 // ========================================
-window.formatDocument = function(doc, visible = false) {
+window.formatDocument = function(doc, visible) {
     if (!doc || doc === 'null') return '-';
     const clean = doc.toString().replace(/\D/g, '');
     

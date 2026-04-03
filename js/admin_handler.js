@@ -3,9 +3,14 @@
 // ==========================================
 // Manages users, credits, and system settings
 
-window.Admin = {
+window.AdminHandler = {
     init: function() {
         console.log("🛠️ Admin Handler Initializing...");
+    },
+
+    openPanel: function(loteId) {
+        console.log("🛠️ AdminHandler.openPanel called for:", loteId);
+        this.showAdminPanel();
     },
 
     showAdminPanel: async function() {
@@ -1737,3 +1742,5 @@ window.Admin = {
         }
     }
 };
+// Compatibilidade com possíveis referências antigas no HTML
+window.Admin = window.AdminHandler;
