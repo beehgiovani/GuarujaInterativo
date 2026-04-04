@@ -101,20 +101,38 @@
 - [x] Analyze existing plan definitions and permission logic
 - [x] Verify plan-based restrictions
 - [x] Verify individual credit purchase logic
-- [x] Fix logout functionality
-- [x] Audit and Fix Owner Privacy Leaks (Data Masking)
-    - [x] `search_handler.js`: Mask owner names in search results
-    - [x] `gemini_chat_handler.js`: Mask owner data in AI tool results
-    - [x] `streetview_handler.js`: Mask owner info in Street View infobox
-    - [x] `history_handler.js`: Mask owner names in "Recently Viewed" history
-    - [x] `enrichment_handler.js`: Secure `showFullDetails` with permission check
-    - [x] `portfolio_handler.js`: Verify Elite-only restriction
-    - [x] `proprietario_tooltip.js`: Audit visibility logic
+- [x] Bucket 3: Mapa & Espacial
+    - [x] `map.test.js` (RBush, UTM)
+    - [x] `tooltip.test.js` (Privacy, Masking)
+    - [x] `history.test.js` (Persistence)
+- [x] Bucket 4: Infra & Auditoria
+    - [x] `test_runner.js` V2.2 (Sandboxed)
+    - [x] `security_audit.test.js` (RBAC Penetration)
+    - [x] `performance.test.js` (Scale Benchmarking)
+- [x] Bucket 5: IA & Inteligência
+    - [x] `gemini_chat.test.js` (Agentic Loop, Tools)
+    - [x] `ai_history.test.js` (Chat Persistence)
+    - [x] `predictive.test.js` (Scoring Logic)
+- [x] Bucket 6: Ferramentas & PWA
+    - [x] `camera.test.js` (PWA Camera)
+    - [x] `streetview.test.js` (SV Sync)
+    - [x] `location.test.js` (GPS Controls - Verified)
+- [x] Bucket 7: Visuals & Redes
+    - [x] `graph.test.js` (Influence Networks)
+    - [x] `proprietario_tooltip.test.js` (Advanced Data)
+    - [x] `zoning.test.js` (Usage/Soil Data)
 - [x] Implement persistence for owner enrichment
-- [ ] Final Codebase-wide Privacy Scan
-- [ ] Create application preview
-    - [ ] Start local server and capture recordings
+- [x] Final Codebase-wide Privacy Scan
+- [x] Create application preview
+    - [x] Start local server and capture recordings
     - [x] Final verification and walkthrough <!-- id: 11 -->
+- [/] Fase de Estabilização (Zero Fails)
+    - [x] Adicionar `toBeCloseTo` e `toThrow` no `test_runner.js`
+    - [x] Adicionar `history.replaceState` e `atob/btoa` no `mocks.js`
+    - [x] Corrigir `ControlPosition` e `createControl` no mock do Google Maps
+    - [/] Implementar `approveUser` e `rejectUser` no `AdminHandler` <!-- id: 18 -->
+    - [ ] Debugar `ZoningHandler` (Containment logic)
+    - [ ] Validar 142 testes passando
 - [x] Force #app-container to top:0 to fix persistent gap <!-- id: 12 -->
 - [x] Fix media_handler.js TypeError (getUrl -> getURI) <!-- id: 17 -->
 - [x] Resolve Map ID vs Styles conflict in map_handler.js <!-- id: 18 -->

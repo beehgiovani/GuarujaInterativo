@@ -94,7 +94,7 @@ window.LayoutAdapter = {
             }
 
             /* Login Box Protection */
-            .login-box {
+            .login-form-side {
                 transform: scale(calc(0.95 + (0.05 * var(--ui-scale)))) !important;
                 transform-origin: center center !important;
                 max-height: 90vh !important;

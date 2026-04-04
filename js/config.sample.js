@@ -9,5 +9,9 @@ window.CONFIG = {
     SUPABASE_URL: 'https://seu-projeto.supabase.co',
     SUPABASE_KEY: 'SUA_CHAVE_AQUI',
     GEMINI_API_KEY: '',
-    OPENWEATHER_KEY: ''
+    // OpenWeather (Opcional se usar via Edge Function)
+    OPENWEATHER_KEY: '',
+
+    // Stripe (Pagamentos & Assinaturas)
+    STRIPE_PUBLISHABLE_KEY: ''
 };

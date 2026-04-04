@@ -114,6 +114,9 @@ window.Monetization = {
             this.userRole = String(data.role || 'user').toLowerCase();
             console.log("👤 User Role Loaded:", this.userRole);
 
+            // [NOVO] Iniciar Monitor de Expiração de Assinatura
+            this.startSubscriptionTimer();
+
             // Verificação de Perfil Completo (Garante CPF/CNPJ e agora Telefone)
             const isMissingData = !data.profile_completed || !data.phone;
             if (isMissingData && this.userRole !== 'admin' && this.userRole !== 'master') {
@@ -124,9 +127,9 @@ window.Monetization = {
             const isMaster = this.userRole === 'admin' || this.userRole === 'master';
             const isPro = this.canAccess('radar_mercado');
 
-            // Mostrar botão Admin para masters
-            const adminBtn = document.getElementById('btnAdminPanel');
-            if (adminBtn) adminBtn.style.display = isMaster ? 'flex' : 'none';
+            // Mostrar botão Admin para masters (agora apontando para o contêiner do badge)
+            const adminContainer = document.getElementById('admin-btn-container');
+            if (adminContainer) adminContainer.style.display = isMaster ? 'inline-block' : 'none';
 
             // Desbloquear chips conforme tier
             document.querySelectorAll('.filter-chip.master-only').forEach(el => {
@@ -997,8 +1000,16 @@ window.Monetization = {
                             </ul>
                             <button onclick="window.Monetization.startSubscription('vip')" style="width:100%;padding:10px;border:none;border-radius:8px;background:white;color:#1e293b;font-weight:700;cursor:pointer;font-size:12px;">Assinar Anual VIP</button>
                         </div>
-
                     </div>
+
+                    ${(this.userProfile?.stripe_customer_id || this.userRole !== 'user') ? `
+                    <div style="text-align:center;margin-top:20px;padding:15px;background:#f1f5f9;border-radius:12px;border:1px dashed #cbd5e1;">
+                        <span style="font-size:12px;color:#475569;">Já possui uma assinatura ativa?</span>
+                        <button onclick="window.Monetization.initStripePortal()" style="background:none;border:none;color:#2563eb;font-weight:800;font-size:12px;cursor:pointer;margin-left:5px;text-decoration:underline;">
+                            <i class="fas fa-external-link-alt"></i> Gerenciar Assinatura & Faturas
+                        </button>
+                    </div>
+                    ` : ''}
                     <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid #e2e8f0;">
                         <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;">Ou compre fichas avulsas (sem assinatura):</div>
                         <span style="font-size:12px;color:#2563eb;text-decoration:underline;cursor:pointer;" onclick="window.Monetization.showPixOptions();this.closest('.custom-modal-overlay').remove();">
@@ -1013,50 +1024,62 @@ window.Monetization = {
 
 
 
-    startSubscription: function(plan) {
+    startSubscription: async function(plan) {
         console.log("💳 Iniciando fluxo de assinatura para o plano:", plan);
         
-        let price = 0;
-        if (this.plansConfig && this.plansConfig[plan]) {
-            price = this.plansConfig[plan].price;
-        } else {
-            // Fallbacks de segurança (Preços V2)
-            if (plan === 'start') price = 97;
-            else if (plan === 'pro') price = 179;
-            else if (plan === 'elite') price = 349;
-            else if (plan === 'vip') price = 2990;
-            else return;
+        const userId = this.userProfile?.id;
+        if (!userId) {
+            window.Toast.error("Usuário não identificado. Por favor, faça login novamente.");
+            return;
         }
 
-        // --- FLUXO ATIVO: PIX MANUAL (Enquanto aguarda Stripe) ---
-        const modal = document.createElement('div');
-        modal.className = 'custom-modal-overlay active';
-        modal.style.zIndex = '10030';
-        modal.innerHTML = `
-            <div class="custom-modal" style="max-width: 450px;">
-                <div class="custom-modal-header" style="background: #1e293b; color: white;">
-                    <div class="custom-modal-title"><i class="fas fa-crown"></i> Assinatura ${plan.toUpperCase()}</div>
-                    <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()">&times;</button>
-                </div>
-                <div class="custom-modal-body" id="plan-checkout-body">
-                    <!-- Conteúdo Pix Manual -->
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        this.renderPlanPixCheckout(plan, price);
-
-        /* 
-        // --- FLUXO FUTURO: STRIPE CHECKOUT (Descomentar para ativar) ---
         const checkoutMap = {
-            'start': 'price_1TI3QADtPqKChaOnIMXmAQs8',
-            'pro':   'price_1TI3QeDtPqKChaOnWTb6qSkC',
-            'elite': 'price_1TI3R5DtPqKChaOnrIDyeXQp',
-            'vip':   'price_1TI3RNDtPqKChaOnpeZhIMvd'
+            'start': 'https://buy.stripe.com/7sY4gz8ANg8ogqOe2l7EQ00',
+            'pro':   'https://buy.stripe.com/3cI6oH2cpbS8deC0bv7EQ01',
+            'elite': 'https://buy.stripe.com/bJe3cv8ANcWc2zY9M57EQ02',
+            'vip':   'https://buy.stripe.com/dRm7sL9ERf4ka2qf6p7EQ03'
         };
-        const target = checkoutMap[plan];
-        if (target) this.initStripeCheckout(target);
-        */
+
+        const baseLink = checkoutMap[plan];
+        if (!baseLink) {
+            window.Toast.error("Link de checkout não configurado para este plano.");
+            return;
+        }
+
+        window.Loading.show("Iniciando Checkout...", "Abrindo ambiente seguro do Stripe");
+
+        try {
+            // Obter e-mail atual para preenchimento (UX)
+            const { data: { user } } = await window.supabaseApp.auth.getUser();
+            const email = user?.email || '';
+
+            // Construir URL com parâmetros
+            const url = new URL(baseLink);
+            url.searchParams.set('client_reference_id', userId);
+            if (email) url.searchParams.set('prefilled_email', email);
+            
+            // Opcional: success_url se os links permitirem override
+            // url.searchParams.set('success_url', 'https://guarujainterativo.com.br/?payment=success');
+
+            console.log("🚀 Redirecionando para Stripe:", url.toString());
+            
+            // Log de intenção no banco (Opcional, para auditoria)
+            await window.supabaseApp.from('checkout_logs').insert({
+                user_id: userId,
+                plano: plan,
+                url_final: url.toString(),
+                status: 'redirected'
+            }).select().maybeSingle();
+
+            // Redirecionamento completo
+            window.location.href = url.toString();
+
+        } catch (e) {
+            window.Loading.hide();
+            console.error("Erro ao preparar checkout:", e);
+            // Se falhar o log ou o auth, ainda assim tentamos redirecionar com o ID que já temos
+            window.location.href = `${baseLink}?client_reference_id=${userId}`;
+        }
     },
 
     initStripeCheckout: async function(priceId) {
@@ -1065,29 +1088,27 @@ window.Monetization = {
             return;
         }
 
-        const stripe = window.Stripe(this.STRIPE_PK || 'pk_test_51TI0jtDABJhsHWnXjh9pUIz8kvuPYtBXC6GJLrYfuKnloUNHTI9ur7gmDk0xepYsgCxdv2CDFCfnnRo8AFkY60db00rPtzlas9');
+        const stripePK = window.CONFIG.STRIPE_PUBLISHABLE_KEY || 'pk_test_...';
+        const stripe = window.Stripe(stripePK);
         
         window.Loading.show("Abrindo Pagamento...", "Conectando ao Ambiente Seguro do Stripe");
 
         try {
-            // Chamando a sua nova Edge Function no Supabase
             console.log("🚀 Invocando Edge Function 'stripe-checkout' para:", priceId);
             
+            // Bruno, aqui chamamos sua Edge Function (você fará o deploy manual)
             const { data, error } = await window.supabaseApp.functions.invoke('stripe-checkout', {
-                body: { priceId: priceId }
+                body: { 
+                    priceId: priceId,
+                    return_url: window.location.origin + '?payment=success'
+                }
             });
 
             if (error) throw error;
 
             if (data?.url) {
-                // Opção 1: Redirecionar via URL retornada pelo Stripe (Mais seguro)
+                // Redirecionamento completo (Melhor UX)
                 window.location.href = data.url;
-            } else if (data?.sessionId) {
-                // Opção 2: Redirecionar via Session ID
-                const { error: stripeError } = await stripe.redirectToCheckout({
-                    sessionId: data.sessionId
-                });
-                if (stripeError) throw stripeError;
             } else {
                 throw new Error("Sessão de checkout não gerada.");
             }
@@ -1096,6 +1117,49 @@ window.Monetization = {
             window.Loading.hide();
             console.error("Stripe Checkout Error:", e);
             window.Toast.error("Erro no Checkout: " + (e.message || "Tente novamente mais tarde."));
+        }
+    },
+
+    // Nova funcionalidade: Gerenciar Assinatura (Portal do Cliente)
+    initStripePortal: async function() {
+        window.Loading.show("Abrindo Portal...", "Verificando sessão segura...");
+        
+        try {
+            // 1. Garantir que a sessão está fresca (Refresh JWT)
+            const { data: { session }, error: sessionErr } = await window.supabaseApp.auth.getSession();
+            if (sessionErr || !session) {
+                throw new Error("Sessão expirada. Por favor, saia e entre novamente no sistema.");
+            }
+
+            console.log("🔐 Sessão validada para:", session.user.email);
+            
+            // 2. Invocar a Edge Function com o token atualizado
+            const { data, error } = await window.supabaseApp.functions.invoke('create-portal-session', {
+                body: { return_url: window.location.href } 
+            });
+
+            if (error) {
+                if (error.status === 401) {
+                    throw new Error("Erro de Autenticação (401): O servidor do Supabase não reconheceu seu login. Tente fazer logout e login novamente.");
+                }
+                throw error;
+            }
+
+            if (data?.url) {
+                window.location.href = data.url;
+            } else {
+                throw new Error("Resposta inválida do servidor de faturamento.");
+            }
+        } catch (e) {
+            console.error("🔥 Erro no Portal:", e);
+            window.Loading.hide();
+            
+            let userMsg = e.message || "Tente novamente mais tarde.";
+            if (userMsg.includes('Failed to fetch') || userMsg.includes('ERR_NAME_NOT_RESOLVED')) {
+                userMsg = "Erro de Rede/DNS: Não foi possível carregar a Stripe. DESATIVE SEU ADBLOCKER e verifique sua conexão.";
+            }
+            
+            window.Toast.error(userMsg, "Falha no Portal");
         }
     },
 
@@ -1323,10 +1387,10 @@ window.Monetization = {
                 .eq('user_id', user.id)
                 .order('desbloqueado_em', { ascending: false });
 
-            // 2. Fetch PERSONS with names
+            // 2. Fetch PERSONS with names (CORREÇÃO ERRO 400 - JOIN COM PROPRIETARIOS)
             const { data: personUnlocks, error: personError } = await window.supabaseApp
                 .from('unlocked_persons')
-                .select('*, proprietarios(nome_completo)')
+                .select('*, proprietarios!unlocked_persons_cpf_cnpj_fkey(nome_completo)')
                 .eq('user_id', user.id)
                 .order('unlocked_at', { ascending: false });
 
@@ -1595,7 +1659,108 @@ window.Monetization = {
                  window.Toast.error("Não foi possível carregar os detalhes do imóvel.");
              }
         } catch(e) { console.error(e); }
-        finally { window.Loading.hide(); }
+    },
+
+    // ==========================================
+    // [NOVO] SUBSCRIPTION TIMER ENGINE
+    // ==========================================
+    
+    startSubscriptionTimer: function() {
+        if (this._subInterval) clearInterval(this._subInterval);
+        
+        const updateWidget = () => {
+            const expiresAt = this.userProfile?.subscription_expires_at;
+            const container = document.getElementById('subscription-timer-container');
+            if (!container) return;
+
+            if (!expiresAt) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const now = new Date();
+            const end = new Date(expiresAt);
+            const diff = end - now;
+
+            if (diff <= 0) {
+                // EXPIROU!
+                if (this.userRole !== 'user' && this.userRole !== 'master' && this.userRole !== 'admin') {
+                    console.warn("⚠️ Assinatura expirada! Executando downgrade...");
+                    this.handleSubscriptionExpiration();
+                }
+                container.innerHTML = `
+                    <div style="margin: 0 24px 20px; padding: 12px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 32px; height: 32px; background: #ef4444; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 10px; font-weight: 800; color: #ef4444; text-transform: uppercase;">Acesso Expirado</div>
+                            <div style="font-size: 11px; color: #7f1d1d; font-weight: 600;">Renove para continuar usando</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Converter para formato legível
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+            const displayTime = hours > 24 
+                ? `${Math.floor(hours/24)}d ${hours%24}h ${mins}m`
+                : `${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+
+            container.innerHTML = `
+                <div style="margin: 0 24px 10px; padding: 12px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 15px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 12px rgba(37,99,235,0.08);">
+                    <div style="width: 38px; height: 38px; background: #2563eb; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; animation: pulseTiny 2s infinite;">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 9px; font-weight: 800; color: #2563eb; text-transform: uppercase; letter-spacing: 0.5px;">Acesso Liberado</div>
+                        <div style="font-size: 14px; font-weight: 900; color: #1e3a8a; font-family: monospace;">${displayTime}</div>
+                    </div>
+                </div>
+                <style>
+                    @keyframes pulseTiny {
+                        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37,99,235,0.4); }
+                        70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(37,99,235,0); }
+                        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37,99,235,0); }
+                    }
+                </style>
+            `;
+        };
+
+        this._subInterval = setInterval(updateWidget, 1000);
+        updateWidget();
+    },
+
+    handleSubscriptionExpiration: async function() {
+        if (this._expiring) return;
+        this._expiring = true;
+
+        try {
+            const { data: { user } } = await window.supabaseApp.auth.getUser();
+            if (!user) return;
+
+            // Downgrade no Banco
+            await window.supabaseApp
+                .from('profiles')
+                .update({ 
+                    role: 'user', 
+                    subscription_expires_at: null 
+                })
+                .eq('id', user.id);
+
+            window.Toast.info("🕒 Seu período de acesso temporário expirou. Retornando ao plano básico.");
+            
+            // Recarregar perfil para atualizar UI global
+            setTimeout(() => window.location.reload(), 3000);
+        } catch (e) {
+            console.error("Erro no downgrade automático:", e);
+        } finally {
+            this._expiring = false;
+        }
     }
 };
 

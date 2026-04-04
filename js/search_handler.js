@@ -145,6 +145,7 @@ window.setupSearchAndFilters = function () {
                     suggestions.forEach(suggestion => {
                         const prediction = suggestion.placePrediction;
                         const item = document.createElement('div');
+                        if (item.id) window._domMap[item.id] = item;
                         item.className = 'suggestion-item';
                         item.innerHTML = `
                             <i class="fas fa-map-marker-alt"></i>
@@ -355,6 +356,14 @@ window.performSearch = async function (query) {
                     // Build Label gracefully
                     let finalLabel = address;
                     if (houseNum && houseNum !== 'S/N' && !address.includes(houseNum)) {
+                    const roleColors = { 
+                        master: '#7c3aed', // Roxo Master
+                        vip: '#d4af37',   // Ouro VIP
+                        elite: '#b45309',  // Bronze Elite
+                        pro: '#0369a1',    // Pro Blue
+                        start: '#0d9488',  // Start Emerald
+                        user: '#334155'    // User Slate
+                    };
                         finalLabel += ', ' + houseNum;
                     }
 
@@ -890,8 +899,13 @@ window.performOpportunitySearch = async function () {
             </div>
         `;
 
+        if (!leads || !Array.isArray(leads)) return;
+
         leads.forEach(lead => {
-            const scoreColor = window.PredictiveHandler.getScoreColor(lead.score);
+            if (!lead) return;
+            const scoreColor = (window.PredictiveHandler && window.PredictiveHandler.getScoreColor) 
+                 ? window.PredictiveHandler.getScoreColor(lead.score) 
+                 : '#334155';
             const isSeller = lead.opportunity_type === 'seller';
             const typeLabel = isSeller ? 'VENDA' : 'COMPRA';
             const typeColor = isSeller ? '#ef4444' : '#10b981';

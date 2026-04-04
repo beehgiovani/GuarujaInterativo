@@ -115,7 +115,9 @@ window.ZoningHandler = (function() {
             </div>
         `;
 
-        document.body.appendChild(panel);
+        if (!panel.parentElement) {
+            document.body.appendChild(panel);
+        }
 
         // Add specific keyframe if not present
         if (!document.getElementById('zoning-anim-style')) {
@@ -180,5 +182,5 @@ window.ZoningHandler = (function() {
         window.open(`https://wa.me/?text=${text}`, '_blank');
     }
 
-    return { runSimulation, shareOnWhatsApp };
+    return { runSimulation, shareOnWhatsApp, rules: ZoningRules };
 })();

@@ -10,13 +10,13 @@ window.PredictiveHandler = {
      * @returns {object} { score, reasons }
      */
     calculateScore: function(owner) {
-        if (!owner) return { score: 0, reasons: [] };
-
+        if (!owner || typeof owner !== 'object') return { score: 0, reasons: [], color: "#3b82f6" };
+        const nome = (owner.nome_completo || "").toUpperCase();
         let score = 0;
         const reasons = [];
 
         // 0. Espólio (Prioridade Máxima para Venda)
-        if (owner.nome_completo && owner.nome_completo.toUpperCase().startsWith('ESPOLIO')) {
+        if (nome.startsWith('ESPOLIO')) {
             score += 85;
             reasons.push("⚖️ Espólio Identificado (Oportunidade Crítica)");
         }

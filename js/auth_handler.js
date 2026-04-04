@@ -350,9 +350,9 @@ window.Auth = {
     },
 
     showPendingApprovalUI: function(status) {
-        const title = document.querySelector('.login-box h2');
+        const title = document.querySelector('.login-form-side h2');
         const btn = document.getElementById('btnLogin');
-        const content = document.querySelector('.login-box form');
+        const content = document.querySelector('.login-form-side form');
         const toggleLink = document.getElementById('toggleAuthLink');
         const nameField = document.getElementById('loginNameField');
         const resendLink = document.getElementById('resendConfirmationLink');
@@ -391,7 +391,7 @@ window.Auth = {
     },
 
     toggleAuthMode: function(mode) {
-        const title = document.querySelector('.login-box h2');
+        const title = document.querySelector('.login-form-side h2');
         const btn = document.getElementById('btnLogin');
         const toggleLink = document.getElementById('toggleAuthLink');
         const nameField = document.getElementById('loginNameField');
@@ -522,26 +522,34 @@ window.Auth = {
         // Verifica a cada 30 segundos se a sessão ainda é a válida
         this._sessionInterval = setInterval(async () => {
             const localSessionId = localStorage.getItem('guaruja_session_id');
-            if (!localSessionId) return;
-
             const { data: { user } } = await window.supabaseApp.auth.getUser();
             if (!user) return;
 
+            // Busca status e session_id mais recentes
             const { data: profile } = await window.supabaseApp
                 .from('profiles')
-                .select('last_session_id')
+                .select('last_session_id, status')
                 .eq('id', user.id)
                 .maybeSingle();
 
-            if (profile && profile.last_session_id && profile.last_session_id !== localSessionId) {
-                console.warn("⚠️ Sessão Única: Outro acesso detectado. Encerrando esta sessão.");
+            if (!profile) return;
+
+            // 1. Verificação de Bloqueio (Rejeição Administrativa)
+            if (profile.status === 'rejected') {
+                console.warn("🚫 Acesso Revogado Administrativamente.");
+                clearInterval(this._sessionInterval);
+                window.Toast.error("🚨 Seu acesso foi revogado pelo administrador.");
+                setTimeout(() => this.logout(), 3000);
+                return;
+            }
+
+            // 2. Verificação de Sessão Única (Kick Logic)
+            if (profile.last_session_id && localSessionId && profile.last_session_id !== localSessionId) {
+                console.warn("⚠️ Sessão Única: Outro acesso detectado.");
                 clearInterval(this._sessionInterval);
                 window.Toast.warning("⚠️ Outro acesso detectado. Sua conta foi conectada em outro dispositivo.");
-                
-                setTimeout(() => {
-                    this.logout();
-                }, 3000);
+                setTimeout(() => this.logout(), 3000);
             }
-        }, 10000); // Acelerado para 10 segundos
+        }, 15000); // Verificação a cada 15 segundos
     }
 };

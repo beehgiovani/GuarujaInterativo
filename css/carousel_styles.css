@@ -164,14 +164,31 @@
     .login-container {
         grid-template-columns: 1fr !important;
         overflow-y: auto;
+        height: 100vh;
+        gap: 0;
     }
     
     .login-splash-side {
-        display: none !important; /* Hide splash on mobile/tablet to prioritize login */
+        display: none !important; /* Esconder splash no mobile para focar no login v2 */
     }
     
+    .landing-carousel-wrapper {
+        height: 100%;
+        width: 100%;
+        max-width: none;
+        border-radius: 0;
+        margin: 0;
+        box-shadow: none;
+    }
+
     .login-form-side {
-        padding: 40px 20px !important;
+        padding: 30px 20px !important;
         height: auto;
+    }
+
+    .splash-title {
+        font-size: 1.8rem !important;
+        text-align: center;
+        padding: 0 10px;
     }
 }

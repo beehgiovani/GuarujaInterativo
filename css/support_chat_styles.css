@@ -1,0 +1,56 @@
+/* SUPPORT CHAT FLOATING BUTTON STYLES */
+#user-support-trigger {
+    position: fixed;
+    bottom: 25px;
+    left: 520px;
+    /* Lado do Farol IA (que está em 80px) */
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 8px 32px 0 rgba(16, 185, 129, 0.3);
+    z-index: 9999;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+#user-support-trigger:hover {
+    transform: scale(1.1) rotate(-5deg);
+}
+
+#user-support-trigger .support-pulse {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #10b981;
+    opacity: 0.4;
+    animation: support-pulse 2s infinite;
+    z-index: -1;
+}
+
+@keyframes support-pulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.4;
+    }
+
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    #user-support-trigger {
+        bottom: 80px;
+        left: 90px;
+        /* Offset do IA no mobile */
+    }
+}

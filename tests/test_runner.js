@@ -1,53 +1,92 @@
 /**
- * TEST RUNNER (V1.7.0 - ASYNC ENHANCED)
- * Motor de simulação com suporte a Promises (resolves/rejects).
+ * TEST RUNNER (V2.2.0 - FULL BROWSER SANDBOX)
+ * Motor de simulação isolado para testes "Extreme".
+ * Inclui APIs como URLSearchParams e localStorage mockado.
  */
 
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const results = { pass: 0, fail: 0 };
-const testFiles = fs.readdirSync(path.join(__dirname, 'unit')).filter(f => f.endsWith('.test.js'));
+const RESULTS = { pass: 0, fail: 0 };
+const argFile = process.argv[2];
+const unitDir = path.join(__dirname, 'unit');
+const testFiles = argFile 
+    ? [path.basename(argFile)] 
+    : fs.readdirSync(unitDir).filter(f => f.endsWith('.test.js'));
 
 async function runTests() {
-    process.stdout.write(`\n🚀 Iniciando Suíte de Testes Consolidados...\n`);
+    process.stdout.write(`\n🚀 Iniciando Suíte de Testes Consolidados (Modo Full Sandbox)...\n`);
 
     for (const file of testFiles) {
         const testQueue = [];
+        let beforeEachHooks = [];
+        let afterEachHooks = [];
+
+        // 1. Criar Contexto Sandbox Limpo para CADA arquivo
         const context = {
             window: {},
-            console: console,
+            console: {
+                log: (...args) => {
+                    const msg = String(args[0]);
+                    if (msg.includes('Mocks') || msg.includes('module loaded') || msg.includes('Configuração de Segurança')) return;
+                    console.log(...args);
+                },
+                error: console.error,
+                warn: console.warn,
+                info: console.info
+            },
             setTimeout: setTimeout,
             clearTimeout: clearTimeout,
             setInterval: setInterval,
             clearInterval: clearInterval,
             process: process,
+            Buffer: Buffer,
             __dirname: __dirname,
             require: require,
-            fs: fs,
-            path: path,
-            Promise: Promise,
-            Error: Error,
-            TypeError: TypeError,
-            ReferenceError: ReferenceError,
             URL: URL,
+            URLSearchParams: URLSearchParams,
             navigator: { userAgent: 'NodeTestRunner' },
             CustomEvent: class CustomEvent { constructor(type, detail) { this.type = type; this.detail = detail; } },
             Event: class Event { constructor(type) { this.type = type; } },
             dispatchEvent: () => true,
-            addEventListener: () => {}
+            addEventListener: () => {},
+            // LocalStorage Mock
+            localStorage: {
+                _data: {},
+                setItem: (k, v) => { context.localStorage._data[k] = String(v); },
+                getItem: (k) => context.localStorage._data[k] || null,
+                removeItem: (k) => { delete context.localStorage._data[k]; },
+                clear: () => { context.localStorage._data = {}; }
+            },
+            // UI Mocks
+            prompt: () => '',
+            Image: class { constructor() { setTimeout(() => this.onload && this.onload(), 10); } },
+            atob: (str) => Buffer.from(str, 'base64').toString('binary'),
+            btoa: (str) => Buffer.from(str, 'binary').toString('base64')
         };
+
         vm.createContext(context);
         context.window = context;
-        context.global = context;
         context.self = context;
 
-        context.loadProjectScript = (fileName) => {
-            const filePath = path.join(__dirname, '..', 'js', fileName);
-            if (!fs.existsSync(filePath)) throw new Error(`Script not found: ${filePath}`);
+        // 2. Definir helpers globais para o contexto
+        context.loadProjectScript = (name) => {
+            const filePath = path.join(__dirname, '..', 'js', name);
+            if (!fs.existsSync(filePath)) {
+                const altPath = path.join(__dirname, name);
+                const unitPath = path.join(unitDir, name);
+                const finalPath = fs.existsSync(altPath) ? altPath : (fs.existsSync(unitPath) ? unitPath : null);
+                
+                if (finalPath) {
+                    const code = fs.readFileSync(finalPath, 'utf8');
+                    vm.runInContext(code, context, { filename: name });
+                    return;
+                }
+                throw new Error(`Script não encontrado: ${name}`);
+            }
             const code = fs.readFileSync(filePath, 'utf8');
-            vm.runInContext(code, context, { filename: fileName });
+            vm.runInContext(code, context, { filename: name });
         };
 
         context.describe = (name, fn) => {
@@ -55,77 +94,101 @@ async function runTests() {
             fn(); 
         };
 
-        context.beforeEach = (fn) => { context._beforeEach = fn; };
-
-        context.it = (name, fn) => {
-            testQueue.push({ name, fn });
-        };
+        context.beforeEach = (fn) => beforeEachHooks.push(fn);
+        context.afterEach = (fn) => afterEachHooks.push(fn);
+        context.it = (name, fn) => testQueue.push({ name, fn });
 
         context.expect = (val) => {
-            const matchers = {
-                toBe: (exp) => { if (val !== exp) throw new Error(`Expected ${exp}, got ${val}`); },
-                toBeCloseTo: (exp, precision = 2) => {
-                    const diff = Math.abs(val - exp);
-                    if (diff > Math.pow(10, -precision) / 2) throw new Error(`Expected ${val} to be close to ${exp}`);
+            const matchers = (negated = false) => ({
+                toBe: (exp) => { 
+                    const pass = val === exp;
+                    if (negated ? pass : !pass) throw new Error(`Expected ${val} ${negated ? 'not ' : ''}to be ${exp}`); 
                 },
-                toContain: (exp) => { if (!val || !val.toString().includes(exp)) throw new Error(`Expected ${val} to contain ${exp}`); },
-                toBeFalsy: () => { if (val) throw new Error(`Expected falsy, got ${val}`); },
-                toBeTruthy: () => { if (!val) throw new Error(`Expected truthy, got ${val}`); },
-                resolves: {
-                    toBe: async (exp) => {
-                        const resolved = await val;
-                        if (resolved !== exp) throw new Error(`Expected resolved ${exp}, got ${resolved}`);
-                    },
-                    toBeTruthy: async () => {
-                        const resolved = await val;
-                        if (!resolved) throw new Error(`Expected resolved truthy, got ${resolved}`);
-                    }
+                toContain: (exp) => { 
+                    const pass = String(val).includes(String(exp));
+                    if (negated ? pass : !pass) throw new Error(`Expected ${val} ${negated ? 'not ' : ''}to contain ${exp}`); 
+                },
+                toBeDefined: () => { 
+                    const pass = val !== undefined;
+                    if (negated ? pass : !pass) throw new Error(`Expected ${negated ? 'not ' : ''}defined, got ${val}`); 
+                },
+                toBeGreaterThan: (exp) => { 
+                    const pass = val > exp;
+                    if (negated ? pass : !pass) throw new Error(`Expected ${val} ${negated ? 'not ' : ''}to be > ${exp}`); 
+                },
+                toBeNull: () => { 
+                    const pass = val === null;
+                    if (negated ? pass : !pass) throw new Error(`Expected ${negated ? 'not ' : ''}null, got ${val}`); 
+                },
+                toBeTruthy: () => { 
+                    const pass = !!val;
+                    if (negated ? pass : !pass) throw new Error(`Expected ${negated ? 'not ' : ''}truthy, got ${val}`); 
+                },
+                toBeFalsy: () => { 
+                    const pass = !val;
+                    if (negated ? pass : !pass) throw new Error(`Expected ${negated ? 'not ' : ''}falsy, got ${val}`); 
+                },
+                toBeCloseTo: (exp, precision = 2) => {
+                    const pass = Math.abs(val - exp) < (Math.pow(10, -precision) / 2);
+                    if (negated ? pass : !pass) throw new Error(`Expected ${val} ${negated ? 'not ' : ''}to be close to ${exp} (prec: ${precision})`);
+                },
+                toThrow: () => {
+                    let thrown = false;
+                    try { val(); } catch (e) { thrown = true; }
+                    if (negated ? thrown : !thrown) throw new Error(`Expected function ${negated ? 'not ' : ''}to throw`);
                 }
-            };
-            return matchers;
+            });
+            const base = matchers(false);
+            base.not = matchers(true);
+            return base;
         };
 
-        const mocksCode = fs.readFileSync(path.join(__dirname, 'mocks.js'), 'utf8');
-        vm.runInContext(mocksCode, context, { filename: 'mocks.js' });
-
-        // Carregar Camada de Configuração (CONFIÁVEL/BLINDADA)
-        const configPath = path.join(__dirname, '..', 'js', 'config.js');
-        if (fs.existsSync(configPath)) {
-            const configCode = fs.readFileSync(configPath, 'utf8');
-            vm.runInContext(configCode, context, { filename: 'config.js' });
-        } else {
-            // Fallback para o Sample se o real não existir (Útil para CI/CD)
-            const samplePath = path.join(__dirname, '..', 'js', 'config.sample.js');
-            const sampleCode = fs.readFileSync(samplePath, 'utf8');
-            vm.runInContext(sampleCode, context, { filename: 'config.sample.js' });
-        }
-
-        const testCode = fs.readFileSync(path.join(__dirname, 'unit', file), 'utf8');
+        // 3. Carregar Mocks Universais PRIMEIRO
         try {
+            const mocksPath = path.join(__dirname, 'mocks.js');
+            const mocksCode = fs.readFileSync(mocksPath, 'utf8');
+            vm.runInContext(mocksCode, context, { filename: 'mocks.js' });
+
+            // 3.1. Carregar RBush (Motor Espacial) para suporte a Map/Zoning
+            const rbushPath = path.join(__dirname, '..', 'js', 'rbush.min.js');
+            if (fs.existsSync(rbushPath)) {
+                const rbushCode = fs.readFileSync(rbushPath, 'utf8');
+                vm.runInContext(rbushCode, context, { filename: 'rbush.min.js' });
+            }
+
+            // 4. Carregar o Arquivo de Teste
+            const testPath = path.join(unitDir, file);
+            const testCode = fs.readFileSync(testPath, 'utf8');
             vm.runInContext(testCode, context, { filename: file });
-            
+
+            // 5. Executar Fila de Testes
             for (const test of testQueue) {
                 try {
-                    if (typeof context._beforeEach === 'function') await context._beforeEach();
+                    for (const hook of beforeEachHooks) await hook();
                     await test.fn();
-                    results.pass++;
+                    for (const hook of afterEachHooks) await hook();
+                    RESULTS.pass++;
                     process.stdout.write(`  ✅ ${test.name}\n`);
                 } catch (e) {
+                    RESULTS.fail++;
                     process.stdout.write(`  ❌ ${test.name}: ${e.message}\n`);
-                    results.fail++;
                 }
             }
-        } catch (e) {
-            process.stdout.write(`\n💥 Fatal Error in ${file}: ${e.message}\n`);
+        } catch (err) {
+            RESULTS.fail++;
+            process.stdout.write(`  🔥 Erro Fatal em ${file}: ${err.message}\n`);
+            console.error(err);
         }
     }
 
-    process.stdout.write(`\n==============================\n📊 SUMÁRIO: ✅ ${results.pass} Passou | ❌ ${results.fail} Falhou\n==============================\n`);
-    if (results.fail > 0) process.exit(1);
-    else process.exit(0);
+    process.stdout.write(`\n==============================`);
+    process.stdout.write(`\n📊 SUMÁRIO: ✅ ${RESULTS.pass} Passou | ❌ ${RESULTS.fail} Falhou`);
+    process.stdout.write(`\n==============================\n`);
+
+    if (RESULTS.fail > 0) process.exit(1);
 }
 
-runTests().catch(e => {
-    console.error("Test runner crashed:", e);
+runTests().catch(err => {
+    console.error("Runner Fatal Error:", err);
     process.exit(1);
 });

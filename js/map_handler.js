@@ -118,6 +118,57 @@ window.init3DToggle = function() {
     window.map.controls[google.maps.ControlPosition.RIGHT_CENTER].push(angleDown);
 };
 
+// --- LEGENDA GEOGRÁFICA INTERATIVA (ZONAS 0-6) ---
+window.initMapLegend = function() {
+    if (!window.map || !window.GUARA_ZONES) return;
+
+    const legendBtn = document.createElement('div');
+    legendBtn.className = 'landscape-control legend-toggle-btn';
+    legendBtn.title = 'Abrir Legenda de Zonas (0-6)';
+    legendBtn.style.cssText = `
+        margin: 10px; background: white; border-radius: 8px; width: 44px; height: 44px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15); cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        border: 1px solid #e2e8f0; font-size: 18px; color: #334155;
+        transition: all 0.2s;
+    `;
+    legendBtn.innerHTML = '<i class="fas fa-map-marked-alt"></i>';
+    window.map.controls[google.maps.ControlPosition.LEFT_TOP].push(legendBtn);
+
+    const legendPanel = document.createElement('div');
+    legendPanel.className = 'zone-legend-flyout';
+    legendPanel.style.cssText = `
+        display: none; position: absolute; top: 120px; left: 14px;
+        background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px);
+        color: white; border-radius: 12px; padding: 20px; width: 260px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
+        z-index: 10000; animation: fadeIn 0.25s ease-out;
+    `;
+    
+    let zonesHtml = '<div style="font-size: 11px; font-weight: 900; text-transform: uppercase; margin-bottom: 20px; color: #94a3b8; letter-spacing: 1.5px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">Identificação Geográfica</div>';
+    Object.entries(window.GUARA_ZONES).forEach(([id, zone]) => {
+        zonesHtml += `
+            <div style="display: flex; gap: 12px; margin-bottom: 15px; align-items: flex-start; transition: all 0.2s;">
+                <div style="width: 12px; height: 12px; border-radius: 3px; background: ${zone.color}; margin-top: 3px; flex-shrink: 0; box-shadow: 0 0 10px ${zone.color}60;"></div>
+                <div>
+                    <div style="font-size: 12px; font-weight: 800; color: white;">${zone.name}</div>
+                    <div style="font-size: 10px; color: #94a3b8; margin-top: 4px; line-height: 1.4; font-weight: 500;">${zone.neighborhoods}</div>
+                </div>
+            </div>`;
+    });
+    
+    legendPanel.innerHTML = zonesHtml;
+    document.getElementById('map').appendChild(legendPanel);
+
+    legendBtn.onclick = () => {
+        const isVisible = legendPanel.style.display === 'block';
+        legendPanel.style.display = isVisible ? 'none' : 'block';
+        legendBtn.style.color = isVisible ? '#334155' : '#2563eb';
+        legendBtn.style.backgroundColor = isVisible ? 'white' : '#eff6ff';
+        if (!isVisible) window.Toast.info("Legenda de Zonas Ativa");
+    };
+};
+
 window.initHeatmap = function() {
     if (!window.map) return;
     let heatmap = null;
@@ -455,6 +506,7 @@ window.initMap = async function () {
 
         window.initRuler();
         window.init3DToggle();
+        window.initMapLegend();
         window.initHeatmap();
 
         // 5. Initialize Search Autocomplete (Integrated Database Search)

@@ -29,6 +29,7 @@ const LocationHandler = {
             border: 1px solid #e2e8f0;
         `;
         controlDiv.innerHTML = '<i class="fas fa-crosshairs" style="font-size: 20px; color: #334155;"></i>';
+        controlDiv.title = 'Minha Localização / GPS';
 
         controlDiv.onclick = () => this.toggleTracking();
 
@@ -173,11 +174,16 @@ const LocationHandler = {
 if (window.map) {
     LocationHandler.init();
 } else {
-    // Poll for map or listen to an event (simplest is polling or waiting for load)
-    const checkMap = setInterval(() => {
-        if (window.map) {
-            LocationHandler.init();
-            clearInterval(checkMap);
-        }
-    }, 500);
+    // Poll for map (using window.LocationAgentCheck to prevent multiple intervals in tests)
+    if (!window.LocationAgentCheck) {
+        window.LocationAgentCheck = setInterval(() => {
+            if (window.map) {
+                LocationHandler.init();
+                clearInterval(window.LocationAgentCheck);
+                window.LocationAgentCheck = null;
+            }
+        }, 500);
+    }
 }
+
+window.LocationHandler = LocationHandler;

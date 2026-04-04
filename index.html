@@ -17,7 +17,7 @@
     <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
 
     <!-- Custom Module CSS (Restored & Modular) -->
-    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/layout.css?v=2.0">
     <link rel="stylesheet" href="css/sidebar_styles.css">
     <link rel="stylesheet" href="css/map_styles.css">
     <link rel="stylesheet" href="css/overlays_styles.css">
@@ -30,7 +30,7 @@
     <link rel="stylesheet" href="css/toast_styles.css">
     <link rel="stylesheet" href="css/crm_styles.css">
     <link rel="stylesheet" href="css/ai_chat_styles.css">
-    <link rel="stylesheet" href="css/mobile_styles.css">
+    <link rel="stylesheet" href="css/mobile_styles.css?v=2.0">
     <link rel="stylesheet" href="css/image_viewer.css">
     <!-- Site Intelligence & Security -->
     <script src="js/config.js"></script>
@@ -137,22 +137,61 @@
                 background: radial-gradient(circle at top left, #1e293b, #0f172a);
                 padding: 60px;
                 position: relative;
-                overflow: hidden;
+                height: 100vh;
+                overflow-y: auto;
                 color: white;
                 flex-direction: column;
-                justify-content: center;
+                justify-content: flex-start;
                 align-items: center;
                 border-right: 1px solid rgba(255,255,255,0.05);
+            }
+
+            /* Scrollbar Premium para as laterais */
+            .login-splash-side::-webkit-scrollbar,
+            .login-form-side::-webkit-scrollbar {
+                width: 5px;
+            }
+            .login-splash-side::-webkit-scrollbar-track,
+            .login-form-side::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            .login-splash-side::-webkit-scrollbar-thumb,
+            .login-form-side::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 10px;
+            }
+            .login-splash-side::-webkit-scrollbar-thumb:hover,
+            .login-form-side::-webkit-scrollbar-thumb:hover {
+                background: rgba(37, 99, 235, 0.3);
+            }
+
+            /* Logotipo Premium v2 (Breathing & Glow) */
+            .premium-logo {
+                width: 140px;
+                height: auto;
+                margin-bottom: 30px;
+                filter: drop-shadow(0 0 15px rgba(37, 99, 235, 0.4));
+                animation: logoBreath 4s ease-in-out infinite;
+                transition: transform 0.3s ease;
+            }
+
+            .premium-logo:hover {
+                transform: scale(1.05);
+                filter: drop-shadow(0 0 25px rgba(37, 99, 235, 0.6));
+            }
+
+            @keyframes logoBreath {
+                0%, 100% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(37, 99, 235, 0.4)); }
+                50% { transform: scale(1.03); filter: drop-shadow(0 0 25px rgba(37, 99, 235, 0.6)); }
             }
 
             .login-form-side {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                justify-content: center;
+                justify-content: flex-start;
                 width: 100%;
-                height: 100%;
-                min-height: 100vh;
+                height: 100vh;
                 background: #0f172a;
                 padding: 20px;
                 overflow-y: auto;
@@ -170,7 +209,7 @@
                     <!-- Vitrine Dinâmica (Substituindo o Lottie quebrado) -->
                     <div class="lottie-wrapper">
                         <!-- O conteúdo será injetado pelo LandingCarousel.js -->
-                        <div class="loading-carousel-placeholder" style="height: 350px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.02); border-radius: 20px;">
+                        <div class="loading-carousel-placeholder" style="height: 350px; display: flex; align-items: center; justify-content: flex-start; background: rgba(255,255,255,0.02); border-radius: 20px;">
                             <i class="fas fa-circle-notch fa-spin"></i>
                         </div>
                     </div>
@@ -204,8 +243,7 @@
 
             <!-- Login Form Side -->
             <div class="login-form-side">
-                <div class="login-box">
-                    <img src="./assets/logo.png" alt="Logo GuaruGeo" style="width: 140px; margin-bottom: 24px; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1));">
+                <img src="assets/logo_v2.png" alt="GuarujaGeo Logo" class="premium-logo">
                     <h2>Acesso Restrito</h2>
                     <p>Inteligência de Dados e Mapas do Guarujá</p>
                     
@@ -233,7 +271,7 @@
                         
                         <button id="btnLogin" type="button" onclick="window.Auth.handleLogin()" style="width: 100%;">Entrar</button>
 
-                        <div id="resendConfirmationLink" style="display: none; align-items: center; justify-content: center; gap: 8px; margin-top: 15px; font-size: 12px; color: #64748b;">
+                        <div id="resendConfirmationLink" style="display: none; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 15px; font-size: 12px; color: #64748b;">
                             <i class="fas fa-envelope"></i> Não recebeu? 
                             <span onclick="window.Auth.resendConfirmation(document.getElementById('loginUser').value)" style="color: #3b82f6; font-weight: 700; cursor: pointer;">Reenviar e-mail</span>
                         </div>
@@ -288,7 +326,6 @@
                             <div style="margin-top:5px; opacity: 0.6;">(13) 99205-8836<br>brunoadmin@guarujainterativo.com.br</div>
                         </div>
                     </div>
-                </div>
             </div>
         </div>
     </div>
@@ -385,9 +422,10 @@
                 <!-- Linha 1: Logo e Ações de Conta -->
                 <div class="header-top-row" style="margin-bottom: 20px; align-items: center;">
                     <div class="sidebar-logo-container" style="padding: 0; flex: 1; display: flex; justify-content: flex-start;">
-                        <img src="assets/logo.png" alt="Guarugeo" style="height: 32px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
+                        <img src="assets/logo_v2.png" alt="Guarugeo" style="height: 60px; width: 60px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
                     </div>
                     <div class="header-account-actions" style="display: flex; align-items: center; gap: 8px;">
+                        
                         <button type="button" id="btnNotifications" title="Notificações" aria-label="Ver notificações" onclick="window.NotificationsHandler && window.NotificationsHandler.toggleDropdown(event)" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 8px; color: #64748b; position: relative; cursor: pointer;">
                             <i class="fas fa-bell"></i>
                             <span id="notifBadge" style="display: none; position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; font-size: 9px; padding: 2px 5px; border-radius: 10px;">0</span>
@@ -404,7 +442,9 @@
                         <i class="fas fa-users" onclick="window.showLeadsPanel()" title="CRM Clientes" style="color: #475569; cursor: pointer;"></i>
                         <i class="fas fa-chart-line" onclick="window.AnalyticsDashboard.show()" title="Analytics" style="color: #6366f1; cursor: pointer;"></i>
                         <i class="fas fa-info-circle" onclick="window.Institutional?.showMenu(event)" title="Info & Suporte" style="color: #64748b; cursor: pointer;"></i>
-                        <i class="fas fa-user-shield" id="btnAdminPanel" onclick="window.Admin && window.Admin.showAdminPanel()" title="Painel Admin" style="color: #1e293b; cursor: pointer; display: none;"></i>
+                        <span id="admin-btn-container" style="position: relative; display: none; line-height: 1;">
+                            <i class="fas fa-user-shield" id="btnAdminPanel" onclick="window.Admin && window.Admin.showAdminPanel()" title="Painel Admin" style="color: #1e293b; cursor: pointer;"></i>
+                        </span>
                     </div>
                     <div id="user-credits-display" onclick="window.Monetization && window.Monetization.showSubscriptionPlans()" style="display: flex; align-items: center; gap: 5px; font-weight: 800; font-size: 11px; color: #2563eb; cursor: pointer;">
                         <i class="fas fa-crown"></i> <span>0</span>
@@ -419,6 +459,8 @@
                 </div>
 
                 <!-- Abas de Navegação -->
+                <div id="subscription-timer-container"></div>
+
                 <div class="sidebar-tabs" style="margin: 20px -24px -24px; padding: 0 24px; display: flex; border-bottom: 1px solid #e2e8f0; gap: 4px; overflow-x: auto; white-space: nowrap;">
                     <button type="button" class="tab-btn active" onclick="window.switchSidebarTab('map')" style="flex: 1; font-size: 10px; padding: 10px 5px;">📍 Mapa</button>
                     <button type="button" class="tab-btn" onclick="window.switchSidebarTab('prospecting')" style="flex: 1; font-size: 10px; padding: 10px 5px;">🔥 Oportunidades</button>
@@ -542,7 +584,7 @@
                             <h3 style="color: #1e293b; margin: 0; font-size: 18px; font-weight: 800;">Meu CRM</h3>
                             <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 0;">Gestão Pessoal de Carteira</p>
                         </div>
-                        <button onclick="window.openAddLeadTooltip()" style="background: #2563eb; color: white; border: none; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(37,99,235,0.3);" title="Novo Lead">
+                        <button onclick="window.openAddLeadTooltip()" style="background: #2563eb; color: white; border: none; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; box-shadow: 0 4px 12px rgba(37,99,235,0.3);" title="Novo Lead">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
@@ -672,7 +714,7 @@
             font-size: 10px;
             color: #64748b;
             display: flex;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
             gap: 15px;
             z-index: 1000; /* Acima do mapa, abaixo de modais */
@@ -984,6 +1026,8 @@
     <script src="js/regional_handler.js"></script>
     <script src="js/portfolio_handler.js"></script>
     <script src="js/weather_handler.js"></script>
+    <script src="js/admin_notification_manager.js"></script>
+    <script src="js/support_user_handler.js"></script>
 
     <style>
         /* Fix for Google Maps 'content-visibility' console warnings */
@@ -1002,16 +1046,22 @@
                 loading.classList.add('hidden');
             }
             
-            // Só libera o login se NÃO estivermos logados E a Landing Page NÃO estiver ativa
+            // Só libera o login se NÃO estivermos logados
             const isLogged = localStorage.getItem('guaruja_auth') === 'true';
-            const isLandingActive = !!document.getElementById('landing-overlay');
-
-            if (!isLogged && !isLandingActive && !window.isGuest) {
+            
+            if (!isLogged && !window.isGuest) {
                  const login = document.getElementById('loginOverlay');
-                 if (login) login.style.display = 'flex';
-                 console.log("🛡️ Visibility Recovery: Forced Login display.");
+                 if (login) {
+                    login.style.display = 'flex';
+                    console.log("🛡️ Visibility Recovery: Ensuring Login is available.");
+                 }
             } else {
-                 console.log("🛡️ Visibility Recovery: Auth or Landing already handling UI.");
+                 console.log("🛡️ Visibility Recovery: Auth already handling UI.");
+                 // Garantir que se estiver logado, o overlay suma
+                 if (isLogged) {
+                    const login = document.getElementById('loginOverlay');
+                    if (login) login.style.display = 'none';
+                 }
             }
             document.body.style.backgroundColor = ''; 
             

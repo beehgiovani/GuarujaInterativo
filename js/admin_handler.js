@@ -40,6 +40,8 @@ window.AdminHandler = {
                         <button class="admin-tab" onclick="window.Admin.switchTab(this, 'users')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">👥 Usuários</button>
                         <button class="admin-tab" onclick="window.Admin.switchTab(this, 'monetization')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">💰 Planos</button>
                         <button class="admin-tab" onclick="window.Admin.switchTab(this, 'transactions')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">💵 Vendas</button>
+                      <!--  <button class="admin-tab" onclick="window.Admin.switchTab(this, 'neighborhoods')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">🏙️ Bairros</button>-->
+                        <button class="admin-tab" onclick="window.Admin.switchTab(this, 'support')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">💬 Suporte</button>
                         <button class="admin-tab" onclick="window.Admin.switchTab(this, 'curatorship')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">🏛️ Curadoria</button>
                         <button class="admin-tab" onclick="window.Admin.switchTab(this, 'crm')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">🤝 CRM Admin</button>
                         <button class="admin-tab" onclick="window.Admin.switchTab(this, 'leiloes')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">⚖️ Leilões</button>
@@ -84,6 +86,10 @@ window.AdminHandler = {
             await this.renderMonetization(content);
         } else if (tab === 'transactions') {
             await this.renderTransactions(content);
+        } else if (tab === 'neighborhoods') {
+            await this.renderNeighborhoodBoard(content);
+        } else if (tab === 'support') {
+            await this.renderSupportChat(content);
         } else if (tab === 'curatorship') {
             await this.renderCuratorship(content);
         } else if (tab === 'crm') {
@@ -99,74 +105,243 @@ window.AdminHandler = {
     },
 
     renderUsers: async function(container) {
+        window.Loading.show('Carregando Usuários...', 'Buscando do Supabase');
         const { data: users, error } = await window.supabaseApp
             .from('profiles')
             .select('*')
             .order('email', { ascending: true });
 
-        if (error) { container.innerHTML = '<div style="color: #ef4444;">Erro ao carregar usuários</div>'; return; }
+        window.Loading.hide();
+        if (error) { container.innerHTML = `<div style="color: #ef4444; padding: 20px;">Erro ao carregar usuários: ${error.message}</div>`; return; }
 
         container.innerHTML = `
-            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; overflow: hidden;">
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="background: rgba(255,255,255,0.05); text-align: left; font-size: 11px; text-transform: uppercase; color: #94a3b8;">
-                            <th style="padding: 15px 20px;">Usuário</th>
-                            <th style="padding: 15px 20px; text-align: center;">Status</th>
-                            <th style="padding: 15px 20px; text-align: center;">Vínculo</th>
-                            <th style="padding: 15px 20px; text-align: center;">Créditos</th>
-                            <th style="padding: 15px 20px; text-align: right;">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${users.map(u => {
-                            const roleColors = { master: '#7c3aed', admin: '#1e40af', elite: '#b45309', pro: '#0369a1', user: '#334155' };
-                            const roleColor = roleColors[u.role] || '#334155';
-                            const status = u.status || 'approved';
-                            const statusColor = status === 'approved' ? '#10b981' : (status === 'pending' ? '#f59e0b' : '#ef4444');
+            <div class="admin-users-grid" style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="user-list-header desktop-only" style="display: grid; grid-template-columns: 2fr 1fr 1.2fr 1fr 1.2fr; padding: 0 20px; font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">
+                    <div>Usuário</div>
+                    <div style="text-align: center;">Status</div>
+                    <div style="text-align: center;">Vínculo</div>
+                    <div style="text-align: center;">Tempo Restante</div>
+                    <div style="text-align: right;">Ações</div>
+                </div>
+
+                ${users.map(u => {
+                    const roleColors = { 
+                        master: '#7c3aed', // Roxo Master
+                        vip: '#d4af37',   // Gold VIP
+                        elite: '#b45309',  // Bronze Elite
+                        pro: '#0369a1',    // Blue Pro
+                        start: '#0d9488',  // Green Start
+                        user: '#334155'    // Slate User
+                    };
+                    const roleColor = roleColors[u.role] || '#334155';
+                    const status = u.status || 'pending';
+                    const statusColor = status === 'approved' ? '#10b981' : (status === 'pending' ? '#f59e0b' : '#ef4444');
+                    
+                    // Calcular tempo restante
+                    let timeRemaining = '---';
+                    let isExpired = false;
+                    if (u.subscription_expires_at) {
+                        const remaining = new Date(u.subscription_expires_at) - new Date();
+                        if (remaining > 0) {
+                            const hours = Math.floor(remaining / (1000 * 60 * 60));
+                            const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                            timeRemaining = `${hours}h ${minutes}m`;
+                        } else {
+                            timeRemaining = 'Expirado';
+                            isExpired = true;
+                        }
+                    }
+
+                    return `
+                    <div class="user-card" style="
+                        background: rgba(255,255,255,0.03); 
+                        border: 1px solid rgba(255,255,255,0.05); 
+                        border-radius: 16px; 
+                        padding: 15px 20px; 
+                        display: grid; 
+                        grid-template-columns: 1fr; 
+                        gap: 15px; 
+                        transition: all 0.2s;
+                    " onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'">
+                        
+                        <!-- Layout Desktop em Grid, Mobile Empilhado -->
+                        <div class="user-card-content" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); align-items: center; gap: 15px;">
                             
-                            return `
-                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
-                                <td style="padding: 15px 20px;">
-                                    <div style="font-weight: 700; color: white;">${u.email}</div>
-                                    <div style="font-size: 11px; color: #64748b;">${u.id.slice(0, 8)}${u.full_name ? ' · ' + u.full_name : ''}</div>
-                                    ${u.phone ? `<div style="font-size: 11px; color: #10b981; margin-top: 2px;"><i class="fab fa-whatsapp"></i> ${u.phone}</div>` : ''}
-                                </td>
-                                <td style="padding: 15px 20px; text-align: center;">
-                                    <span style="font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 20px; background: ${statusColor}20; color: ${statusColor}; border: 1px solid ${statusColor}40;">
-                                        ${(status || 'pending').toUpperCase()}
-                                    </span>
-                                </td>
-                                <td style="padding: 15px 20px; text-align: center;">
-                                    <select onchange="window.Admin.changeRole('${u.id}', this.value)" style="background: ${roleColor}; color: white; border: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; cursor: pointer; text-transform: uppercase;">
-                                        ${['user','pro','elite','admin','master'].map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r.toUpperCase()}</option>`).join('')}
-                                    </select>
-                                </td>
-                                <td style="padding: 15px 20px; text-align: center; color: #f59e0b; font-weight: 800;">
-                                    ${u.credits || 0}
-                                </td>
-                                <td style="padding: 15px 20px; text-align: right; display: flex; gap: 8px; align-items: center; justify-content: flex-end;">
-                                    ${status === 'pending' ? `
-                                        <button onclick="window.Admin.approveUser('${u.id}', '${u.email}')" style="background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;">
-                                            APROVAR
+                            <!-- INFO PRINCIPAL -->
+                            <div style="min-width: 200px;">
+                                <div style="font-weight: 800; color: white; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${u.email}</div>
+                                <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                                    ${u.full_name || 'Sem nome'} · <span style="font-family: monospace;">${u.id.slice(0, 8)}</span>
+                                </div>
+                                ${u.phone ? `<div style="font-size: 11px; color: #10b981; margin-top: 4px;"><i class="fab fa-whatsapp"></i> ${u.phone}</div>` : ''}
+                            </div>
+
+                            <!-- STATUS -->
+                            <div style="text-align: center; display: flex; flex-direction: column; gap: 4px; align-items: center;">
+                                <span style="font-size: 9px; font-weight: 800; padding: 4px 10px; border-radius: 20px; background: ${statusColor}20; color: ${statusColor}; border: 1px solid ${statusColor}40;">
+                                    ${status.toUpperCase()}
+                                </span>
+                            </div>
+
+                            <div style="text-align: center;">
+                                <select onchange="window.Admin.changeRole('${u.id}', this.value, '${u.email}')" style="width: 100%; max-width: 120px; background: ${roleColor}; color: white; border: none; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; text-transform: uppercase; outline: none;">
+                                    ${['user','start','pro', 'elite', 'vip', 'master'].map(r => `<option value="${r}" ${u.role === r ? 'selected' : ''}>${r.toUpperCase()}</option>`).join('')}
+                                </select>
+                            </div>
+
+                            <!-- TEMPO (EXPIRAÇÃO) -->
+                            <div style="text-align: center;">
+                                <div style="font-size: 11px; font-weight: 800; color: ${isExpired ? '#64748b' : '#3b82f6'};">
+                                    <i class="far fa-clock"></i> ${timeRemaining}
+                                </div>
+                                <button onclick="window.Admin.openTemporalActivation('${u.id}', '${u.email}')" style="background: none; border: none; color: #3b82f6; font-size: 9px; font-weight: 700; cursor: pointer; margin-top: 4px; border-bottom: 1px dashed #3b82f6; padding: 0;">ADICIONAR TEMPO</button>
+                            </div>
+
+                            <!-- AÇÕES -->
+                            <div id="user-actions-${u.id}" style="text-align: right; display: flex; gap: 8px; align-items: center; justify-content: flex-end; width: 100%;">
+                                ${status === 'pending' ? `
+                                    <button onclick="window.Admin.approveUser('${u.id}', '${u.email}')" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer; flex: 1;">
+                                        APROVAR
+                                    </button>
+                                    <button onclick="window.Admin.rejectUser('${u.id}', '${u.email}')" style="background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); padding: 8px 12px; border-radius: 10px; font-size: 11px; cursor: pointer;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                ` : `
+                                    <div style="display: flex; gap: 5px; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 10px; width: 100%; max-width: 150px;">
+                                        <input type="number" id="credit-input-${u.id}" placeholder="Créditos" style="width: 100%; padding: 6px; border: none; background: transparent; color: white; font-size: 11px; font-weight: 700; outline: none;" />
+                                        <button onclick="window.Admin.quickAdjustCredits('${u.id}', '${u.email}')" style="background: #10b981; color: white; border: none; width: 30px; height: 30px; border-radius: 8px; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                            <i class="fas fa-plus" style="font-size: 9px;"></i>
                                         </button>
-                                        <button onclick="window.Admin.rejectUser('${u.id}', '${u.email}')" style="background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); padding: 6px 12px; border-radius: 8px; font-size: 11px; cursor: pointer;">
-                                            REJEITAR
-                                        </button>
-                                    ` : `
-                                        <input type="number" id="credit-input-${u.id}" placeholder="+/- créditos" style="width: 80px; padding: 6px 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; background: rgba(255,255,255,0.05); color: white; font-size: 12px;" />
-                                        <button onclick="window.Admin.quickAdjustCredits('${u.id}', '${u.email}')" style="background: #10b981; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;">
-                                            ✓
-                                        </button>
-                                    `}
-                                </td>
-                            </tr>`;
-                        }).join('')}
-                    </tbody>
-                </table>
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('')}
             </div>
+
+            <style>
+                @media (max-width: 768px) {
+                    .desktop-only { display: none !important; }
+                    .user-card-content { grid-template-columns: 1fr 1fr !important; }
+                    .user-card-content > div:first-child { grid-column: span 2; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px; }
+                }
+            </style>
         `;
     },
+
+    approveUser: async function(userId, email) {
+        if (!confirm(`Aprovar acesso para: ${email}?`)) return;
+        
+        const cleanId = String(userId).trim();
+
+        // REACTION: Feedback visual instantâneo e robusto
+        const activeItem = document.getElementById(`user-actions-${cleanId}`);
+        if (activeItem) {
+            activeItem.innerHTML = '<i class="fas fa-spinner fa-spin" style="color: #10b981;"></i>';
+        }
+
+        window.Loading.show('Aprovando...', 'Concedendo acesso básico');
+        
+        try {
+            // Usa RPC para bypassar o RLS do Supabase de forma segura
+            const { error } = await window.supabaseApp.rpc('admin_update_profile', { 
+                target_user_id: cleanId,
+                new_status: 'approved',
+                new_role: 'start'
+            });
+            
+            if (error) {
+                // Diagnóstico de erro de Edge Function (Transaction Rollback)
+                if (error.message?.includes('Edge Function')) {
+                    throw new Error("Erro de Notificação (Edge Function): A aprovação foi interrompida pois o gatilho falhou.");
+                }
+                throw error;
+            }
+
+            window.Toast.success('Usuário aprovado com sucesso!');
+            
+            // Log Auditoria Opcional (Não trava UI)
+            window.supabaseApp.auth.getUser().then(({ data: { user: adminUser } }) => {
+                if (adminUser) {
+                    window.supabaseApp.from('audit_logs').insert({
+                        user_id: adminUser.id,
+                        user_email: adminUser.email,
+                        action: 'APPROVE_USER',
+                        detail: `Aprovou usuário via RPC: ${email} (ID: ${cleanId})`
+                    });
+                }
+            });
+
+            // Delay para garantir propagação e refresh (Aumentado para resiliência)
+            setTimeout(() => this.refreshTabs(), 1000);
+        } catch(e) { 
+            console.error("Erro na Aprovação:", e);
+            window.Toast.error(e.message, "Falha na Aprovação"); 
+            this.refreshTabs(); // Restore UI on error
+        } finally { 
+            window.Loading.hide(); 
+        }
+    },
+
+    rejectUser: async function(userId, email) {
+        if (!confirm(`Rejeitar acesso para: ${email}?`)) return;
+        
+        // REACTION: Feedback visual instantâneo
+        const activeItem = document.getElementById(`user-actions-${userId}`);
+        if (activeItem) activeItem.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        const cleanId = String(userId).trim();
+        try {
+            // Usa RPC para bypass do RLS
+            const { error } = await window.supabaseApp.rpc('admin_update_profile', { 
+                target_user_id: cleanId,
+                new_status: 'rejected',
+                new_role: 'user' // Reverte para user caso fosse start
+            });
+            
+            if (error) throw error;
+
+            // Log Auditoria
+            const { data: { user: adminUser } } = await window.supabaseApp.auth.getUser();
+            await window.supabaseApp.from('audit_logs').insert({
+                user_id: adminUser.id,
+                user_email: adminUser.email,
+                action: 'REJECT_USER',
+                detail: `Rejeitou acesso via RPC: ${email}`
+            });
+
+            window.Toast.info('Solicitação recusada.');
+            this.refreshTabs();
+        } catch(e) { window.Toast.error('Erro: ' + e.message); }
+    },
+
+    changeRole: async function(userId, newRole, email) {
+        window.Loading.show('Atualizando...', `Cargo: ${newRole.toUpperCase()}`);
+        try {
+            // Usa RPC para bypass do RLS
+            const { error } = await window.supabaseApp.rpc('admin_update_profile', { 
+                target_user_id: userId,
+                new_status: null,
+                new_role: newRole
+            });
+            if (error) throw error;
+            
+            // Log Auditoria
+            const { data: { user: adminUser } } = await window.supabaseApp.auth.getUser();
+            await window.supabaseApp.from('audit_logs').insert({
+                user_id: adminUser.id,
+                user_email: adminUser.email,
+                action: 'CHANGE_ROLE',
+                detail: `Mudou cargo via RPC de ${email} para ${newRole.toUpperCase()}`
+            });
+
+            window.Toast.success(`Cargo ${newRole.toUpperCase()} aplicado!`);
+            this.refreshTabs();
+        } catch(e) { window.Toast.error('Erro ao mudar cargo: ' + e.message); }
+        finally { window.Loading.hide(); }
+    },
+
 
     renderCuratorship: async function(container) {
         // Fetch both unit and lote edits
@@ -468,72 +643,79 @@ window.AdminHandler = {
         }
     },
 
-    changeRole: async function(userId, newRole) {
-        try {
-            const { error } = await window.supabaseApp
-                .from('profiles')
-                .update({ role: newRole })
-                .eq('id', userId);
-            if (error) throw error;
-            window.Toast.success(`Role atualizado para ${newRole.toUpperCase()}!`);
-        } catch (e) {
-            console.error(e);
-            window.Toast.error('Erro ao alterar role: ' + e.message);
-        }
+
+    openTemporalActivation: function(userId, email) {
+        const modal = document.createElement('div');
+        modal.className = 'custom-modal-overlay active';
+        modal.style.zIndex = '10040';
+        modal.innerHTML = `
+            <div class="custom-modal" style="max-width: 400px; text-align: left; background: #0f172a; color: white;">
+                <div class="custom-modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <div class="custom-modal-title">⏳ Ativação Temporal</div>
+                    <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()" style="color:white;">&times;</button>
+                </div>
+                <div class="custom-modal-body" style="padding: 25px;">
+                    <p style="font-size: 12px; color: #94a3b8; margin-bottom: 20px;">
+                        Libere acesso para <b>${email}</b> por um tempo determinado.
+                    </p>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 8px;">DURAÇÃO DO ACESSO</label>
+                        <select id="act-hours" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; font-weight: 700;">
+                            <option value="1">1 Hora (Teste Rápido)</option>
+                            <option value="5">5 Horas (Período do Dia)</option>
+                            <option value="24">1 Dia (24 Horas)</option>
+                            <option value="72">3 Dias (Weekend)</option>
+                            <option value="168">1 Semana (7 dias)</option>
+                            <option value="720">1 Mês (30 dias)</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 25px;">
+                        <label style="display: block; font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 8px;">PLANO A LIBERAR</label>
+                        <select id="act-role" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; font-weight: 700;">
+                            <option value="pro">PLAN PRO</option>
+                            <option value="elite">PLAN ELITE</option>
+                            <option value="vip">PLAN ANUAL VIP</option>
+                            <option value="master">MASTER ACCESS</option>
+                        </select>
+                    </div>
+
+                    <button onclick="window.Admin.executeTemporalActivation('${userId}', '${email}')" style="width: 100%; padding: 15px; background: #2563eb; color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer;">
+                        CONFIRMAR LIBERAÇÃO
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
     },
 
-    approveUser: async function(userId, userEmail) {
-        if (!confirm(`Deseja aprovar o cadastro de ${userEmail}?`)) return;
-        window.Loading.show('Aprovando...', 'Liberando acesso ao sistema');
+    executeTemporalActivation: async function(userId, email) {
+        const hours = document.getElementById('act-hours').value;
+        const role = document.getElementById('act-role').value;
+
+        window.Loading.show('Ativando...', `Liberando ${role.toUpperCase()} por ${hours} horas`);
         try {
-            const { error } = await window.supabaseApp
-                .from('profiles')
-                .update({ status: 'approved' })
-                .eq('id', userId);
-            
+            // Chamada ao RPC criado no banco
+            const { error } = await window.supabaseApp.rpc('manual_activate_plan', {
+                target_user_id: userId,
+                new_role: role,
+                duration_hours: parseInt(hours)
+            });
+
             if (error) throw error;
 
-            // Log de auditoria
-            const { data: { user: adminUser } } = await window.supabaseApp.auth.getUser();
-            if (adminUser) {
-                await window.supabaseApp.from('audit_logs').insert({
-                    user_id: adminUser.id,
-                    user_email: adminUser.email,
-                    action: 'user_approved',
-                    detail: `Aprovou cadastro de ${userEmail}`
-                });
-            }
-
-            window.Toast.success(`Acesso liberado para ${userEmail}!`);
+            window.Toast.success(`Acesso ${role.toUpperCase()} liberado para ${email}!`);
+            document.querySelector('.custom-modal-overlay[style*="z-index: 10040"]').remove();
             this.refreshTabs();
         } catch (e) {
             console.error(e);
-            window.Toast.error("Erro ao aprovar usuário: " + e.message);
+            window.Toast.error("Erro ao ativar plano: " + e.message);
         } finally {
             window.Loading.hide();
         }
     },
 
-    rejectUser: async function(userId, userEmail) {
-        if (!confirm(`Deseja REJEITAR e BLOQUEAR o cadastro de ${userEmail}?`)) return;
-        window.Loading.show('Rejeitando...', 'Bloqueando acesso');
-        try {
-            const { error } = await window.supabaseApp
-                .from('profiles')
-                .update({ status: 'rejected' })
-                .eq('id', userId);
-            
-            if (error) throw error;
-
-            window.Toast.info(`Cadastro de ${userEmail} rejeitado.`);
-            this.refreshTabs();
-        } catch (e) {
-            console.error(e);
-            window.Toast.error("Erro ao rejeitar usuário: " + e.message);
-        } finally {
-            window.Loading.hide();
-        }
-    },
 
     renderMonetization: async function(container) {
         // Carrega dados em paralelo
@@ -1720,7 +1902,6 @@ window.AdminHandler = {
                             <button onclick="window.Admin.switchTab(this, 'curatorship')" style="background: #2563eb; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 11px; text-transform: uppercase;">Ir para Curadoria</button>
                          </div>
                     </div>
-
                 </div>
             `;
 
@@ -1739,6 +1920,155 @@ window.AdminHandler = {
             container.innerHTML = '<div style="color: #ef4444; padding: 40px; text-align: center;">Erro ao carregar Dashboard: ' + e.message + '</div>';
         } finally {
             window.Loading.hide();
+        }
+    },
+
+    renderNeighborhoodBoard: async function(container) {
+        container.innerHTML = `
+            <div style="margin-bottom: 25px;">
+                <h3 style="color: white; margin-bottom: 8px;">🏙️ Board de Inteligência por Bairro</h3>
+                <p style="font-size: 12px; color: #94a3b8;">Visão estratégica da cobertura geográfica e zoneamento.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
+                ${Object.entries(window.GUARA_ZONES).map(([id, zone]) => `
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid ${zone.color}44; border-radius: 16px; padding: 20px; border-left: 4px solid ${zone.color};">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                            <div style="font-size: 14px; font-weight: 800; color: white;">${zone.name}</div>
+                            <div style="background: ${zone.color}22; color: ${zone.color}; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 800;">ZONA ${id}</div>
+                        </div>
+                        <div style="font-size: 11px; color: #64748b; margin-bottom: 15px; line-height: 1.4;">${zone.neighborhoods}</div>
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="window.Admin.highlightZone('${id}')" style="flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 8px; border-radius: 8px; font-size: 10px; font-weight: 700; cursor: pointer;">🔍 Inspecionar</button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    },
+
+    loadConversation: async function(uid) {
+        const chatContainer = document.getElementById('adminChatWindow');
+        if (!chatContainer) return;
+
+        chatContainer.innerHTML = '<div style="padding: 20px; color: #94a3b8;">Carregando histórico...</div>';
+        
+        try {
+            const { data: msgs } = await window.supabaseApp
+                .from('admin_messages')
+                .select('*')
+                .eq('user_id', uid)
+                .order('created_at', { ascending: true });
+
+            // Marcar como lidas
+            await window.supabaseApp
+                .from('admin_messages')
+                .update({ is_read: true })
+                .eq('user_id', uid)
+                .eq('is_from_admin', false);
+
+            chatContainer.innerHTML = `
+                <div style="flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;" id="adminChatMessages">
+                    ${msgs.map(m => `
+                        <div style="align-self: ${m.is_from_admin ? 'flex-end' : 'flex-start'}; background: ${m.is_from_admin ? '#2563eb' : 'rgba(255,255,255,0.05)'}; color: ${m.is_from_admin ? 'white' : '#cbd5e1'}; padding: 10px 15px; border-radius: 12px; max-width: 80%; font-size: 12px; border: 1px solid ${m.is_from_admin ? 'transparent' : 'rgba(255,255,255,0.1)'};">
+                            ${m.content}
+                            <div style="font-size: 8px; margin-top: 5px; opacity: 0.5; text-align: right;">${new Date(m.created_at).toLocaleTimeString()}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="padding: 15px; border-top: 1px solid rgba(255,255,255,0.05); display: flex; gap: 10px;">
+                    <input type="text" id="adminReplyInput" placeholder="Sua resposta..." onkeypress="if(event.key==='Enter') window.Admin.sendAdminMessage('${uid}')" style="flex: 1; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px; border-radius: 8px; outline: none;">
+                    <button onclick="window.Admin.sendAdminMessage('${uid}')" style="background: #2563eb; color: white; border: none; padding: 0 20px; border-radius: 8px; font-weight: 800; cursor: pointer;">ENVIAR</button>
+                </div>
+            `;
+            const chatBox = document.getElementById('adminChatMessages');
+            if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+        } catch (e) {
+            chatContainer.innerHTML = '<div style="color: #ef4444; padding: 20px;">Erro ao carregar chat: ' + e.message + '</div>';
+        }
+    },
+
+    sendAdminMessage: async function(uid) {
+        const input = document.getElementById('adminReplyInput');
+        if (!input) return;
+        const content = input.value.trim();
+        if (!content) return;
+
+        try {
+            const { error } = await window.supabaseApp.from('admin_messages').insert([{
+                user_id: uid,
+                content: content,
+                is_from_admin: true,
+                is_read: true
+            }]);
+
+            if (error) throw error;
+            input.value = '';
+            this.loadConversation(uid);
+        } catch (e) {
+            window.Toast.error("Falha ao enviar: " + e.message);
+        }
+    },
+
+    openUserChat: function() {
+        if (window.SupportUserHandler) {
+            window.SupportUserHandler.toggle();
+        } else {
+            console.error("SupportUserHandler not found");
+            window.Toast.warning("Sistema de chat inicializando...");
+        }
+    },
+
+    renderSupportChat: async function(container) {
+        window.Loading.show('Abrindo Suporte...', 'Carregando mensagens');
+        try {
+            const { data: messages, error } = await window.supabaseApp
+                .from('admin_messages')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            // Agrupar por usuário
+            const users = {};
+            messages.forEach(m => {
+                if (!users[m.user_id]) users[m.user_id] = { email: m.user_email, msgs: [] };
+                users[m.user_id].msgs.push(m);
+            });
+
+            container.innerHTML = `
+                <div style="display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: 60vh;">
+                    <!-- Lista de Usuários -->
+                    <div style="background: rgba(255,255,255,0.02); border-radius: 12px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.05);">
+                        ${Object.entries(users).map(([uid, u]) => `
+                            <div onclick="window.Admin.loadConversation('${uid}')" style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.2s;">
+                                <div style="font-size: 12px; font-weight: 800; color: white; margin-bottom: 4px;">${u.email}</div>
+                                <div style="font-size: 10px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${u.msgs[0].content}</div>
+                            </div>
+                        `).join('')}
+                        ${Object.keys(users).length === 0 ? '<div style="padding: 40px; text-align: center; color: #475569;">Nenhuma mensagem recebida.</div>' : ''}
+                    </div>
+                    <!-- Janela de Chat -->
+                    <div id="adminChatWindow" style="background: rgba(255,255,255,0.01); border-radius: 12px; display: flex; flex-direction: column; border: 1px solid rgba(255,255,255,0.05);">
+                        <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: #475569;">
+                            <div style="text-align: center;">
+                                <i class="fas fa-comments" style="font-size: 40px; margin-bottom: 15px; opacity: 0.2;"></i>
+                                <div style="font-size: 13px;">Selecione uma conversa para responder</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } catch (e) {
+            container.innerHTML = '<div style="color: #ef4444;">Erro no Suporte: ' + e.message + '</div>';
+        } finally {
+            window.Loading.hide();
+        }
+    },
+
+    highlightZone: function(zoneId) {
+        if (window.ZoningHandler) {
+            window.ZoningHandler.isolateZone(parseInt(zoneId));
+            window.Toast.success(`Zona ${zoneId} em destaque no mapa.`);
         }
     }
 };
