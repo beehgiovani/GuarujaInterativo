@@ -1,6 +1,7 @@
 # --- CONFIGURAÇÕES DE SEGURANÇA E PRIVACIDADE (GuaruGeo) ---
 
 # Backup e Dados Privados (CRÍTICO)
+js/config.js
 **/.env
 **/secrets.json
 **/service-account.json

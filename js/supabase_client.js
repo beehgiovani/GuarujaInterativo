@@ -1,8 +1,7 @@
 
 // Supabase Configuration
-// Keys provided by user
-const SUPABASE_URL = 'https://ijmgvsztgljribnogtsx.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_tHrPQdJlE9sOPkAr_muBlQ_bGDx8pxU'; // User provided key
+const SUPABASE_URL = window.CONFIG.SUPABASE_URL;
+const SUPABASE_ANON_KEY = window.CONFIG.SUPABASE_KEY;
 
 // Initialize Supabase Client
 // We use 'supabaseApp' to avoid conflict with the global 'supabase' object provided by the SDK
