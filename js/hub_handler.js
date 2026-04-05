@@ -27,12 +27,14 @@ window.HubHandler = {
     },
 
     openHub() {
-        // Update user stats before opening
-        this.refreshHubStats();
-        
+        // Update user stats before opening (Protected)
+        try { this.refreshHubStats(); } catch (e) { console.error('refreshHubStats:', e); }
+
         const hubOverlay = document.getElementById('global-hub-modal');
         if (hubOverlay) {
             hubOverlay.classList.add('active');
+            // Dispara mini-tour do Hub apenas 1x
+            if (window.Onboarding) setTimeout(() => window.Onboarding.checkHubTour(), 500);
         }
     },
 
@@ -61,7 +63,8 @@ window.HubHandler = {
             // Hide or show Admin App
             const adminApp = document.getElementById('hub-app-admin');
             if (adminApp) {
-                if (window.AdminNotificationManager && window.AdminNotificationManager.isAdminUser()) {
+                const isAdmin = window.Monetization && (window.Monetization.userRole === 'admin' || window.Monetization.userRole === 'master');
+                if (isAdmin) {
                     adminApp.style.display = 'flex';
                 } else {
                     adminApp.style.display = 'none';
@@ -92,8 +95,8 @@ window.HubHandler = {
         } else if (appId === 'support') {
             // Institutional
             if (window.Institutional) {
-                // Mock event to pass to showMenu
-                window.Institutional.showMenu({ target: document.body });
+                // Mock event to pass to showMenu to prevent undefined stopPropagation crashes
+                window.Institutional.showMenu({ target: document.body, stopPropagation: () => {} });
             }
         } else if (appId === 'admin') {
             if (window.Admin) window.Admin.showAdminPanel();
@@ -103,10 +106,17 @@ window.HubHandler = {
     openAppModal(modalId) {
         // Hide others first
         document.querySelectorAll('.app-modal').forEach(m => m.classList.remove('active'));
-        
+
         const modal = document.getElementById(modalId);
         if (modal) {
             modal.classList.add('active');
+
+            // Dispara mini-tour dedicado do app (apenas 1x)
+            if (window.Onboarding) {
+                if (modalId === 'modal-app-crm')    setTimeout(() => window.Onboarding.checkCrmTour(),    600);
+                if (modalId === 'modal-app-wallet') setTimeout(() => window.Onboarding.checkWalletTour(), 600);
+                if (modalId === 'modal-app-radar')  setTimeout(() => window.Onboarding.checkRadarTour(),  600);
+            }
         }
     },
 
@@ -186,7 +196,7 @@ window.HubHandler = {
                         <button class="hub-footer-btn" onclick="window.HubHandler.closeHub(); window.NotificationsHandler && window.NotificationsHandler.toggleDropdown(event)">
                             <i class="fas fa-bell"></i> Notificações <span id="hub-notif-count" class="hub-notif-badge">0</span>
                         </button>
-                        <button class="hub-footer-btn logout" onclick="window.HubHandler.closeHub(); window.Auth.logout()">
+                        <button class="hub-footer-btn logout" onclick="window.HubHandler.closeHub(); window.Auth && window.Auth.logout()">
                             Sair do Sistema <i class="fas fa-sign-out-alt"></i>
                         </button>
                     </div>
@@ -281,22 +291,27 @@ window.HubHandler = {
     }
 };
 
-// Auto-init logic
-window.addEventListener('load', () => {
-    // Wait for the app to structure, then init hub
-    setTimeout(() => {
+// Auto-init logic robusta
+function bootHub() {
+    if (!document.getElementById('global-hub-modal')) {
         window.HubHandler.init();
-        
-        // Sync user info when Auth triggers
-        if (window.supabaseApp) {
-            window.supabaseApp.auth.getUser().then(({ data: { user } }) => {
-                if (user) {
-                    const elName = document.getElementById('hub-user-name');
-                    const elEmail = document.getElementById('hub-user-email');
-                    if (elName) elName.innerText = user.user_metadata?.full_name || 'Corretor Geo';
-                    if (elEmail) elEmail.innerText = user.email;
-                }
-            });
-        }
-    }, 1500);
-});
+    }
+    
+    // Sync user info when Auth triggers
+    if (window.supabaseApp) {
+        window.supabaseApp.auth.getUser().then(({ data: { user } }) => {
+            if (user) {
+                const elName = document.getElementById('hub-user-name');
+                const elEmail = document.getElementById('hub-user-email');
+                if (elName) elName.innerText = user.user_metadata?.full_name || 'Corretor Geo';
+                if (elEmail) elEmail.innerText = user.email;
+            }
+        });
+    }
+}
+
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', () => setTimeout(bootHub, 500));
+} else {
+    setTimeout(bootHub, 500);
+}

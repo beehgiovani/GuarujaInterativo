@@ -30,6 +30,7 @@
     <link rel="stylesheet" href="css/toast_styles.css">
     <link rel="stylesheet" href="css/crm_styles.css">
     <link rel="stylesheet" href="css/ai_chat_styles.css">
+    <link rel="stylesheet" href="css/hub_styles.css?v=2.0">
     <link rel="stylesheet" href="css/mobile_styles.css?v=2.0">
     <link rel="stylesheet" href="css/image_viewer.css">
     <!-- Site Intelligence & Security -->
@@ -421,10 +422,8 @@
             <div class="sidebar-header" style="background: rgba(255,255,255,0.02); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);">
                 <!-- Linha 1: Logo e Menu Hamburger -->
                 <div class="header-top-row v2-flex">
-                    <button id="hubToggleBtn" class="hub-menu-btn" title="Menu Principal">
-                        <span></span>
-                        <span></span>
-                        <span></span>
+                    <button id="hubToggleBtn" class="hub-menu-btn" title="Menu Principal" onclick="if(window.HubHandler) window.HubHandler.openHub();">
+                        <i class="fas fa-bars" style="font-size: 20px; color: #1e293b; pointer-events: none;"></i>
                     </button>
                     <div class="sidebar-logo-container" style="padding: 0; flex: 1; display: flex; justify-content: flex-start;">
                         <img src="assets/logo_v2.png" alt="GuarujaGeo" style="height: 50px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
@@ -488,11 +487,11 @@
                         <div class="filter-chip master-only locked" data-search-type="property"
                              onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Pesquisa por Imóveis exclusiva para perfil Master.')"
                              data-tooltip="Pesquisa na base do Cadastro Imobiliário">Imóveis <span class="lock-icon">🔒</span></div>
-                        <div class="filter-chip master-only locked" data-search-type="opportunity"
+                        <!-- <div class="filter-chip master-only locked" data-search-type="opportunity"
                             style="border-style: dashed; background: #fffbeb; color: #b45309;"
                             data-tooltip="Radar Farol [BETA]: Inteligência de Venda Profissional">
                             ✨ Farol Oportunidades [BETA] <span class="lock-icon">🔒</span>
-                        </div>
+                        </div>-->
                     </div>
                 </div>
 
@@ -1001,6 +1000,7 @@
     <script src="js/weather_handler.js"></script>
     <script src="js/admin_notification_manager.js"></script>
     <script src="js/support_user_handler.js"></script>
+    <script src="js/hub_handler.js?v=2.0"></script>
 
     <style>
         /* Fix for Google Maps 'content-visibility' console warnings */

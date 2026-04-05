@@ -1,4 +1,4 @@
-const CACHE_NAME = 'guarugeo-cache-v1.8';
+const CACHE_NAME = 'guarugeo-cache-v2.0';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -20,9 +20,11 @@ const ASSETS_TO_CACHE = [
     './css/introjs.min.css',
     './css/onboarding_styles.css',
     './css/anuncios_styles.css',
+    './css/hub_styles.css',
     './assets/logo_v2.png',
     
     // Core JS Logic
+    './js/hub_handler.js',
     './js/app.js',
     './js/utils.js',
     './js/map_handler.js',
