@@ -668,30 +668,27 @@ window.displaySearchResults = function (results) {
 
             items.forEach(item => {
                 const div = document.createElement('div');
-                div.className = 'search-item';
-                div.style.cssText = `
-                    padding: 12px 16px;
-                    border-bottom: 1px solid #f1f5f9;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                    background: white;
-                `;
+                div.className = 'modern-search-card';
                 
                 const displayLabel = item.label;
+                const lockIcon = (item.isOwner && !window.Monetization.isEliteOrAbove() && !window.Monetization.isUnlockedPerson(item.cpf_cnpj)) ? '<i class="fas fa-lock" style="font-size: 10px; margin-left: 4px; opacity: 0.5;"></i>' : '';
+                const unitBadge = item.isUnit ? `<span class="msc-badge" style="background:#e0f2fe; color:#0284c7;">UNIDADE</span>` : '';
 
                 div.innerHTML = `
-                    <div class="result-title" style="font-weight: 700; font-size: 13px; color: #1e293b; margin-bottom: 2px;">
-                        ${displayLabel}
-                        ${(item.isOwner && !window.Monetization.isEliteOrAbove() && !window.Monetization.isUnlockedPerson(item.cpf_cnpj)) ? '<i class="fas fa-lock" style="font-size: 10px; margin-left: 4px; opacity: 0.5;"></i>' : ''}
+                    <div class="msc-icon">
+                        ${cat.icon}
                     </div>
-                    <div class="result-subtitle" style="font-size: 11px; color: #64748b; display: flex; align-items: center; justify-content: space-between;">
-                        <span>${item.sub || ''}</span>
-                        ${item.isUnit ? `<span style="background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 9px;">UNIDADE</span>` : ''}
+                    <div class="msc-content">
+                        <div class="msc-title">
+                            ${displayLabel} ${lockIcon}
+                        </div>
+                        <div class="msc-subtitle">
+                            ${item.sub || ''}
+                            ${unitBadge}
+                        </div>
                     </div>
                 `;
 
-                div.onmouseover = () => { div.style.background = '#f1f5f9'; };
-                div.onmouseout = () => { div.style.background = 'white'; };
                 div.onclick = () => window.handleResultClick(item);
                 container.appendChild(div);
             });

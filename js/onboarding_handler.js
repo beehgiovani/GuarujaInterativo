@@ -211,38 +211,31 @@ window.Onboarding = {
         intro.setOptions({
             steps: [
                 {
-                    title: "Busca Universal Indexada 🔍",
-                    intro: "A forma mais rápida de achar o que procura. Esqueça buscar só por ruas. Digite o <b>Nome de um Edifício</b>, busque um <b>Proprietário pelo CPF/Nome</b> ou vá direto na <b>Matrícula</b>. O sistema vasculha tudo ao mesmo tempo.",
+                    title: "Busca Universal e Filtros 🔍",
+                    intro: "A barra lateral inteira agora é dedicada à Busca! Pense nela como seu Motor de Pesquisa imobiliário. Digite ruas, donos ou edifícios aqui, aplique filtros logo abaixo e os resultados premium aparecerão na mesma listagem.",
                     element: document.querySelector('.search-box'),
                     position: 'bottom'
                 },
                 {
-                    title: "Filtros Estratégicos 🏷️",
-                    intro: "O mapa está poluído? Limpe-o. Quer focar só nas transações recentes? Ou apenas quer ver <b>onde existem Prédios de Alto Padrão</b>? Selecione as camadas específicas aqui e o mapa acende.",
-                    element: document.querySelector('.filter-section'),
-                    position: 'right'
+                    title: "O Novo Hub de Aplicativos 🍔",
+                    intro: "Nós libertamos a tela para você! Limpamos todos os botões que enchiam a antiga sidebar e os movemos para este <b>Menu Hamburger</b>. Ao clicar aqui, você abrirá a sua Nuvem Operacional contendo o <b>Meu CRM</b>, <b>Radar Oportunidades</b>, <b>Carteira VIP</b> e seus botões de Perfil/Créditos.",
+                    element: document.getElementById('hubToggleBtn'),
+                    position: 'right' // Menu is top left, tooltip opens to the right
                 },
                 {
-                    title: "Seu Funil de Vendas (CRM) 👥",
-                    intro: "Encontrou um prospect? Adicione ao CRM! Administre seus clientes e leads arrastando entre etapas como <b>Triagem</b>, <b>Visita</b> e <b>Fechamento</b>. Acompanhe comissões estimadas em tempo real.",
-                    element: document.querySelector('.crm-leads-btn'),
-                    position: 'bottom'
+                    title: "Planos e Acessos Restritos ⭐",
+                    intro: "Ao abrir o Menu Hamburger, você verá o seu Perfil. Como usuário inicial (Start), você enxerga dados de superfície do mapa. Para destravar os segredos imobiliários (Ver CPF, baixar matrículas e ligar para proprietários ocultos), será necessário migrar para <b>PRO</b> ou consumir <b>Créditos Ouro</b>.",
+                    position: 'center'
                 },
                 {
-                    title: "GuaruBot: O Cérebro da Operação 🧠",
-                    intro: "Este é o seu Assistente IA 24h. Acione o botão e converta ordens em ações: <i>'Quais prédios na Enseada têm imóveis grandes?'</i> ou <i>'Resuma os riscos jurídicos da matrícula X'</i>. A IA cruza a base de dados cartorial sozinha.",
+                    title: "GuaruBot: Inteligência Artificial 🧠",
+                    intro: "Este é o seu Assistente de Bolso IA 24h. Em vez de procurar no mapa, você pode simplesmente enviar uma ordem para ele: <i>'Ache imóveis gigantes na Enseada'</i>, e o GuaruBot fará a varredura.",
                     element: document.getElementById('ai-chat-trigger'),
                     position: 'left'
                 },
                 {
-                    title: "Planos e Acessos Restritos ⭐",
-                    intro: "Como usuário <b>Grátis</b> (Start), você vê dados superficiais e o visual do mapa. Para desbloquear dados profundos como <b>CPF, Telefone, Dívidas Fiscais e Visualização de Matrículas em PDF</b>, você necessitará do plano <b>PRO</b> ou <b>VIP</b>. Além dos planos, o desbloqueio de dados super-sensíveis consome <b>Créditos Ouro</b>.",
-                    element: document.querySelector('.user-profile-widget'), 
-                    position: 'left'
-                },
-                {
                     title: "Interação no Mapa 📍",
-                    intro: "É aqui que a mágica final acontece. <b>Clique em qualquer Empreendimento (Hexágonos) ou Lotes Comuns</b> no mapa para mergulhar nas entranhas da construção e ver quem mora lá e muito mais.",
+                    intro: "É aqui que a mágica final acontece. <b>Clique em qualquer Empreendimento (Hexágonos) ou Lotes Comuns</b> no mapa para mergulhar nas entranhas da construção, descobrir quem comprou e hackear as negociações.",
                     element: document.getElementById('map'),
                     position: 'center'
                 },

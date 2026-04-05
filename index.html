@@ -419,53 +419,26 @@
         <!-- Sidebar -->
         <aside id="sidebar">
             <div class="sidebar-header" style="background: rgba(255,255,255,0.02); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);">
-                <!-- Linha 1: Logo e Ações de Conta -->
-                <div class="header-top-row" style="margin-bottom: 20px; align-items: center;">
+                <!-- Linha 1: Logo e Menu Hamburger -->
+                <div class="header-top-row v2-flex">
+                    <button id="hubToggleBtn" class="hub-menu-btn" title="Menu Principal">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
                     <div class="sidebar-logo-container" style="padding: 0; flex: 1; display: flex; justify-content: flex-start;">
-                        <img src="assets/logo_v2.png" alt="Guarugeo" style="height: 60px; width: 60px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
-                    </div>
-                    <div class="header-account-actions" style="display: flex; align-items: center; gap: 8px;">
-                        
-                        <button type="button" id="btnNotifications" title="Notificações" aria-label="Ver notificações" onclick="window.NotificationsHandler && window.NotificationsHandler.toggleDropdown(event)" style="background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 8px; color: #64748b; position: relative; cursor: pointer;">
-                            <i class="fas fa-bell"></i>
-                            <span id="notifBadge" style="display: none; position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; font-size: 9px; padding: 2px 5px; border-radius: 10px;">0</span>
-                        </button>
-                        <button type="button" onclick="window.Auth.logout()" style="background: #fef2f2; border: none; width: 32px; height: 32px; border-radius: 8px; color: #ef4444; cursor: pointer;" title="Sair" aria-label="Sair do sistema">
-                            <i class="fas fa-sign-out-alt"></i>
-                        </button>
+                        <img src="assets/logo_v2.png" alt="GuarujaGeo" style="height: 50px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
                     </div>
                 </div>
 
-                <!-- Linha 2: Barra de Ferramentas Estratégica -->
-                <div class="strategy-bar" style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 15px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
-                    <div style="display: flex; gap: 15px;">
-                        <i class="fas fa-users" onclick="window.showLeadsPanel()" title="CRM Clientes" style="color: #475569; cursor: pointer;"></i>
-                        <i class="fas fa-chart-line" onclick="window.AnalyticsDashboard.show()" title="Analytics" style="color: #6366f1; cursor: pointer;"></i>
-                        <i class="fas fa-info-circle" onclick="window.Institutional?.showMenu(event)" title="Info & Suporte" style="color: #64748b; cursor: pointer;"></i>
-                        <span id="admin-btn-container" style="position: relative; display: none; line-height: 1;">
-                            <i class="fas fa-user-shield" id="btnAdminPanel" onclick="window.Admin && window.Admin.showAdminPanel()" title="Painel Admin" style="color: #1e293b; cursor: pointer;"></i>
-                        </span>
-                    </div>
-                    <div id="user-credits-display" onclick="window.Monetization && window.Monetization.showSubscriptionPlans()" style="display: flex; align-items: center; gap: 5px; font-weight: 800; font-size: 11px; color: #2563eb; cursor: pointer;">
-                        <i class="fas fa-crown"></i> <span>0</span>
-                    </div>
-                </div>
+                <!-- Abas e Strategy Bar movidas para o Hub Central -->
+                <div id="subscription-timer-container"></div>
                 
                 <div class="search-box">
                     <input type="text" id="searchInput" placeholder="O que você busca no Guarujá?" title="Buscar ruas, imóveis ou edifícios" aria-label="Campo de busca" autocomplete="off">
                     <div id="googleSuggestions" class="google-suggestions-box hidden"></div>
                     <button type="button" id="searchBtn" aria-label="Pesquisar" title="Pesquisar">🔍</button>
                     <button type="button" id="searchClearBtn" class="search-clear-btn" aria-label="Limpar busca" title="Limpar" style="display: none;">×</button>
-                </div>
-
-                <!-- Abas de Navegação -->
-                <div id="subscription-timer-container"></div>
-
-                <div class="sidebar-tabs" style="margin: 20px -24px -24px; padding: 0 24px; display: flex; border-bottom: 1px solid #e2e8f0; gap: 4px; overflow-x: auto; white-space: nowrap;">
-                    <button type="button" class="tab-btn active" onclick="window.switchSidebarTab('map')" style="flex: 1; font-size: 10px; padding: 10px 5px;">📍 Mapa</button>
-                    <button type="button" class="tab-btn" onclick="window.switchSidebarTab('prospecting')" style="flex: 1; font-size: 10px; padding: 10px 5px;">🔥 Oportunidades</button>
-                    <button type="button" class="tab-btn" onclick="window.switchSidebarTab('crm')" style="flex: 1; font-size: 10px; padding: 10px 5px;">👥 CRM</button>
-                    <button type="button" class="tab-btn" onclick="window.switchSidebarTab('wallet')" style="flex: 1; font-size: 10px; padding: 10px 5px;">📦 Carteira</button>
                 </div>
             </div>
 

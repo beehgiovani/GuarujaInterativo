@@ -174,22 +174,16 @@ async function loadInitialData() {
 // ========================================
 
 function setupAppListeners() {
-    // Sidebar Tabs
+    // Sidebar Tabs (Redirecionado para o Hub 2.0)
     window.switchSidebarTab = function (tab) {
-        // Hide all contents
-        document.querySelectorAll('.sidebar-tab-content').forEach(c => c.style.display = 'none');
-        document.querySelectorAll('.sidebar-tabs .tab-btn').forEach(b => b.classList.remove('active'));
-
-        const targetTab = document.getElementById(`tab-${tab}`);
-        if (targetTab) {
-            targetTab.style.display = 'block';
-        } else {
-            console.warn(`Tab content 'tab-${tab}' not found.`);
+        if (tab === 'map') {
+            if (window.HubHandler) window.HubHandler.closeAllAppModals();
+            return;
         }
 
-        const targetBtn = document.querySelector(`.sidebar-tabs .tab-btn[onclick*="${tab}"]`);
-        if (targetBtn) {
-            targetBtn.classList.add('active');
+        // Tenta abrir via Hub
+        if (window.HubHandler) {
+            window.HubHandler.launchApp(tab);
         }
 
         if (tab === 'crm') {
