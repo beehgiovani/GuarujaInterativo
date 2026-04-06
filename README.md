@@ -261,8 +261,7 @@ A aplicação estará disponível em: `https://seu-projeto.web.app`
 ## 📖 Uso da Aplicação
 
 ### Login
-- **Usuário**: `admin`
-- **Senha**: `admin123`
+- **Acesso**: Via E-mail e Senha (com verificação anti-bot hCaptcha)
 
 ### Navegação no Mapa
 1. **Visão de Zonas** (inicial): Clique em uma zona para explorar
