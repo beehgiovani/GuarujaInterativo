@@ -79,6 +79,44 @@
     padding: 0 4px;
 }
 
+/* === USER CREDITS WIDGET (Restored 2.0) === */
+.user-credits-widget {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(37, 99, 235, 0.05);
+    border: 1px solid rgba(37, 99, 235, 0.15);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    margin-left: auto;
+    font-size: 13px;
+    white-space: nowrap;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+
+.user-credits-widget:hover {
+    background: rgba(37, 99, 235, 0.1);
+    border-color: rgba(37, 99, 235, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+}
+
+.user-credits-widget:active {
+    transform: scale(0.96);
+}
+
+/* Specific inner styling if needed by Monetization.js */
+.user-credits-widget span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
 /* === CAIXA DE BUSCA PREMIUM === */
 .search-box {
     position: relative;

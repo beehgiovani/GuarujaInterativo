@@ -616,6 +616,16 @@ textarea {
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
 }
 
+/* Override do Autocomplete/Autofill do Chrome/Safari */
+.login-form-side input:-webkit-autofill,
+.login-form-side input:-webkit-autofill:hover, 
+.login-form-side input:-webkit-autofill:focus, 
+.login-form-side input:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 50px #131c31 inset !important;
+    -webkit-text-fill-color: white !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
 .login-form-side button {
     width: 100%;
     padding: 14px;

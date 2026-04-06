@@ -2,7 +2,42 @@
  * AUTH_HANDLER.JS - Gestão de Acesso Real via Supabase
  */
 
+// ─── hCaptcha Site Key ────────────────────────────────────────────────────────
+const HCAPTCHA_SITEKEY = 'b0061b42-b086-4cec-b162-22cc6708a84a';
+// ─────────────────────────────────────────────────────────────────────────────
+
 window.Auth = {
+    // ─── UTILS DE MASCARAMENTO DA UI ─────────────────────────────────────────
+    maskCpf: function(input) {
+        let v = input.value.replace(/\D/g, ''); // só números
+        if (v.length > 11) v = v.substring(0, 11);
+        let res = v;
+        if (v.length > 3) res = v.substring(0,3) + "." + v.substring(3, 11);
+        if (v.length > 6) res = res.substring(0,7) + "." + res.substring(7, 11);
+        if (v.length > 9) res = res.substring(0,11) + "-" + res.substring(11, 13);
+        input.value = res;
+    },
+
+    maskPhone: function(input) {
+        let v = input.value.replace(/\D/g, ''); // só números
+        // Se começou a digitar, mas não tem 55, injeta o 55 automático
+        if (v.length > 0 && !v.startsWith('55')) {
+            v = '55' + v;
+        }
+        if (v.length > 13) v = v.substring(0, 13);
+        
+        let res = v;
+        if (v.length > 2) {
+            res = "+55 (" + v.substring(2, 4);
+            if (v.length >= 5) res += ") " + v.substring(4, 9);
+            if (v.length >= 10) res += "-" + v.substring(9, 13);
+        } else if (v.length > 0) {
+            res = "+55";
+        }
+        input.value = res; // visual UI formatado
+    },
+    // ─────────────────────────────────────────────────────────────────────────
+
     init: async function() {
         // ============================================
         // DETECTAR FLUXO DE RECUPERAÇÃO DE SENHA
@@ -75,40 +110,82 @@ window.Auth = {
         }
 
         // Listener para mudanças de estado (login/logout)
-        // Guarda para evitar múltiplas inicializações
         window.supabaseApp.auth.onAuthStateChange(async (event, session) => {
+
+            // ─── RECUPERAÇÃO DE SENHA (Supabase v2 PKCE/hash) ───────────────
+            if (event === 'PASSWORD_RECOVERY') {
+                console.log('🔑 PASSWORD_RECOVERY detectado via onAuthStateChange');
+                this._inPasswordRecovery = true; // bloqueia init do mapa
+                document.getElementById('loginOverlay').style.display = 'block';
+                this.toggleAuthMode('new-password');
+                window.history.replaceState(null, '', window.location.pathname);
+                return;
+            }
+
+            // ─── LOGIN NORMAL ────────────────────────────────────────────────
             if (event === 'SIGNED_IN' && session) {
+                // Se estamos em fluxo de recovery, NÃO inicializa o mapa
+                if (this._inPasswordRecovery) {
+                    console.log('ℹ️ SIGNED_IN ignorado — esperando usuário definir nova senha.');
+                    return;
+                }
                 if (!this._appInitialized) {
-                    // Só inicializa se ainda não foi feito pela sessão ativa acima
-                    console.log("🔔 User Logged In (novo login):", session.user.email);
+                    console.log('🔔 User Logged In (novo login):', session.user.email);
                     await this.handleAuthenticatedUser(session.user);
                 } else {
                     console.log('ℹ️ SIGNED_IN ignorado - app já inicializado.');
                 }
             }
+
             if (event === 'SIGNED_OUT') {
-                console.log("🔕 User Logged Out");
+                console.log('🔕 User Logged Out');
                 localStorage.removeItem('guaruja_auth');
                 this._appInitialized = false;
+                this._inPasswordRecovery = false;
                 window.location.reload();
             }
         });
     },
 
+    // Alias chamado pelo botão do HTML (mantém compatibilidade)
+    handleLogin: function() {
+        const email = document.getElementById('loginUser')?.value?.trim();
+        const password = document.getElementById('loginPass')?.value;
+        if (!email || !password) {
+            this.showAuthMessage('Preencha e-mail e senha para continuar.', 'error');
+            return;
+        }
+        this.login(email, password);
+    },
+
     login: async function(email, password) {
         window.Loading.show("Autenticando...", "Verificando credenciais");
+
+        // Captura e valida o token do captcha (Login tbm exige se ativo no Supabase Global)
+        const captchaToken = window.hcaptcha ? window.hcaptcha.getResponse() : undefined;
+        if (!captchaToken) {
+            window.Loading.hide();
+            window.Toast.warning('⚠️ Por favor, complete a verificação "Não sou robô" para entrar.');
+            return;
+        }
+
         const { data, error } = await window.supabaseApp.auth.signInWithPassword({
             email: email,
             password: password,
+            options: { captchaToken }
         });
 
         if (error) {
             console.error("Login Error:", error);
+            // Reset captcha após erro
+            if (window.hcaptcha) window.hcaptcha.reset();
             let msg = "E-mail ou senha incorretos.";
             if (error.message.includes("Email not confirmed")) {
                 msg = "Por favor, confirme seu e-mail antes de entrar.";
             } else if (error.message.includes("Invalid login credentials")) {
                 msg = "Credenciais inválidas. Verifique seu login.";
+            } else if (error.message.includes("captcha")) {
+                msg = "⚠️ Verificação anti-bot falhou. Resolva o captcha e tente novamente.";
             }
             
             document.getElementById('loginError').innerText = msg;
@@ -137,22 +214,32 @@ window.Auth = {
                 return;
             }
 
-            // 3. Validação de Email Básico
+        // 2. Captura e valida o token do hCaptcha (UI gate anti-bot)
+        const captchaToken = window.hcaptcha ? window.hcaptcha.getResponse() : undefined;
+        if (!captchaToken) {
+            window.Loading.hide();
+            window.Toast.warning('⚠️ Por favor, complete a verificação "Não sou um robô".');
+            return;
+        }
+
+        // 3. Validação de Email Básico
             if (!cleanEmail.includes('@') || cleanEmail.length < 5) {
                 window.Loading.hide();
                 window.Toast.warning("⚠️ Por favor, digite um e-mail válido.");
                 return;
             }
 
-            // 4. VERIFICAÇÃO DE UNICIDADE (Telefone e CPF - E-mail é validado pelo próprio Auth)
-            // Consultamos a tabela profiles que contém os dados espelhados do Auth
-            const { data: existingUser, error: checkError } = await window.supabaseApp
+            // 4. VERIFICAÇÃO DE UNICIDADE (Telefone e CPF)
+            // Usa .limit(1) em vez de .maybeSingle() para evitar crash quando há 2+ registros duplicados
+            const { data: existingUsers, error: checkError } = await window.supabaseApp
                 .from('profiles')
                 .select('id, phone, cpf_cnpj')
                 .or(`phone.eq.${cleanPhone},cpf_cnpj.eq.${cleanCpf}`)
-                .maybeSingle();
+                .limit(1);
 
             if (checkError) console.error("Erro na verificação de unicidade:", checkError);
+
+            const existingUser = existingUsers && existingUsers.length > 0 ? existingUsers[0] : null;
 
             if (existingUser) {
                 window.Loading.hide();
@@ -161,14 +248,16 @@ window.Auth = {
                 else if (existingUser.cpf_cnpj === cleanCpf) reason = "CPF";
                 
                 window.Toast.error(`⚠️ Este ${reason} já está cadastrado em outra conta.`);
+                this.showAuthMessage(`⚠️ Este ${reason} já está vinculado a outra conta. Faça login ou use dados diferentes.`, 'error');
                 return;
             }
 
-            // 5. Proceder com o cadastro no Supabase Auth
+            // 6. Proceder com o cadastro no Supabase Auth
             const { data, error } = await window.supabaseApp.auth.signUp({
                 email: cleanEmail,
                 password: password,
                 options: {
+                    captchaToken: captchaToken || undefined,
                     data: {
                         full_name: fullName,
                         phone: cleanPhone,
@@ -179,6 +268,8 @@ window.Auth = {
 
             if (error) {
                 console.error("Erro no Auth SignUp:", error);
+                // Reset captcha após erro
+                if (window.hcaptcha) window.hcaptcha.reset();
                 if (error.message.includes("already registered")) {
                     window.Toast.error("⚠️ Este e-mail já está cadastrado.");
                 } else {
@@ -414,6 +505,9 @@ window.Auth = {
             if (passField) passField.style.display = 'block';
             if (forgotLink) forgotLink.style.display = 'none';
             if (resendLink) resendLink.style.display = 'flex';
+            // Mostra o reCAPTCHA
+            const captchaBox = document.getElementById('hcaptcha-container');
+            if (captchaBox) captchaBox.style.display = 'block';
             toggleLink.innerHTML = 'Já tem uma conta? <b>Fazer Login</b>';
             toggleLink.onclick = () => this.toggleAuthMode('login');
             btn.onclick = () => this.signUp(
@@ -467,12 +561,13 @@ window.Auth = {
             if (passField) passField.style.display = 'block';
             if (forgotLink) forgotLink.style.display = 'block';
             if (resendLink) resendLink.style.display = 'none';
+            // MOSTRA hCaptcha no modo login (se ativado pelo DB exige no flow)
+            const captchaBox = document.getElementById('hcaptcha-container');
+            if (captchaBox) captchaBox.style.display = 'block';
+            if (window.hcaptcha) window.hcaptcha.reset();
             toggleLink.innerHTML = 'Não tem conta? <b>Solicitar Acesso</b>';
             toggleLink.onclick = () => this.toggleAuthMode('signup');
-            btn.onclick = () => this.login(
-                document.getElementById('loginUser').value,
-                document.getElementById('loginPass').value
-            );
+            btn.onclick = () => this.handleLogin();
         }
     },
 

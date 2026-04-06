@@ -185,6 +185,51 @@ window.Institutional = {
         this.createModal('Segurança Jurídica & LGPD', content);
     },
 
+    showTrainingModal() {
+        const content = `
+            <div style="text-align: center; margin-bottom: 25px;">
+                <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 28px; color: white; box-shadow: 0 10px 20px rgba(16,185,129,0.3);">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <h2 style="color: #0f172a; margin: 0 0 5px 0;">Manual do Usuário e Treinamento</h2>
+                <p style="color: #64748b; font-size: 13px; margin: 0;">Domine o GuaruGeo e acelere seus resultados</p>
+            </div>
+
+            <div style="display: grid; gap: 15px;">
+                <div style="background: rgba(37,99,235,0.05); border: 1px solid rgba(37,99,235,0.2); border-radius: 12px; padding: 20px; transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                    <h4 style="margin: 0 0 10px 0; color: #1e3a8a; display: flex; align-items: center; justify-content: space-between;">
+                        <span><i class="fas fa-file-pdf" style="color: #ef4444; margin-right: 8px;"></i> PDF Oficial (Versão Imprimível)</span>
+                        <i class="fas fa-chevron-right" style="opacity: 0.5;"></i>
+                    </h4>
+                    <p style="font-size: 13px; color: #475569; margin: 0 0 15px 0; line-height: 1.4;">
+                        O guia passo-a-passo detalhado, com atalhos, boas práticas para interpretar mapas e tirar o máximo proveito das ferramentas do hub.
+                    </p>
+                    <button style="background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; box-shadow: 0 4px 12px rgba(37,99,235,0.2);" onclick="window.Toast.info('O download será iniciado em breve.')">
+                        Fazer Download do Manual Completo
+                    </button>
+                </div>
+                
+                <div style="background: rgba(16,185,129,0.05); border: 1px solid rgba(16,185,129,0.2); border-radius: 12px; padding: 20px; transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                    <h4 style="margin: 0 0 10px 0; color: #065f46; display: flex; align-items: center; justify-content: space-between;">
+                        <span><i class="fas fa-play-circle" style="color: #10b981; margin-right: 8px;"></i> Aulas Rápidas e Dinâmicas em Vídeo</span>
+                        <i class="fas fa-chevron-right" style="opacity: 0.5;"></i>
+                    </h4>
+                    <p style="font-size: 13px; color: #475569; margin: 0 0 15px 0; line-height: 1.4;">
+                        Playlist com vídeos curtos explicando como dominar a mineração de dados, Radar e Funil de Vendas de Leilões em menos de 10 minutos.
+                    </p>
+                    <button style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; box-shadow: 0 4px 12px rgba(16,185,129,0.2);" onclick="window.open('https://youtube.com', '_blank')">
+                        Acessar Formato e Vídeo (Em Breve)
+                    </button>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 25px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                <p style="font-size: 12px; color: #64748b;">Continua com problemas? Entre no <b style="color: #2563eb; cursor: pointer;" onclick="window.Institutional.showContact();">Fale Conosco / Suporte</b> da nossa plataforma.</p>
+            </div>
+        `;
+        this.createModal('Centro de Treinamento', content);
+    },
+
     async sendFeedback() {
         const msg = document.getElementById('inst-feedback-msg')?.value;
         if (!msg) return window.Toast.warning("Escreva uma mensagem antes de enviar.");

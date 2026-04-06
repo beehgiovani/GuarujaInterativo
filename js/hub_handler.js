@@ -46,29 +46,28 @@ window.HubHandler = {
     },
 
     refreshHubStats() {
-        // Safe check for Monetization data
         const creditsVal = document.getElementById('hub-credits-value');
-        const roleStr = document.getElementById('hub-premium-badge');
-        
-        if (window.Monetization && window.Monetization.userProfile) {
+        const roleStr    = document.getElementById('hub-premium-badge');
+        const adminApp   = document.getElementById('hub-app-admin');
+
+        // Sempre esconde admin por padrão — só abre se role === 'master'
+        const role = window.Monetization?.userRole || window.Monetization?.userProfile?.role || '';
+        const isAdmin = (role === 'master');
+
+        if (adminApp) adminApp.style.display = isAdmin ? 'flex' : 'none';
+
+        if (window.Monetization?.userProfile) {
             const up = window.Monetization.userProfile;
             if (creditsVal) creditsVal.innerText = up.credits || 0;
             if (roleStr) {
-                roleStr.innerHTML = up.role === 'start' ? '⭐ START' :
-                                    up.role === 'pro' ? '💎 PRO' :
-                                    up.role === 'vip' ? '👑 VIP' :
-                                    up.role === 'master' ? '🛡️ MASTER' : '⭐ START';
-            }
-
-            // Hide or show Admin App
-            const adminApp = document.getElementById('hub-app-admin');
-            if (adminApp) {
-                const isAdmin = window.Monetization && (window.Monetization.userRole === 'admin' || window.Monetization.userRole === 'master');
-                if (isAdmin) {
-                    adminApp.style.display = 'flex';
-                } else {
-                    adminApp.style.display = 'none';
-                }
+                const badges = {
+                    start:  '⭐ START',
+                    pro:    '💎 PRO',
+                    elite:  '🏆 ELITE',
+                    vip:    '👑 VIP ANUAL',
+                    master: '🛡️ ADMIN'
+                };
+                roleStr.innerHTML = badges[up.role] || '⭐ START';
             }
         }
     },
@@ -93,12 +92,18 @@ window.HubHandler = {
         } else if (appId === 'analytics') {
             if (window.AnalyticsDashboard) window.AnalyticsDashboard.show();
         } else if (appId === 'support') {
-            // Institutional
+            // Treinamento -> Manual do Usuário
             if (window.Institutional) {
-                // Mock event to pass to showMenu to prevent undefined stopPropagation crashes
-                window.Institutional.showMenu({ target: document.body, stopPropagation: () => {} });
+                window.Institutional.showTrainingModal();
             }
         } else if (appId === 'admin') {
+            // SEGURANÇA: dupla verificação de role antes de abrir o painel
+            const role = window.Monetization?.userRole || window.Monetization?.userProfile?.role || '';
+            if (role !== 'master') {
+                console.warn('🚫 Acesso negado ao Master Panel. Role:', role);
+                if (window.Toast) window.Toast.error('🚫 Acesso restrito ao Administrador.');
+                return;
+            }
             if (window.Admin) window.Admin.showAdminPanel();
         }
     },
@@ -122,6 +127,21 @@ window.HubHandler = {
 
     closeAllAppModals() {
         document.querySelectorAll('.app-modal').forEach(m => m.classList.remove('active'));
+    },
+
+    /** Ativa busca de Oportunidades defensivamente (chip pode estar oculto) */
+    launchRadarSearch() {
+        // Tenta clicar no chip de oportunidade
+        const chip = document.querySelector('[data-search-type="opportunity"]');
+        if (chip) {
+            chip.click();
+        } else if (typeof window.performOpportunitySearch === 'function') {
+            // Fallback: dispara busca de oportunidade diretamente pelo handler  
+            window.performOpportunitySearch();
+            if (window.Toast) window.Toast.info("Radar ativado no mapa. Analise a lista abaixo.");
+        } else {
+            if (window.Toast) window.Toast.info('🔥 Ative o filtro "Farol Oportunidades" na barra lateral para rastrear o mercado!');
+        }
     },
 
     buildHubModal() {
@@ -185,7 +205,12 @@ window.HubHandler = {
                             <div class="hub-app-title">Treinamento</div>
                         </div>
 
-                        <div id="hub-app-admin" class="hub-app-card app-admin" onclick="window.HubHandler.launchApp('admin')">
+                        <div class="hub-app-card app-plans" onclick="window.HubHandler.closeHub(); window.Monetization && window.Monetization.showSubscriptionPlans();">
+                            <div class="hub-app-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);"><i class="fas fa-crown"></i></div>
+                            <div class="hub-app-title">Meu Plano</div>
+                        </div>
+
+                        <div id="hub-app-admin" class="hub-app-card app-admin" style="display:none;" onclick="window.HubHandler.launchApp('admin')">
                             <div class="hub-app-icon"><i class="fas fa-shield-alt"></i></div>
                             <div class="hub-app-title">Master Panel</div>
                         </div>
@@ -246,15 +271,21 @@ window.HubHandler = {
                         </div>
                         <button class="app-modal-close" style="background: rgba(245,158,11,0.2); color: #b45309;" onclick="window.HubHandler.closeAllAppModals()">&times;</button>
                     </div>
-                    <div class="app-modal-body" style="text-align: center; padding: 40px;">
-                        <i class="fas fa-fire" style="font-size: 60px; color: #f59e0b; margin-bottom: 20px;"></i>
-                        <p style="color: #92400e; font-size: 15px; margin-bottom: 30px; font-weight: 500;">
-                            O Farol IA rastreia o mercado para você.<br>Feche as janelas e ative os filtros de Oportunidade no Menu Lateral do Mapa.
+                    <div class="app-modal-body" style="text-align: center; padding: 20px;">
+                        <i class="fas fa-fire" style="font-size: 40px; color: #f59e0b; margin-bottom: 20px;"></i>
+                        <p style="color: #92400e; font-size: 13px; margin-bottom: 20px; font-weight: 500;">
+                            A Inteligência Artificial rastreia o mercado.<br>Ative e descubra as melhores Oportunidades.
                         </p>
-                        <button onclick="window.HubHandler.closeAllAppModals(); document.querySelector('[data-search-type=\\'opportunity\\']').click();" 
-                                style="background: #f59e0b; border: none; padding: 15px 30px; border-radius: 12px; color: white; font-weight: 800; font-size: 14px; cursor: pointer;">
-                            <i class="fas fa-search-dollar"></i> Rodar Diagnóstico no Mapa Agora
+                        <button onclick="window.HubHandler.launchRadarSearch();" 
+                                style="background: #f59e0b; border: none; padding: 12px 24px; border-radius: 12px; color: white; font-weight: 800; font-size: 14px; cursor: pointer; width: 100%; margin-bottom: 20px;">
+                            <i class="fas fa-search-dollar"></i> Rodar Diagnóstico Agora
                         </button>
+                        
+                        <div id="prospecting-leads-list" style="text-align: left; max-height: 400px; overflow-y: auto;">
+                            <div style="padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px dashed #e2e8f0; color: #94a3b8; font-size: 11px; text-align: center;">
+                                Ative o Radar acima para listar aqui investidores e oportunidades quentes.
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

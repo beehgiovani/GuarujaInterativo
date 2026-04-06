@@ -455,7 +455,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
         </button>
     ` : '';
 
-    const googleEarthBtn = (lat && lng && window.Monetization.canAccess('mapear_patrimonio')) ? `
+    const googleEarthBtn = (lat && lng && window.GoogleEarthHandler && window.Monetization.canAccess('mapear_patrimonio')) ? `
         <div style="display: flex; gap: 4px;">
             <button onclick="window.GoogleEarthHandler.exportLotToKML(window.currentLote)" 
                title="Exportar para Google Earth (KML)"
@@ -519,7 +519,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
                 ${streetViewBtn}
                 ${googleEarthBtn}
                 
-                <button onclick="window.AdminHandler.openPanel('${lote.inscricao}')"
+              <!--  <button onclick="window.AdminHandler.openPanel('${lote.inscricao}')"
                     class="tooltip-action-btn"
                     style="background: #fbbf24; border: 1px solid rgba(255,255,255,0.2); color: #92400e; border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px;"
                     onmouseover="this.style.background='#f59e0b'"
@@ -527,7 +527,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
                     <i class="fas fa-bullhorn"></i> 
                     <span class="btn-text">Anúncios</span>
                     <span id="header-anuncios-badge-${lote.inscricao}" style="background: #ef4444; color: white; border-radius: 50%; padding: 2px 6px; font-size: 9px; display: none;">0</span>
-                </button>
+                </button> -->
 
                 ${window.Monetization.canAccess('link_cliente') ? `
                 <button onclick="window.ClientModeHandler.generateLink(window.currentLoteForUnit)"

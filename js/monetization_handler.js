@@ -117,11 +117,15 @@ window.Monetization = {
             // [NOVO] Iniciar Monitor de Expiração de Assinatura
             this.startSubscriptionTimer();
 
-            // Verificação de Perfil Completo (Garante CPF/CNPJ e agora Telefone)
-            const isMissingData = !data.profile_completed || !data.phone;
-            if (isMissingData && this.userRole !== 'admin' && this.userRole !== 'master') {
-                console.log("⚠️ Perfil incompleto detectado. Solicitando dados...");
-                setTimeout(() => this.showProfileCompletionModal(), 2000);
+            // Verificação granular: detecta exatamente quais campos estão faltando
+            const missingFields = [];
+            if (!data.full_name || data.full_name.trim() === '') missingFields.push('full_name');
+            if (!data.phone  || data.phone.trim()  === '') missingFields.push('phone');
+            if (!data.cpf_cnpj || data.cpf_cnpj.trim() === '') missingFields.push('cpf_cnpj');
+
+            if (missingFields.length > 0 && this.userRole !== 'master') {
+                console.log('⚠️ Campos faltando no perfil:', missingFields);
+                setTimeout(() => this.showProfileCompletionModal(missingFields), 1500);
             }
 
             const isMaster = this.userRole === 'admin' || this.userRole === 'master';
@@ -164,6 +168,193 @@ window.Monetization = {
             if (!this.userProfile) {
                 this.userProfile = { credits: 0, role: 'user' };
             }
+        }
+    },
+
+    // ================================================================
+    //  MODAL DE COMPLETAR PERFIL (só campos faltantes)
+    // ================================================================
+    showProfileCompletionModal: function(missingFields = []) {
+        // Evita abrir múltiplas vezes
+        if (document.getElementById('profile-completion-modal')) return;
+
+        // Mapa de campos: chave -> label, placeholder, type, mask
+        const fieldDefs = {
+            full_name: { label: 'Nome Completo',      placeholder: 'Ex: Bruno Giovani',          type: 'text',  mask: null },
+            phone:     { label: 'WhatsApp / Telefone', placeholder: 'Ex: (13) 99999-9999',        type: 'tel',   mask: 'phone' },
+            cpf_cnpj:  { label: 'CPF',                 placeholder: 'Ex: 000.000.000-00',         type: 'text',  mask: 'cpf' },
+        };
+
+        const fieldsHtml = missingFields.map(key => {
+            const def = fieldDefs[key];
+            if (!def) return '';
+            return `
+                <div style="margin-bottom: 16px;">
+                    <label style="display:block; font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px;">
+                        ${def.label} <span style="color:#ef4444">*</span>
+                    </label>
+                    <input
+                        id="pcomp-${key}"
+                        type="${def.type}"
+                        placeholder="${def.placeholder}"
+                        data-mask="${def.mask || ''}"
+                        autocomplete="off"
+                        style="width:100%; padding:12px 14px; border-radius:10px; border:1.5px solid rgba(255,255,255,0.1);
+                               background:rgba(255,255,255,0.06); color:#e2e8f0; font-size:14px; outline:none;
+                               transition: border-color 0.2s; box-sizing:border-box;"
+                        onfocus="this.style.borderColor='#3b82f6'"
+                        onblur="this.style.borderColor='rgba(255,255,255,0.1)'"
+                    >
+                </div>`;
+        }).join('');
+
+        const overlay = document.createElement('div');
+        overlay.id = 'profile-completion-modal';
+        overlay.style.cssText = `
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 1000000;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px; box-sizing: border-box;
+            animation: fadeIn 0.3s ease;
+        `;
+
+        const plural = missingFields.length > 1 ? 's' : '';
+        overlay.innerHTML = `
+            <div style="
+                background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
+                border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 20px;
+                padding: 32px;
+                width: 100%;
+                max-width: 440px;
+                box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+                animation: slideUp 0.35s cubic-bezier(0.16,1,0.3,1);
+            ">
+                <div style="text-align:center; margin-bottom:28px;">
+                    <div style="width:56px;height:56px;background:linear-gradient(135deg,#3b82f6,#10b981);
+                                border-radius:50%;display:flex;align-items:center;justify-content:center;
+                                margin:0 auto 16px; font-size:24px;">
+                        👤
+                    </div>
+                    <h2 style="margin:0 0 8px;color:#f8fafc;font-size:20px;font-weight:800;">
+                        Complete seu Perfil
+                    </h2>
+                    <p style="margin:0;color:#94a3b8;font-size:13px;line-height:1.5;">
+                        ${missingFields.length === 1
+                            ? `O campo <b style="color:#e2e8f0">${fieldDefs[missingFields[0]]?.label}</b> está faltando.`
+                            : `${missingFields.length} campo${plural} obrigatório${plural} estão faltando.`
+                        }
+                    </p>
+                </div>
+
+                ${fieldsHtml}
+
+                <div id="pcomp-error" style="display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);
+                     border-radius:8px;padding:10px;color:#fca5a5;font-size:12px;margin-bottom:16px;"></div>
+
+                <button
+                    id="pcomp-save-btn"
+                    onclick="window.Monetization.saveProfileCompletion()"
+                    style="width:100%;padding:14px;border:none;border-radius:12px;
+                           background:linear-gradient(135deg,#3b82f6,#10b981);
+                           color:white;font-weight:800;font-size:15px;cursor:pointer;
+                           transition:opacity 0.2s; box-shadow: 0 8px 20px rgba(59,130,246,0.3);"
+                    onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                    Salvar e Continuar →
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        // Aplicar máscaras
+        const phoneInput = document.getElementById('pcomp-phone');
+        if (phoneInput) {
+            phoneInput.addEventListener('input', (e) => {
+                let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+                if (v.length > 2)  v = `(${v.slice(0,2)}) ${v.slice(2)}`;
+                if (v.length > 10) v = v.slice(0,10) + '-' + v.slice(10);
+                e.target.value = v;
+            });
+        }
+        const cpfInput = document.getElementById('pcomp-cpf_cnpj');
+        if (cpfInput) {
+            cpfInput.addEventListener('input', (e) => {
+                let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+                if (v.length > 9)       v = `${v.slice(0,3)}.${v.slice(3,6)}.${v.slice(6,9)}-${v.slice(9)}`;
+                else if (v.length > 6)  v = `${v.slice(0,3)}.${v.slice(3,6)}.${v.slice(6)}`;
+                else if (v.length > 3)  v = `${v.slice(0,3)}.${v.slice(3)}`;
+                e.target.value = v;
+            });
+        }
+
+        // Guarda quais campos precisam ser salvos
+        overlay._missingFields = missingFields;
+    },
+
+    saveProfileCompletion: async function() {
+        const overlay = document.getElementById('profile-completion-modal');
+        if (!overlay) return;
+
+        const missingFields = overlay._missingFields || [];
+        const updates = { profile_completed: true };
+        const errorEl = document.getElementById('pcomp-error');
+
+        // Coleta e valida cada campo
+        for (const key of missingFields) {
+            const input = document.getElementById(`pcomp-${key}`);
+            const val = input?.value?.trim() || '';
+
+            if (!val) {
+                errorEl.innerText = `O campo "${input?.placeholder || key}" é obrigatório.`;
+                errorEl.style.display = 'block';
+                input?.focus();
+                return;
+            }
+
+            if (key === 'cpf_cnpj') {
+                const clean = val.replace(/\D/g, '');
+                if (window.validateCPF && !window.validateCPF(clean)) {
+                    errorEl.innerText = 'CPF inválido. Verifique o número digitado.';
+                    errorEl.style.display = 'block';
+                    input?.focus();
+                    return;
+                }
+                updates[key] = clean;
+            } else if (key === 'phone') {
+                updates[key] = val.replace(/\D/g, '');
+            } else {
+                updates[key] = val;
+            }
+        }
+
+        const saveBtn = document.getElementById('pcomp-save-btn');
+        if (saveBtn) { saveBtn.disabled = true; saveBtn.innerText = 'Salvando...'; }
+
+        try {
+            const { data: { user } } = await window.supabaseApp.auth.getUser();
+            const { error } = await window.supabaseApp
+                .from('profiles')
+                .update(updates)
+                .eq('id', user.id);
+
+            if (error) throw error;
+
+            // Atualiza o perfil local
+            Object.assign(this.userProfile, updates);
+
+            overlay.style.animation = 'fadeOut 0.3s ease forwards';
+            setTimeout(() => overlay.remove(), 300);
+
+            if (window.Toast) window.Toast.success('✅ Perfil atualizado com sucesso!');
+        } catch (e) {
+            console.error('Erro ao salvar perfil:', e);
+            errorEl.innerText = 'Erro ao salvar: ' + e.message;
+            errorEl.style.display = 'block';
+            if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = 'Salvar e Continuar →'; }
         }
     },
 
@@ -640,8 +831,11 @@ window.Monetization = {
         window.Loading.show("Desbloqueando...", loadingMsg);
         
         try {
-            const cleanLote = String(loteInscricao || '').replace(/\D/g, '').substring(0, 8);
-            const cleanUnit = unitId ? String(unitId).replace(/\D/g, '') : null;
+            // NOTA: Passamos a inscrição ORIGINAL (com os pontos/traços) para o RPC.
+            // Limpar os IDs (\D) causava bugs de incompatibilidade ao carregar a Carteira, 
+            // pois a tabela de unidades/lotes mantém a formatação da inscrição oficial original.
+            const cleanLote = String(loteInscricao || '');
+            const cleanUnit = unitId ? String(unitId) : null;
             console.warn("🛰️ [Monetization] Preparando chamada RPC para:", { cleanLote, cleanUnit });
 
             console.log("💰 [Monetization] Starting Unlock Flow for:", { cleanLote, cleanUnit, price, role: this.userRole });
@@ -1470,7 +1664,11 @@ window.Monetization = {
                     // Resolve metadata localmente (evita dependência de Foreing Key no banco)
                     let lot = item.lotes; 
                     if (!lot && window.allLotes) {
-                        lot = window.allLotes.find(l => l.inscricao === item.lote_inscricao);
+                        lot = window.allLotes.find(l => {
+                            const dbId = String(item.lote_inscricao || '').replace(/\D/g, '');
+                            const memoryId = String(l.inscricao || '').replace(/\D/g, '');
+                            return memoryId === dbId;
+                        });
                     }
                     if (!lot) lot = { inscricao: item.lote_inscricao };
 

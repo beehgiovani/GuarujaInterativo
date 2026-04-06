@@ -92,6 +92,7 @@ window.openAddLeadTooltip = function (leadId = null) {
     const tooltip = document.createElement('div');
     tooltip.className = 'lead-tooltip';
     tooltip.id = 'leadTooltip';
+    tooltip.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 200000;';
 
     tooltip.innerHTML = `
         <div class="lead-tooltip-header">
@@ -242,7 +243,7 @@ window.openAddLeadTooltip = function (leadId = null) {
     // Add backdrop
     const backdrop = document.createElement('div');
     backdrop.className = 'sidebar-backdrop active';
-    backdrop.style.zIndex = '9999';
+    backdrop.style.zIndex = '199999';
     backdrop.onclick = window.closeLeadTooltip;
     document.body.appendChild(backdrop);
     tooltip.backdrop = backdrop;

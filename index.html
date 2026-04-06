@@ -10,6 +10,9 @@
     <!-- Turf.js (Geospatial Analysis) -->
     <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
 
+    <!-- hCaptcha (Bot Protection - Supabase integration) -->
+    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <!-- Font Awesome & Lottie -->
@@ -245,8 +248,8 @@
             <!-- Login Form Side -->
             <div class="login-form-side">
                 <img src="assets/logo_v2.png" alt="GuarujaGeo Logo" class="premium-logo">
-                    <h2>Acesso Restrito</h2>
-                    <p>Inteligência de Dados e Mapas do Guarujá</p>
+                    
+                    <h2>Inteligência de Dados e Mapas do Guarujá</h2>
                     
                     <form onsubmit="event.preventDefault();" style="display: flex; flex-direction: column;">
                         <!-- Campo de Nome (Apenas Cadastro) -->
@@ -254,12 +257,13 @@
                             <input type="text" id="loginName" placeholder="Nome Completo">
                         </div>
                         <!-- Campo de Telefone (Apenas Cadastro) -->
-                        <div id="loginPhoneField" style="display: none; margin-bottom: 16px;">
-                            <input type="text" id="loginPhone" placeholder="Telefone/WhatsApp">
+                        <div id="loginPhoneField" style="display: none; margin-bottom: 16px; position: relative;">
+                            <span style="position: absolute; left: 18px; top: 14px; font-size: 16px; user-select: none;">🇧🇷</span>
+                            <input type="tel" id="loginPhone" placeholder="+55 (13) 99999-9999" oninput="window.Auth.maskPhone(this)" style="padding-left: 45px; width: 100%;">
                         </div>
                         <!-- NOVO: Campo de CPF (Apenas Cadastro - Trava Duo-Account) -->
                         <div id="loginCpfField" style="display: none; margin-bottom: 16px;">
-                            <input type="text" id="loginCpf" placeholder="CPF (000.000.000-00)">
+                            <input type="text" id="loginCpf" placeholder="CPF (000.000.000-00)" oninput="window.Auth.maskCpf(this)" style="width: 100%;">
                         </div>
                         
                         <input type="email" id="loginUser" placeholder="E-mail" required style="margin-bottom: 16px; width: 100%;">
@@ -271,6 +275,16 @@
                         <span onclick="window.Auth.toggleAuthMode('forgot')" style="text-align: right; font-size: 11px; color: #3b82f6; cursor: pointer; font-weight: 700; display: block; margin-bottom: 16px;">Esqueci minha senha</span>
                         
                         <button id="btnLogin" type="button" onclick="window.Auth.handleLogin()" style="width: 100%;">Entrar</button>
+
+                        <!-- hCaptcha widget (aparece apenas no modo cadastro) -->
+                        <div id="hcaptcha-container" style="display:none; margin: 14px 0;">
+                            <div class="h-captcha"
+                                id="hcaptcha-widget"
+                                data-sitekey="b0061b42-b086-4cec-b162-22cc6708a84a"
+                                data-theme="dark"
+                                data-size="normal">
+                            </div>
+                        </div>
 
                         <div id="resendConfirmationLink" style="display: none; align-items: center; justify-content: flex-start; gap: 8px; margin-top: 15px; font-size: 12px; color: #64748b;">
                             <i class="fas fa-envelope"></i> Não recebeu? 
@@ -422,11 +436,15 @@
             <div class="sidebar-header" style="background: rgba(255,255,255,0.02); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);">
                 <!-- Linha 1: Logo e Menu Hamburger -->
                 <div class="header-top-row v2-flex">
-                    <button id="hubToggleBtn" class="hub-menu-btn" title="Menu Principal" onclick="if(window.HubHandler) window.HubHandler.openHub();">
+                    <button id="hubToggleBtn" class="hub-menu-btn pulse-active" title="Menu Principal" onclick="if(window.HubHandler) window.HubHandler.openHub();">
                         <i class="fas fa-bars" style="font-size: 20px; color: #1e293b; pointer-events: none;"></i>
                     </button>
                     <div class="sidebar-logo-container" style="padding: 0; flex: 1; display: flex; justify-content: flex-start;">
                         <img src="assets/logo_v2.png" alt="GuarujaGeo" style="height: 50px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
+                    </div>
+                    <!-- Plan & Credits Access Point (Restored) -->
+                    <div id="user-credits-display" class="user-credits-widget" title="Ver Planos e Créditos">
+                        <!-- Injected by Monetization.renderPlanWidget() -->
                     </div>
                 </div>
 
@@ -502,27 +520,7 @@
                 </div>
             </div>
 
-            <!-- TAB: PROSPECTING (NEW) -->
-            <div id="tab-prospecting" class="sidebar-tab-content" style="display: none;">
-                <div style="padding: 20px; text-align: center;">
-                    <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 16px; padding: 25px; margin-bottom: 20px;">
-                        <i class="fas fa-fire" style="font-size: 44px; color: #f59e0b; margin-bottom: 15px; filter: drop-shadow(0 4px 6px rgba(245,158,11,0.3));"></i>
-                        <h3 style="color: #92400e; margin-bottom: 8px; font-weight: 900;">Radar Oportunidades [BETA] 🔥</h3>
-                        <p style="font-size: 12px; color: #b45309; line-height: 1.6; font-weight: 500;">
-                            Nossa IA analisa em tempo real o comportamento dos proprietários para identificar quem tem mais chance de vender ou aceitar propostas.
-                        </p>
-                        <button onclick="window.switchSidebarTab('map'); document.querySelector('[data-search-type=\'opportunity\']').click();" 
-                                class="btn-primary-rich" style="margin-top: 20px; background: #f59e0b; width: 100%; border-radius: 10px; font-weight: 800; font-size: 12px; height: 44px;">
-                            <i class="fas fa-search-dollar"></i> Rodar Diagnóstico Agora
-                        </button>
-                    </div>
-                    <div id="prospecting-leads-list" style="text-align: left;">
-                        <div style="padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px dashed #e2e8f0; color: #94a3b8; font-size: 11px; text-align: center;">
-                            Ative o Radar acima para ver a lista de investidores e oportunidades quentes.
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- Radar Panel is now inside Hub Modal -->
 
             <!-- TAB: MEU CRM (NEW PERSONALIZED) -->
             <!-- TAB: WALLET (Minha Carteira de Desbloqueios) -->
@@ -983,6 +981,7 @@
     <script src="js/leilao_staging_handler.js"></script>
     <script src="js/renovation_radar.js"></script>
     <script src="js/push_handler.js"></script>
+    <script src="js/google_earth_handler.js"></script>
     
     <!-- UX Improvements V1.2 (Cleanup duplicates) -->
     <script src="js/advanced_maps_handler.js"></script>
