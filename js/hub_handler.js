@@ -84,8 +84,10 @@ window.HubHandler = {
         }
 
         if (appId === 'crm') {
+            if (window.loadLeads) window.loadLeads();
             this.openAppModal('modal-app-crm');
         } else if (appId === 'wallet') {
+            if (window.Monetization && window.Monetization.loadWallet) window.Monetization.loadWallet();
             this.openAppModal('modal-app-wallet');
         } else if (appId === 'radar') {
             this.openAppModal('modal-app-radar');

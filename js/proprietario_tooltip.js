@@ -315,6 +315,18 @@ window.ProprietarioTooltip = {
                         <div style="font-size: 28px; font-weight: 800; letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px;">
                             ${window.maskName(prop.nome_completo, (window.Monetization && typeof window.Monetization.isUnlockedPerson === 'function' && window.Monetization.isUnlockedPerson(prop.cpf_cnpj)))}
                             ${(() => {
+                                const isUnlocked = window.Monetization && typeof window.Monetization.isUnlockedPerson === 'function' && window.Monetization.isUnlockedPerson(prop.cpf_cnpj);
+                                if (!isUnlocked && prop.cpf_cnpj && !prop.cpf_cnpj.startsWith('S_PJ_')) {
+                                    return `
+                                        <button onclick="window.Monetization.promptUnlockPerson('${prop.cpf_cnpj}', '${prop.nome_completo.replace(/'/g, "\\'")}')" 
+                                                style="background: #1e293b; color: white; border: none; padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                                            <i class="fas fa-unlock"></i> Liberar Nome
+                                        </button>
+                                    `;
+                                }
+                                return '';
+                            })()}
+                            ${(() => {
                                 const pred = window.PredictiveHandler.calculateScore(prop);
                                 return `
                                     <div style="background: ${pred.color}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
@@ -345,7 +357,7 @@ window.ProprietarioTooltip = {
                         <i class="fas ${window.Monetization.canAccess('advanced_ai') ? 'fa-globe' : 'fa-lock'}"></i> Receita Federal
                     </button>` : ''}
 
-                    <button onclick="${window.Monetization.canAccess('marketing_tools') ? `window.Enrichment.enrichPerson('${prop.cpf_cnpj}')` : `window.Monetization.showSubscriptionPlans()`}" 
+                    <button onclick="${window.Monetization.canAccess('marketing_tools') ? `window.Enrichment.enrichPerson('${prop.cpf_cnpj}', '${(prop.nome_completo || '').replace(/'/g, "\\'")}')` : `window.Monetization.showSubscriptionPlans()`}" 
                         style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; transition: all 0.2s;"
                         onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
                         <i class="fas ${window.Monetization.canAccess('marketing_tools') ? 'fa-search-plus' : 'fa-lock'}"></i> Ficha Avançada

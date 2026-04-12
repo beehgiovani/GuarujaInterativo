@@ -10,11 +10,21 @@ window.Auth = {
     // ─── UTILS DE MASCARAMENTO DA UI ─────────────────────────────────────────
     maskCpf: function(input) {
         let v = input.value.replace(/\D/g, ''); // só números
-        if (v.length > 11) v = v.substring(0, 11);
-        let res = v;
-        if (v.length > 3) res = v.substring(0,3) + "." + v.substring(3, 11);
-        if (v.length > 6) res = res.substring(0,7) + "." + res.substring(7, 11);
-        if (v.length > 9) res = res.substring(0,11) + "-" + res.substring(11, 13);
+        if (v.length > 14) v = v.substring(0, 14);
+        
+        let res = "";
+        if (v.length <= 11) {
+            res = v.substring(0, 3);
+            if (v.length > 3) res += "." + v.substring(3, 6);
+            if (v.length > 6) res += "." + v.substring(6, 9);
+            if (v.length > 9) res += "-" + v.substring(9, 11);
+        } else {
+            res = v.substring(0, 2);
+            if (v.length > 2) res += "." + v.substring(2, 5);
+            if (v.length > 5) res += "." + v.substring(5, 8);
+            if (v.length > 8) res += "/" + v.substring(8, 12);
+            if (v.length > 12) res += "-" + v.substring(12, 14);
+        }
         input.value = res;
     },
 
@@ -35,6 +45,21 @@ window.Auth = {
             res = "+55";
         }
         input.value = res; // visual UI formatado
+    },
+
+    togglePasswordVisibility: function(inputId, icon) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
     },
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -207,30 +232,33 @@ window.Auth = {
             const cleanPhone = phone.replace(/\D/g, '');
             const cleanCpf = cpf.replace(/\D/g, '');
 
-            // 2. VALIDAÇÃO DE CPF REAL (Algoritmo Oficial)
-            if (!window.validateCPF(cleanCpf)) {
+            // 2. Validações Básicas de Segurança
+            if (!password || password.length < 6) {
                 window.Loading.hide();
-                window.Toast.warning("⚠️ CPF inválido. Por favor, digite um CPF real.");
+                window.Toast.warning("⚠️ A senha deve ter no mínimo 6 caracteres.");
                 return;
             }
 
-        // 2. Captura e valida o token do hCaptcha (UI gate anti-bot)
-        const captchaToken = window.hcaptcha ? window.hcaptcha.getResponse() : undefined;
-        if (!captchaToken) {
-            window.Loading.hide();
-            window.Toast.warning('⚠️ Por favor, complete a verificação "Não sou um robô".');
-            return;
-        }
+            if (!window.validateCPF(cleanCpf) && !window.validateCNPJ(cleanCpf)) {
+                window.Loading.hide();
+                window.Toast.warning("⚠️ CPF/CNPJ inválido. Por favor, digite um documento real.");
+                return;
+            }
 
-        // 3. Validação de Email Básico
+            const captchaToken = window.hcaptcha ? window.hcaptcha.getResponse() : undefined;
+            if (!captchaToken) {
+                window.Loading.hide();
+                window.Toast.warning('⚠️ Por favor, complete a verificação "Não sou um robô".');
+                return;
+            }
+
             if (!cleanEmail.includes('@') || cleanEmail.length < 5) {
                 window.Loading.hide();
                 window.Toast.warning("⚠️ Por favor, digite um e-mail válido.");
                 return;
             }
 
-            // 4. VERIFICAÇÃO DE UNICIDADE (Telefone e CPF)
-            // Usa .limit(1) em vez de .maybeSingle() para evitar crash quando há 2+ registros duplicados
+            // 3. Verificação de Unicidade
             const { data: existingUsers, error: checkError } = await window.supabaseApp
                 .from('profiles')
                 .select('id, phone, cpf_cnpj')
@@ -239,25 +267,20 @@ window.Auth = {
 
             if (checkError) console.error("Erro na verificação de unicidade:", checkError);
 
-            const existingUser = existingUsers && existingUsers.length > 0 ? existingUsers[0] : null;
-
-            if (existingUser) {
+            if (existingUsers && existingUsers.length > 0) {
                 window.Loading.hide();
-                let reason = "dados";
-                if (existingUser.phone === cleanPhone) reason = "Telefone";
-                else if (existingUser.cpf_cnpj === cleanCpf) reason = "CPF";
-                
+                const user = existingUsers[0];
+                let reason = user.phone === cleanPhone ? "Telefone" : "CPF";
                 window.Toast.error(`⚠️ Este ${reason} já está cadastrado em outra conta.`);
-                this.showAuthMessage(`⚠️ Este ${reason} já está vinculado a outra conta. Faça login ou use dados diferentes.`, 'error');
                 return;
             }
 
-            // 6. Proceder com o cadastro no Supabase Auth
+            // 4. Proceder com o Auth SignUp
             const { data, error } = await window.supabaseApp.auth.signUp({
                 email: cleanEmail,
                 password: password,
                 options: {
-                    captchaToken: captchaToken || undefined,
+                    captchaToken,
                     data: {
                         full_name: fullName,
                         phone: cleanPhone,
@@ -267,21 +290,18 @@ window.Auth = {
             });
 
             if (error) {
-                console.error("Erro no Auth SignUp:", error);
-                // Reset captcha após erro
                 if (window.hcaptcha) window.hcaptcha.reset();
-                if (error.message.includes("already registered")) {
-                    window.Toast.error("⚠️ Este e-mail já está cadastrado.");
-                } else {
-                    window.Toast.error("Erro no cadastro: " + error.message);
-                }
-                return;
+                throw error;
             }
 
-            window.Toast.info("Solicitação enviada! Verifique seu e-mail.");
+            window.Toast.success("Solicitação enviada!");
+            this.showAuthMessage("✅ Quase pronto! Verifique seu e-mail para confirmar a conta antes de entrar.", "success");
             this.toggleAuthMode('login');
         } catch (error) {
-            window.Toast.error("Erro no cadastro: " + error.message);
+            console.error("Erro no cadastro:", error);
+            let msg = "Erro no cadastro: " + error.message;
+            if (error.message.includes("already registered")) msg = "⚠️ Este e-mail já está cadastrado.";
+            window.Toast.error(msg);
         } finally {
             window.Loading.hide();
         }
@@ -536,14 +556,22 @@ window.Auth = {
             toggleLink.style.display = 'none';
 
             // Substituir os campos do formulário dinamicamente
-            const passField = document.getElementById('loginPassField');
             if (passField) {
                 passField.style.display = 'block';
+                passField.style.position = 'relative';
                 passField.innerHTML = `
-                    <input type="password" id="loginNewPass" placeholder="Nova senha (mínimo 6 caracteres)"
-                        autocomplete="new-password" style="margin-bottom: 10px; width: 100%;">
-                    <input type="password" id="loginConfirmPass" placeholder="Confirmar nova senha"
-                        autocomplete="new-password" style="margin-bottom: 15px; width: 100%;">
+                    <div style="position: relative; margin-bottom: 10px;">
+                        <input type="password" id="loginNewPass" placeholder="Nova senha (mínimo 6 caracteres)"
+                            autocomplete="new-password" style="width: 100%; padding-right: 40px;">
+                        <i class="fas fa-eye" onclick="window.Auth.togglePasswordVisibility('loginNewPass', this)" 
+                           style="position: absolute; right: 15px; top: 13px; cursor: pointer; color: #64748b;"></i>
+                    </div>
+                    <div style="position: relative; margin-bottom: 15px;">
+                        <input type="password" id="loginConfirmPass" placeholder="Confirmar nova senha"
+                            autocomplete="new-password" style="width: 100%; padding-right: 40px;">
+                        <i class="fas fa-eye" onclick="window.Auth.togglePasswordVisibility('loginConfirmPass', this)" 
+                           style="position: absolute; right: 15px; top: 13px; cursor: pointer; color: #64748b;"></i>
+                    </div>
                 `;
             }
             // Esconder campo de e-mail (não precisa)
@@ -561,7 +589,15 @@ window.Auth = {
             if (passField) passField.style.display = 'block';
             if (forgotLink) forgotLink.style.display = 'block';
             if (resendLink) resendLink.style.display = 'none';
-            // MOSTRA hCaptcha no modo login (se ativado pelo DB exige no flow)
+            // Reset password type and icon when switching
+            const passInput = document.getElementById('loginPass');
+            const toggleIcon = document.getElementById('togglePasswordIcon');
+            if (passInput) passInput.type = 'password';
+            if (toggleIcon) {
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+
             const captchaBox = document.getElementById('hcaptcha-container');
             if (captchaBox) captchaBox.style.display = 'block';
             if (window.hcaptcha) window.hcaptcha.reset();

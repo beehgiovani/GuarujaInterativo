@@ -117,15 +117,18 @@ window.Monetization = {
             // [NOVO] Iniciar Monitor de Expiração de Assinatura
             this.startSubscriptionTimer();
 
-            // Verificação granular: detecta exatamente quais campos estão faltando
-            const missingFields = [];
-            if (!data.full_name || data.full_name.trim() === '') missingFields.push('full_name');
-            if (!data.phone  || data.phone.trim()  === '') missingFields.push('phone');
-            if (!data.cpf_cnpj || data.cpf_cnpj.trim() === '') missingFields.push('cpf_cnpj');
+            // Verifica se o perfil já foi marcado como completo para não incomodar o usuário
+            if (!data.profile_completed && this.userRole !== 'master') {
+                const missingFields = [];
+                // Alguns usuários antigos/login social têm full_name. Novos têm broker_name. Checamos ambos.
+                if ((!data.full_name || data.full_name.trim() === '') && (!data.broker_name || data.broker_name.trim() === '')) missingFields.push('name');
+                if (!data.phone  || data.phone.trim()  === '') missingFields.push('phone');
+                if (!data.cpf_cnpj || data.cpf_cnpj.trim() === '') missingFields.push('cpf_cnpj');
 
-            if (missingFields.length > 0 && this.userRole !== 'master') {
-                console.log('⚠️ Campos faltando no perfil:', missingFields);
-                setTimeout(() => this.showProfileCompletionModal(missingFields), 1500);
+                if (missingFields.length > 0) {
+                    console.log('⚠️ Campos faltando no perfil:', missingFields);
+                    setTimeout(() => this.showProfileCompletionModal(missingFields), 1500);
+                }
             }
 
             const isMaster = this.userRole === 'admin' || this.userRole === 'master';
@@ -568,7 +571,7 @@ window.Monetization = {
 
             window.Loading.hide();
             window.Toast.success("Perfil atualizado com sucesso!");
-            document.getElementById('profile-completion-modal').remove();
+            document.getElementById('profile-completion-modal')?.remove();
             
             // Recarregar perfil na memória
             if (this.userProfile) {
@@ -861,14 +864,27 @@ window.Monetization = {
             console.log("🛰️ [Monetization] RPC Response:", { data, error });
 
             if (error) {
-                console.error("❌ [Monetization] RPC Error:", error);
-                window.Toast.error("Erro no servidor: " + (error.message || "Falha ao registrar desbloqueio"));
+                const errorStr = JSON.stringify({
+                    message: error.message,
+                    details: error.details,
+                    hint: error.hint,
+                    code: error.code,
+                    rpc_params: { target_lote: cleanLote, target_unidade: cleanUnit, weight: price }
+                }, null, 2);
+                
+                console.error("❌ [Monetization] RPC Error Details:", errorStr);
+                
+                let userFriendlyMsg = "Erro no servidor: " + (error.message || "Falha ao registrar desbloqueio");
+                if (error.code === 'P0001') userFriendlyMsg = "Erro nas Regras de Negócio: " + error.message;
+                if (error.code === '57014' || error.message === 'FetchError') userFriendlyMsg = "O servidor demorou muito para responder (Timeout/CORS).";
+                
+                window.Toast.error(userFriendlyMsg);
                 throw error;
             }
 
             if (data === false) {
-                console.warn("⚠️ [Monetization] RPC returned FALSE (Unknown failure)");
-                window.Toast.error("O servidor não pôde processar o desbloqueio. Verifique seu saldo ou limite.");
+                console.warn("⚠️ [Monetization] RPC returned FALSE (Business logic rejected the unlock)");
+                window.Toast.error("Desbloqueio não permitido. Verifique seu saldo ou se este item já foi liberado.");
                 return;
             }
 
@@ -1017,6 +1033,56 @@ window.Monetization = {
             </div>
         `;
         document.body.appendChild(modal);
+    },
+
+    /**
+     * NOVO: Desbloqueio direto de pessoa física/jurídica (via Proprietário Tooltip)
+     */
+    promptUnlockPerson: async function(personCpfCnpj, personName) {
+        if (!personCpfCnpj || personCpfCnpj.startsWith('S_PJ_')) {
+            window.Toast.info("Dados públicos restritos ou já liberados.");
+            return;
+        }
+
+        const isUnlocked = this.isUnlockedPerson(personCpfCnpj);
+        if (isUnlocked) {
+            window.Toast.info("Este proprietário já está desbloqueado em sua conta.");
+            return;
+        }
+
+        const credits = this.userProfile?.credits || 0;
+        const required = 5; // Custo padrão para Pessoa
+        
+        if (credits < required && !this.canAccess('radar_mercado')) {
+            this.showInsufficientCreditsModal(required);
+            return;
+        }
+
+        const confirms = confirm(`Deseja desbloquear os dados completos de "${personName}"?\n\nCusto: ${required} créditos.`);
+        if (!confirms) return;
+
+        window.Loading.show("Desbloqueando...", "Liberando dados do proprietário");
+        try {
+            const { data, error } = await window.supabaseApp.rpc('unlock_person_data', {
+                target_cpf_cnpj: personCpfCnpj.replace(/\D/g, '')
+            });
+
+            if (error) throw error;
+            if (data) {
+                window.Toast.success("Dados do proprietário liberados com sucesso!");
+                // Refresh Profile
+                if (window.ProprietarioTooltip && window.ProprietarioTooltip.currentPropId) {
+                    window.ProprietarioTooltip.show(window.ProprietarioTooltip.currentPropId);
+                }
+            } else {
+                window.Toast.error("Não foi possível processar o débito.");
+            }
+        } catch (e) {
+            console.error("Unlock Person Error:", e);
+            window.Toast.error("Falha ao desbloquear: " + (e.message || "Erro desconhecido"));
+        } finally {
+            window.Loading.hide();
+        }
     },
 
     showInsufficientCreditsModal: function(required) {

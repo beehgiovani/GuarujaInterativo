@@ -1458,12 +1458,14 @@ async function showUnitTooltip(unit, parentLote, x, y) {
                                     const isProOrElite = window.Monetization.canAccess('radar_mercado');
                                     if (!isProOrElite) {
                                         return `
-                                            <div style="font-size: 13px; color: #64748b; font-weight: 600; font-style: italic;">
+                                            <div style="font-size: 13px; color: #64748b; font-weight: 600; font-style: italic; display: flex; align-items: center; gap: 6px;">
                                                 ${window.maskName(unit.nome_proprietario)}
+                                                <i class="fas fa-unlock" style="cursor: pointer; font-size: 12px; color: #f59e0b;" 
+                                                   onclick="window.unlockUnitInfo('${unit.inscricao}')" title="Liberar Dados"></i>
                                             </div>
-                                            <button onclick="window.Monetization.showSubscriptionPlans()" 
+                                            <button onclick="window.unlockUnitInfo('${unit.inscricao}')" 
                                                     style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; border-radius: 6px; padding: 6px 14px; font-size: 10px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.3);">
-                                                <i class="fas fa-star"></i> Ver Plano
+                                                <i class="fas fa-unlock"></i> Desbloquear
                                             </button>
                                         `;
                                     } else {

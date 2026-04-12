@@ -263,13 +263,14 @@
                         </div>
                         <!-- NOVO: Campo de CPF (Apenas Cadastro - Trava Duo-Account) -->
                         <div id="loginCpfField" style="display: none; margin-bottom: 16px;">
-                            <input type="text" id="loginCpf" placeholder="CPF (000.000.000-00)" oninput="window.Auth.maskCpf(this)" style="width: 100%;">
+                            <input type="text" id="loginCpf" placeholder="CPF ou CNPJ" oninput="window.Auth.maskCpf(this)" style="width: 100%;">
                         </div>
                         
                         <input type="email" id="loginUser" placeholder="E-mail" required style="margin-bottom: 16px; width: 100%;">
                         
-                        <div id="loginPassField" style="margin-bottom: 16px; width: 100%;">
-                            <input type="password" id="loginPass" placeholder="Senha" required style="width: 100%;">
+                        <div id="loginPassField" style="margin-bottom: 16px; width: 100%; position: relative;">
+                            <input type="password" id="loginPass" placeholder="Senha" required style="width: 100%; padding-right: 40px;">
+                            <i class="fas fa-eye" id="togglePasswordIcon" onclick="window.Auth.togglePasswordVisibility('loginPass', this)" style="position: absolute; right: 15px; top: 13px; cursor: pointer; color: #64748b; font-size: 16px;"></i>
                         </div>
 
                         <span onclick="window.Auth.toggleAuthMode('forgot')" style="text-align: right; font-size: 11px; color: #3b82f6; cursor: pointer; font-weight: 700; display: block; margin-bottom: 16px;">Esqueci minha senha</span>
@@ -294,6 +295,13 @@
                         <p id="toggleAuthLink" style="margin-top: 20px; font-size: 13px; cursor: pointer; color: #3b82f6;" onclick="window.Auth.toggleAuthMode('signup')">
                             Não tem conta? <b>Solicitar Acesso</b>
                         </p>
+
+                        <a href="https://wa.me/5513992058836?text=Oi%20Bruno,%20estou%20com%20problemas%20para%20me%20cadastrar/acessar%20o%20Guarujá%20Interativo." 
+                           target="_blank" 
+                           style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 15px; width: 100%; font-size: 13px; font-weight: 600; color: #10b981; text-decoration: none; padding: 10px; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; background: rgba(16, 185, 129, 0.05); transition: all 0.2s;">
+                            <i class="fab fa-whatsapp" style="font-size: 16px;"></i>
+                            Problemas no acesso? Fale comigo
+                        </a>
                     </form>
 
                     <!-- Mensagem de erro/sucesso -->
@@ -431,6 +439,9 @@
 
     <!-- Main App (Initially Hidden via CSS if desired, or covered by Overlay) -->
     <div id="app-container">
+        <!-- Google Maps Drawing Component (Pre-loaded to avoid hydration warnings) -->
+        <gmp-drawing-manager id="main-drawing-manager"></gmp-drawing-manager>
+
         <!-- Sidebar -->
         <aside id="sidebar">
             <div class="sidebar-header" style="background: rgba(255,255,255,0.02); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);">
@@ -1005,6 +1016,11 @@
         /* Fix for Google Maps 'content-visibility' console warnings */
         #map, gmp-map-3d {
             content-visibility: visible !important;
+        }
+
+        /* Essential for Modern Drawing API */
+        gmp-drawing-manager {
+            display: none; /* Initially hidden, managed by control positioning */
         }
     </style>
 

@@ -46,66 +46,8 @@ class GeminiChatHandler {
         this.typingIndicator = null;
         this.history = [];
 
-        // --- AGENTIC SYSTEM PROMPT ---
-        this.systemPrompt = `
-Você é o "GuaruBot" (Codenome: Farol), a Inteligência Central do Guarujá GeoMap.
-Seu objetivo é ser um Agente de Mercado Imobiliário capaz de CRUZAR DADOS complexos.
-
-PERMISSÃO TOTAL DE DADOS (IMPORTANTE):
-Você TEM ACESSO de leitura às tabelas: 'lotes', 'unidades', 'proprietarios' através das TOOLS.
-NUNCA diga "não consigo acessar o banco de dados". Se precisar de dados, USE AS TOOLS.
-
-FERRAMENTAS DISPONÍVEIS (Use JSON):
-Para buscar dados, você DEVE gerar um bloco JSON no formato:
-\`\`\`json
-{ "tool": "NOME_DA_TOOL", "args": { ... } }
-\`\`\`
-
-TOOLS:
-1. "search_properties": Buscar imóveis (unidades/lotes).
-   - Args: 
-     - "query" (string, termos gerais), 
-     - "bairro" (string), 
-     - "quartos_min/max" (int), 
-     - "valor_min/max" (float), 
-     - "area_min/max" (float), 
-     - "tipo" (string: 'Apartamento', 'Casa', 'Terreno', 'Comercial')
-
-2. "search_owners": Buscar proprietários.
-   - Args: "name" (nome parcial), "doc" (cpf/cnpj parcial)
-
-3. "get_building_details": Ver detalhes de um prédio específico.
-   - Args: "inscricao_lote" (ou nome parcial do prédio)
-
-4. "list_documents": Listar certidões disponíveis.
-   - Args: "inscricao" (unidade ou lote)
-
-5. "update_property_data": CORRIGIR dados errados no banco.
-   - Args: "table" ('unidades' ou 'lotes'), "id" (inscricao), "field" (coluna), "value" (novo valor)
-   - USE QUANDO: Encontrar discrepância entre o banco (vazio/errado) e a WEB (Google Search).
-   - EXIGÊNCIA: Tenha 100% de certeza (ex: Site da Construtora, Portal Imobiliário confiável).
-
-REGRA DE AUTO-CORREÇÃO (CRÍTICO):
-Se você notar que um imóvel tem dados faltantes (ex: Área=0, Quartos=null) E você encontrar essa informação no Google:
-1. CONFIRME a informação em 2 fontes se possível.
-2. EXECUTE 'update_property_data' IMEDIATAMENTE.
-3. Avise o usuário: "Notei que a área estava 0m², mas encontrei 120m² no site da construtora. Atualizei para você."
-
-REGRA DE INTERAÇÃO (CRUCIAL):
-O usuário espera que você seja PROATIVO. Se a busca no banco ('search_properties') retornar ZERO resultados ou dados errados:
-1. NÃO DESISTA.
-2. Use seu conhecimento web (Google Search) para encontrar os dados reais do edifício/imóvel.
-3. Exemplo: "Não achei no banco, mas pesquisei e vi que o Edifício X tem aptos de 3 dormitórios de 120m²."
-4. Se tiver certeza, USE 'update_property_data' para corrigir o banco e depois mostre o resultado.
-
-5. "generate_contract": GERAR MINUTAS JURÍDICAS.
-   - Args: "type" ('compra_venda', 'autorizacao'), "inscricao" (imóvel), "client_name" (opcional), "client_doc" (opcional), "price" (opcional)
-   - Resposta: Você receberá um LINK para download.
-   - USE QUANDO: O usuário pedir "Faça um contrato", "Gere uma autorização de venda".
-
-PERSONALIDADE:
-Profissional, direto, focado em fechar negócios. Use emojis imobiliários (🏢, 🔑, 📄).
-`;
+        // O systemPrompt é gerado dinamicamente no primeiro uso (após Monetization carregar)
+        this._systemPromptCache = null;
 
         this.init();
     }
@@ -114,6 +56,12 @@ Profissional, direto, focado em fechar negócios. Use emojis imobiliários (🏢
         this.createElements();
         this.bindEvents();
         console.log("🧠 GuaruBot Agent Initialized");
+
+        // Regenerar prompt quando monetização estiver pronta (garante dados do plano corretos)
+        window.addEventListener('monetizationReady', () => {
+            this._systemPromptCache = null; // Invalida cache para rebuild
+            this._updateWelcomeMessage();
+        });
     }
 
     createElements() {
@@ -135,10 +83,8 @@ Profissional, direto, focado em fechar negócios. Use emojis imobiliários (🏢
             </div>
             
             <div id="ai-chat-messages">
-                <div class="ai-msg bot">
-                    Olá! Sou o GuaruBot. Posso cruzar dados de proprietários, imóveis e certidões.
-                    <br><br>
-                    <i>Ex: "Busque aptos na Enseada com 3 quartos acima de 1M"</i>
+                <div class="ai-msg bot" id="guarubot-welcome">
+                    Olá! Sou o <b>GuaruBot</b> 🤖 — carregando seu plano...
                 </div>
             </div>
 
@@ -159,6 +105,9 @@ Profissional, direto, focado em fechar negócios. Use emojis imobiliários (🏢
         this.typingIndicator.className = 'ai-typing';
         this.typingIndicator.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Analisando base de dados...';
         this.messagesDiv.appendChild(this.typingIndicator);
+
+        // Atualiza welcome message assim que possível
+        setTimeout(() => this._updateWelcomeMessage(), 1500);
     }
 
     bindEvents() {
@@ -172,6 +121,147 @@ Profissional, direto, focado em fechar negócios. Use emojis imobiliários (🏢
             if (e.key === 'Enter') this.sendMessage();
         };
     }
+
+    // ─────────────────────────────────────────────────────────
+    // SISTEMA DE PROMPT DINÂMICO — baseado nas funções ativas
+    // ─────────────────────────────────────────────────────────
+
+    get systemPrompt() {
+        // Lazy build: gerado uma vez e cacheado até invalidação (ex: troca de plano)
+        if (!this._systemPromptCache) {
+            this._systemPromptCache = this.buildSystemPrompt();
+        }
+        return this._systemPromptCache;
+    }
+
+    buildSystemPrompt() {
+        const role  = window.Monetization?.userRole || 'user';
+        const can   = (f) => window.Monetization?.canAccess(f) ?? false;
+        const isGuest = window.isGuest;
+
+        // ── Identidade base ──────────────────────────────────
+        let prompt = `Você é o "GuaruBot" (Farol), assistente de IA do Guarujá GeoMap — plataforma imobiliária inteligente de Guarujá/SP.
+Plano atual do usuário: ${role.toUpperCase()}.
+
+REGRAS FUNDAMENTAIS:
+- NUNCA mencione ou explique funcionalidades que o usuário NÃO tem acesso.
+- NUNCA invente dados. Use TOOLS para acessar o banco de dados real.
+- Se a busca retornar vazio, tente variações; se ainda vazio, informe honestamente.
+- Seja direto, profissional, use emojis imobiliários (🏢 🔑 📄 🗺️ 💰).
+- Responda SEMPRE em português brasileiro.
+
+ACESSO AO BANCO (TOOLS):
+Para buscar dados, gere um bloco JSON no formato:
+\`\`\`json
+{ "tool": "NOME", "args": { } }
+\`\`\`
+NUNCA diga "não consigo acessar o banco". Se precisar de dados, USE AS TOOLS.\n`;
+
+        // ── Funcionalidades ativas ────────────────────────────
+        prompt += `\n## FUNCIONALIDADES DISPONÍVEIS PARA ESTE USUÁRIO (${role.toUpperCase()}):\n`;
+        prompt += `- 🗺️ Mapa interativo: navegar, clicar em lotes e ver fichas cadastrais básicas\n`;
+        prompt += `- 🔍 Buscar imóveis: por bairro, tipo, valor, área e dormitórios\n`;
+
+        if (can('unlock_lote')) {
+            prompt += `- 🔓 Desbloquear fichas: acessar dados completos de unidades (proprietário, contato, valores)\n`;
+        }
+        if (can('radar_mercado')) {
+            prompt += `- 📡 Radar de mercado: filtros avançados no mapa (status de venda, faixa de preço, oportunidades)\n`;
+        }
+        if (can('search_owner')) {
+            prompt += `- 👤 Buscar proprietários: por nome ou CPF/CNPJ\n`;
+        }
+        if (can('marketing_tools')) {
+            prompt += `- 📊 Ficha Avançada: enriquecer proprietário com telefones, endereços e empresas\n`;
+        }
+        if (can('crm_history')) {
+            prompt += `- 📋 CRM: adicionar leads e registrar histórico de contato com proprietários\n`;
+        }
+        if (can('mapear_patrimonio')) {
+            prompt += `- 🏘️ Patrimônio: visualizar no mapa todos os imóveis de um proprietário\n`;
+        }
+        if (can('advanced_ai')) {
+            prompt += `- 🧠 Análise Farol IA: score preditivo de oportunidade de negócio por imóvel\n`;
+            prompt += `- 🌐 Receita Federal (PJ): consultar dados de empresas pelo CNPJ\n`;
+            prompt += `- 🎯 Alertas de Oportunidade: encontrar imóveis com alta probabilidade de negociação\n`;
+        }
+        if (can('dossier_pdf')) {
+            prompt += `- 📄 Dossiê PDF: gerar relatório completo e profissional do imóvel\n`;
+        }
+        if (can('link_cliente') || can('dossier_pdf')) {
+            prompt += `- 📝 Minutas: gerar contratos de compra e venda ou autorização de venda\n`;
+        }
+        if (can('owner_history')) {
+            prompt += `- 🕐 Histórico do Proprietário: ver movimentações e histórico de negociações\n`;
+        }
+
+        // ── TOOLS disponíveis ─────────────────────────────────
+        prompt += `\n## TOOLS DISPONÍVEIS:\n`;
+        prompt += `- "search_properties": buscar imóveis\n`;
+        prompt += `  Args: bairro (string), tipo (Apartamento/Casa/Terreno/Comercial), quartos_min (int), valor_min (float), valor_max (float), area_min (float)\n`;
+
+        if (can('search_owner')) {
+            prompt += `- "search_owners": buscar proprietários\n`;
+            prompt += `  Args: name (nome parcial), doc (CPF/CNPJ parcial)\n`;
+        }
+        if (can('link_cliente') || can('dossier_pdf')) {
+            prompt += `- "generate_contract": gerar minuta jurídica\n`;
+            prompt += `  Args: type ('compra_venda' | 'autorizacao'), inscricao (código do imóvel), client_name, client_doc, price\n`;
+        }
+
+        // ── Exemplos de uso ───────────────────────────────────
+        prompt += `\n## EXEMPLOS DE PERGUNTAS QUE VOCÊ PODE RESPONDER:\n`;
+        prompt += `- "Busque apartamentos na Enseada com 3 quartos"\n`;
+        prompt += `- "Mostre imóveis disponíveis até R$ 800.000 em Guarujá"\n`;
+        if (can('search_owner'))    prompt += `- "Quem é o dono do Ed. Marina Park?"\n`;
+        if (can('radar_mercado'))   prompt += `- "Tem algum imóvel com status 'Captar' na Praia das Pitangueiras?"\n`;
+        if (can('advanced_ai'))     prompt += `- "Analise o potencial de oportunidade deste proprietário"\n`;
+        if (can('dossier_pdf'))     prompt += `- "Gere um contrato de autorização de venda para inscrição 12345678901"\n`;
+
+        prompt += `\nSe o usuário perguntar "o que posso fazer?" ou "como funciona?", responda APENAS com as funcionalidades listadas acima.`;
+        prompt += `\nSe o usuário tentar usar algo além do seu plano, informe educadamente que aquela função requer um plano superior e sugira fazer upgrade.`;
+
+        return prompt;
+    }
+
+    buildWelcomeMessage() {
+        const role = window.Monetization?.userRole || 'user';
+        const can  = (f) => window.Monetization?.canAccess(f) ?? false;
+
+        const roleLabel = {
+            user:   '🔓 Gratuito',
+            start:  '⭐ Start',
+            pro:    '🔵 Pro',
+            elite:  '🟣 Elite',
+            vip:    '👑 VIP Anual',
+            master: '🏆 Master',
+            admin:  '🏆 Master',
+            guest:  '👤 Visitante'
+        }[role] || role;
+
+        let msg = `Olá! Sou o <b>GuaruBot</b> 🤖 — seu assistente do Guarujá GeoMap.<br>`;
+        msg += `<span style="font-size:11px;opacity:0.7;">Plano: ${roleLabel}</span><br><br>`;
+        msg += `Posso te ajudar com:<br>`;
+        msg += `• 🗺️ Buscar imóveis no mapa<br>`;
+
+        if (can('unlock_lote'))     msg += `• 🔓 Desbloquear fichas de imóveis<br>`;
+        if (can('search_owner'))    msg += `• 👤 Encontrar proprietários por nome ou CPF<br>`;
+        if (can('radar_mercado'))   msg += `• 📡 Filtros avançados de mercado<br>`;
+        if (can('marketing_tools')) msg += `• 📊 Ficha Avançada do proprietário<br>`;
+        if (can('mapear_patrimonio')) msg += `• 🏘️ Mapear patrimônio completo<br>`;
+        if (can('advanced_ai'))     msg += `• 🧠 Análise Farol IA (score preditivo)<br>`;
+        if (can('dossier_pdf'))     msg += `• 📄 Gerar Dossiê PDF ou Contrato<br>`;
+
+        msg += `<br><i style="opacity:0.7;">Tente: "Busque aptos na Enseada com 3 quartos"</i>`;
+        return msg;
+    }
+
+    _updateWelcomeMessage() {
+        const el = document.getElementById('guarubot-welcome');
+        if (el) el.innerHTML = this.buildWelcomeMessage();
+    }
+
+
 
     toggleChat() {
         const isActive = this.container.classList.contains('active');

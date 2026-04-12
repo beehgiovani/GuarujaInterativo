@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bruno Giovani Pereira</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary:   #1e3a5f;
+    --accent:    #2563eb;
+    --accent2:   #0d9488;
+    --personal:  #7c3aed;
+    --light:     #f1f5f9;
+    --border:    #e2e8f0;
+    --text:      #1e293b;
+    --muted:     #64748b;
+    --white:     #ffffff;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #f8fafc;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .page {
+    max-width: 820px;
+    margin: 32px auto;
+    background: var(--white);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* ── HEADER ─────────────────────────────────────── */
+  .header {
+    background: linear-gradient(135deg, var(--primary) 0%, #1e4080 60%, #1a3a6e 100%);
+    color: white;
+    padding: 36px 40px 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute; top: -40px; right: -40px;
+    width: 220px; height: 220px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+  }
+  .header::after {
+    content: '';
+    position: absolute; bottom: -60px; left: 200px;
+    width: 300px; height: 300px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 50%;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+  .header .badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 20px;
+    padding: 3px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+  }
+  .contacts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 24px;
+    margin-top: 14px;
+  }
+  .contact-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    opacity: 0.9;
+  }
+  .contact-item a { color: white; text-decoration: none; }
+  .contact-item a:hover { text-decoration: underline; }
+  .contact-dot {
+    width: 6px; height: 6px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── BODY ────────────────────────────────────────── */
+  .body { padding: 32px 40px; }
+
+  /* ── SECTION ─────────────────────────────────────── */
+  .section { margin-bottom: 28px; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+  }
+  .section-header .icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .icon-blue  { background: #dbeafe; color: var(--accent); }
+  .icon-teal  { background: #ccfbf1; color: var(--accent2); }
+  .icon-purple{ background: #ede9fe; color: var(--personal); }
+  .icon-slate { background: #f1f5f9; color: #475569; }
+
+  .section-header h2 {
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text);
+  }
+
+  /* ── SUMMARY ─────────────────────────────────────── */
+  .summary-box {
+    background: #f8fafc;
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    font-size: 13px;
+    color: #334155;
+    line-height: 1.7;
+  }
+
+  /* ── EXPERIENCE ENTRIES ──────────────────────────── */
+  .entry { margin-bottom: 20px; }
+  .entry:last-child { margin-bottom: 0; }
+
+  .entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .entry-title {
+    font-weight: 700;
+    font-size: 13.5px;
+    color: var(--text);
+  }
+  .entry-company {
+    font-weight: 600;
+    color: var(--accent);
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  .entry-date {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+    background: var(--light);
+    border-radius: 20px;
+    padding: 2px 10px;
+  }
+  .entry ul {
+    padding-left: 16px;
+    color: #475569;
+    font-size: 12.5px;
+  }
+  .entry ul li { margin-bottom: 3px; }
+
+  /* ── SEPARADOR DE SEÇÃO PESSOAL ──────────────────── */
+  .personal-projects-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, #ede9fe 0%, #f5f3ff 100%);
+    border: 1px solid #c4b5fd;
+    border-radius: 10px;
+    padding: 10px 16px;
+    margin-bottom: 16px;
+  }
+  .personal-projects-banner .label {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--personal);
+  }
+  .personal-projects-banner .desc {
+    font-size: 11px;
+    color: #7c3aed;
+    opacity: 0.8;
+  }
+  .personal-icon {
+    width: 32px; height: 32px;
+    background: var(--personal);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .professional-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
+    border: 1px solid #93c5fd;
+    border-radius: 10px;
+    padding: 10px 16px;
+    margin-bottom: 16px;
+  }
+  .professional-banner .label {
+    font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--accent);
+  }
+  .professional-icon {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 14px; flex-shrink: 0;
+  }
+
+  /* ── ENTRY PERSONAL (visual diferenciado) ────────── */
+  .entry-personal .entry-company { color: var(--personal); }
+  .entry-personal .entry-date { background: #ede9fe; color: var(--personal); }
+
+  /* ── SKILLS GRID ─────────────────────────────────── */
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .skill-group {
+    background: var(--light);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .skill-group-title {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .skill-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #334155;
+  }
+
+  /* ── CERTS ───────────────────────────────────────── */
+  .cert-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .cert-item {
+    background: var(--light);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .cert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .cert-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .cert-issuer { font-size: 10px; color: var(--muted); }
+  .cert-date { font-size: 10px; color: var(--muted); margin-left: auto; white-space: nowrap; }
+
+  /* ── FOOTER ──────────────────────────────────────── */
+  .footer {
+    background: var(--light);
+    border-top: 1px solid var(--border);
+    padding: 14px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* ── PRINT ─────────────────────────────────────────── */
+  @page {
+    size: A4;
+    margin: 0.3cm 0.4cm 0.4cm 0.4cm; /* topo reduzido para não cortar */
+  }
+  @media print {
+    body {
+      background: white;
+      font-size: 11px;
+      padding: 1cm 0.8cm; /* Compensa a margem zero do @page */
+    }
+    .page { margin: 0; border-radius: 0; box-shadow: none; max-width: 100%; }
+    .body { padding: 20px 28px; }
+    .header { padding: 20px 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══ HEADER ══════════════════════════════════════ -->
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>Bruno Giovani Pereira</h1>
+        <div class="badge">Software Engineer Pleno · GIS &amp; Automação</div>
+      </div>
+      <div style="text-align:right;opacity:0.8;font-size:11px;line-height:1.8;padding-top:4px;">
+        Guarujá, SP — Brasil<br>
+        <a href="https://www.linkedin.com/in/beehgiovani/" target="_blank" style="color:white;text-decoration:underline;">linkedin.com/in/beehgiovani</a><br>
+        <a href="https://github.com/beehgiovani" target="_blank" style="color:white;text-decoration:underline;">github.com/beehgiovani</a>
+      </div>
+    </div>
+    <div class="contacts">
+      <div class="contact-item">
+        <div class="contact-dot"></div>
+        <a href="mailto:brunoadmin@guarujainterativo.com.br" style="color:white;text-decoration:none;">brunoadmin@guarujainterativo.com.br</a>
+      </div>
+      <div class="contact-item">
+        <div class="contact-dot"></div>
+        (13) 99205-8836
+      </div>
+      <div class="contact-item">
+        <div class="contact-dot"></div>
+        <a href="http://guarujainterativo.com.br" target="_blank">guarujainterativo.com.br</a>
+      </div>
+      <div class="contact-item">
+        <div class="contact-dot"></div>
+        GitHub: <a href="https://github.com/beehgiovani" target="_blank">beehgiovani</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ BODY ════════════════════════════════════════ -->
+  <div class="body">
+
+    <!-- Resumo Profissional -->
+    <div class="section">
+      <div class="section-header">
+        <div class="icon icon-blue">💼</div>
+        <h2>Resumo Profissional</h2>
+      </div>
+      <div class="summary-box">
+        Software Engineer Pleno com sólida experiência em Geotecnologia (GIS), Automação Avançada (OSINT/LegalTech) e desenvolvimento Full-Stack. Especializado em pipelines de extração e enriquecimento de dados cadastrais imobiliários, integração de APIs externas e construção de plataformas SaaS com foco em performance, segurança e UX premium. Experiência em ecossistemas Java/Kotlin, PostgreSQL (Supabase), Python para automação e scraping, e JavaScript/TypeScript para front-end moderno. Certificações recentes pela University of Chicago e Loiane Training.
+      </div>
+    </div>
+
+    <!-- ══ EXPERIÊNCIA PROFISSIONAL ══════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="icon icon-blue">🏢</div>
+        <h2>Experiência Profissional</h2>
+      </div>
+
+      <!-- Banner Profissional -->
+      <div class="professional-banner">
+        <div class="professional-icon">🏢</div>
+        <div>
+          <div class="label">Emprego / Consultoria</div>
+          <div style="font-size:11px;color:#1d4ed8;opacity:0.8;">Experiência formal e CLT / PJ</div>
+        </div>
+      </div>
+
+      <!-- Soo Tech / Agilidade -->
+      <div class="entry">
+        <div class="entry-header">
+          <div class="entry-title">Consultor de Desenvolvimento Kotlin / Android</div>
+          <div class="entry-date">Jan 2024 – Presente</div>
+        </div>
+        <div class="entry-company">Soo Tech / Agilidade – Remoto</div>
+        <ul>
+          <li>Desenvolvimento e manutenção de aplicações Android nativas com Kotlin e Jetpack Compose.</li>
+          <li>Integração com APIs REST e autenticação OAuth2/JWT em ambientes de produção.</li>
+          <li>Code review e mentoria técnica em ciclos ágeis (Scrum/Kanban).</li>
+          <li>Otimização de queries PostgreSQL e integração com backend Java/Spring Boot.</li>
+        </ul>
+      </div>
+
+      <!-- Cimed -->
+      <div class="entry">
+        <div class="entry-header">
+          <div class="entry-title">Lead Developer – Automação e Dados</div>
+          <div class="entry-date">Jan 2024 – Mar 2026</div>
+        </div>
+        <div class="entry-company">Cimed Indústria de Medicamentos – São Paulo, SP</div>
+        <ul>
+          <li>Liderou squad de automação de processos internos com Python e integrações ERP.</li>
+          <li>Desenvolvimento de pipelines de dados para análise de vendas e logística.</li>
+          <li>Implementação de dashboards interativos com Power BI e exportação automatizada.</li>
+          <li>Integração com sistemas legados via APIs REST e WebScraping estruturado.</li>
+        </ul>
+      </div>
+
+      <!-- LegalTech -->
+      <div class="entry">
+        <div class="entry-header">
+          <div class="entry-title">Engenheiro de Automação &amp; Dados</div>
+          <div class="entry-date">2021 – Presente</div>
+        </div>
+        <div class="entry-company">Autônomo – LegalTech / GovTech / OSINT</div>
+        <ul>
+          <li>Desenvolvimento de robôs de extração de dados de portais municipais com OCR (ddddocr) para bypass de CAPTCHAs.</li>
+          <li>Pipelines de enriquecimento imobiliário: cruzamento de GeoServer WFS, cartório e dados tributários.</li>
+          <li>Automação de geração de documentos jurídicos e certidões para cartórios e imobiliárias.</li>
+          <li>Projetos para clientes nas áreas de compliance, due diligence e OSINT imobiliário.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ══ PROJETOS PESSOAIS ══════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="icon icon-purple">🚀</div>
+        <h2>Projetos Próprios</h2>
+      </div>
+
+      <!-- Banner Pessoal -->
+      <div class="personal-projects-banner">
+        <div class="personal-icon">🧪</div>
+        <div>
+          <div class="label">Projetos Autorais &amp; Iniciativas Próprias</div>
+          <div class="desc">Produtos construídos de forma independente — arquitetura, produto e código autorados</div>
+        </div>
+      </div>
+
+      <!-- Guarujá Interativo -->
+      <div class="entry entry-personal">
+        <div class="entry-header">
+          <div class="entry-title">Guarujá Interativo — Plataforma GIS SaaS Imobiliária</div>
+          <div class="entry-date" style="background:#ede9fe;color:#7c3aed;">2023 – Presente</div>
+        </div>
+        <div class="entry-company">Founder &amp; Lead Developer · guarujainterativo.com.br</div>
+        <ul>
+          <li>Plataforma SaaS completa de inteligência imobiliária para o litoral paulista com mapa interativo (Leaflet.js), filtros por bairro, valor e tipo.</li>
+          <li>Stack: JavaScript Vanilla, Supabase (PostgreSQL + Auth + Storage + Edge Functions Deno/TypeScript), Firebase Hosting.</li>
+          <li>Sistema de monetização com tiers (Start/Pro/Elite/VIP), créditos avulsos, integração Stripe e comprovante Pix com QR Code EMV.</li>
+          <li>Enriquecimento de proprietários via API externa (telefones, endereços, empresas, familiares), com cache inteligente e controle de créditos.</li>
+          <li>GuaruBot: assistente de IA contextual baseado em Gemini API com system prompt dinâmico por plano do usuário e acesso a banco via tools.</li>
+          <li>hCaptcha, RLS Supabase, autenticação segura, gestão de assinaturas e painel admin completo.</li>
+          <li>App mobile via Capacitor.js com suporte PWA.</li>
+        </ul>
+      </div>
+
+      <!-- MetroMarGeo -->
+      <div class="entry entry-personal">
+        <div class="entry-header">
+          <div class="entry-title">MetroMarGeo — Motor de Extração GIS Litoral &amp; Metrópole</div>
+          <div class="entry-date" style="background:#ede9fe;color:#7c3aed;">2025 – Presente</div>
+        </div>
+        <div class="entry-company">Projeto Autoral · Python · GeoServer · OCR</div>
+        <ul>
+          <li>Engine Python de extração em massa de dados imobiliários via APIs WFS (GeoServer) dos municípios de Guarujá, Santos, São Paulo, Praia Grande, Peruíbe, Bertioga e Riviera de São Lourenço.</li>
+          <li>Fase 2: enriquecimento tributário com OCR (ddddocr) para bypass de CAPTCHAs nos portais de débitos municipais — extração de CPF/CNPJ, nome do proprietário e situação fiscal.</li>
+          <li>Output JSON estruturado compatível com o pipeline de importação do Guarujá Interativo.</li>
+          <li>Módulo de cruzamento espacial para normalização de logradouros entre fontes diferentes.</li>
+        </ul>
+      </div>
+
+      <!-- PredictMed -->
+      <div class="entry entry-personal">
+        <div class="entry-header">
+          <div class="entry-title">PredictMed — SaaS de Saúde com IA Preditiva</div>
+          <div class="entry-date" style="background:#ede9fe;color:#7c3aed;">Mar 2026 – Presente</div>
+        </div>
+        <div class="entry-company">Projeto Autoral · Full-Stack Developer</div>
+        <ul>
+          <li>Plataforma de análise preditiva de dados de saúde com Supabase, Edge Functions e modelos de IA.</li>
+          <li>Foco em segurança de dados médicos, automação de fluxos e UX responsivo de alto impacto.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ══ SKILLS ══════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="icon icon-teal">⚙️</div>
+        <h2>Habilidades Técnicas</h2>
+      </div>
+      <div class="skills-grid">
+        <div class="skill-group">
+          <div class="skill-group-title">Backend &amp; Dados</div>
+          <div class="skill-tags">
+            <span class="tag">Java</span>
+            <span class="tag">Kotlin</span>
+            <span class="tag">Python</span>
+            <span class="tag">Node.js</span>
+            <span class="tag">Spring Boot</span>
+            <span class="tag">AWS Lambda</span>
+            <span class="tag">Kafka</span>
+            <span class="tag">PostgreSQL</span>
+            <span class="tag">Supabase</span>
+            <span class="tag">REST APIs</span>
+          </div>
+        </div>
+        <div class="skill-group">
+          <div class="skill-group-title">Front-End &amp; Mobile</div>
+          <div class="skill-tags">
+            <span class="tag">JavaScript</span>
+            <span class="tag">TypeScript</span>
+            <span class="tag">React</span>
+            <span class="tag">Angular</span>
+            <span class="tag">Android/Kotlin</span>
+            <span class="tag">Capacitor.js</span>
+            <span class="tag">PWA</span>
+            <span class="tag">Leaflet.js</span>
+          </div>
+        </div>
+        <div class="skill-group">
+          <div class="skill-group-title">Automação &amp; GIS</div>
+          <div class="skill-tags">
+            <span class="tag">Web Scraping</span>
+            <span class="tag">OCR/ddddocr</span>
+            <span class="tag">GeoServer WFS</span>
+            <span class="tag">OSINT</span>
+            <span class="tag">Pandas</span>
+            <span class="tag">Deno/EdgeFn</span>
+            <span class="tag">Firebase</span>
+            <span class="tag">Power BI</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CERTIFICAÇÕES ═══════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="icon icon-slate">🎓</div>
+        <h2>Formação &amp; Certificações</h2>
+      </div>
+      <div class="cert-grid">
+        <div class="cert-item">
+          <div class="cert-dot" style="background:#2563eb;"></div>
+          <div>
+            <div class="cert-name">Angular (Completo)</div>
+            <div class="cert-issuer">Loiane Training</div>
+          </div>
+          <div class="cert-date">Mar 2026</div>
+        </div>
+        <div class="cert-item">
+          <div class="cert-dot" style="background:#10b981;"></div>
+          <div>
+            <div class="cert-name">Storytelling for Marketing</div>
+            <div class="cert-issuer">University of Chicago / Santander</div>
+          </div>
+          <div class="cert-date">Mar 2026</div>
+        </div>
+        <div class="cert-item">
+          <div class="cert-dot" style="background:#f59e0b;"></div>
+          <div>
+            <div class="cert-name">Business English</div>
+            <div class="cert-issuer">Santander Universidades</div>
+          </div>
+          <div class="cert-date">Mar 2026</div>
+        </div>
+        <div class="cert-item">
+          <div class="cert-dot" style="background:#7c3aed;"></div>
+          <div>
+            <div class="cert-name">Power BI — Análise de Dados</div>
+            <div class="cert-issuer">Santander Universidades</div>
+          </div>
+          <div class="cert-date">Mar 2026</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+</div>
+</body>
+</html>

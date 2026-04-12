@@ -129,7 +129,7 @@ window.Enrichment = {
     },
 
     // Função: Enriquecer via CPF/CNPJ direto (Para Tooltip Proprietário)
-    async enrichPerson(cpf_cnpj) {
+    async enrichPerson(cpf_cnpj, nome_proprietario) {
         // SECURITY GUARD: Check if user can use marketing tools (Enrichment)
         if (window.Monetization && !window.Monetization.canAccess('marketing_tools')) {
             window.Monetization.showSubscriptionPlans();
@@ -153,6 +153,11 @@ window.Enrichment = {
             .eq('cpf_cnpj', doc)
             .maybeSingle();
 
+        // Se não veio nome pelo parâmetro, tenta usar o cache do banco
+        if (!nome_proprietario && cachedProp?.nome_completo) {
+            nome_proprietario = cachedProp.nome_completo;
+        }
+
         if (this._isCacheValid(cachedProp?.dados_enrichment, cachedProp?.data_enriquecimento)) {
             window.Loading.show('Visualizando Ficha...', 'Recuperando do banco local (Gratuito)...');
             try {
@@ -174,7 +179,7 @@ window.Enrichment = {
         try {
             let result = null;
             if (doc.length === 11) {
-                result = await this.searchPerson(doc);
+                result = await this.searchPerson(doc, nome_proprietario);
             } else if (doc.length === 14) {
                 result = await this.searchCompany(doc);
             } else {
