@@ -64,6 +64,38 @@ window.Auth = {
     // ─────────────────────────────────────────────────────────────────────────
 
     init: async function() {
+        // --- 🚀 NUCLEAR RESET / VERSION SYNC ---
+        const currentVersion = window.APP_VERSION || "1.0";
+        const storedVersion = localStorage.getItem('guaruja_app_version');
+
+        if (storedVersion !== currentVersion) {
+            console.warn(`🔄 Version Mismatch: ${storedVersion} -> ${currentVersion}. Clearing old session/cache...`);
+            
+            // 1. Sign out (Server-side clear)
+            if (window.supabaseApp) await window.supabaseApp.auth.signOut();
+
+            // 2. Clear LocalStorage (except specific settings if any)
+            localStorage.clear();
+
+            // 3. Clear IndexedDB (Cache)
+            try {
+                indexedDB.deleteDatabase('GuarujaGeoDB');
+                console.log("📦 Cache Database deleted.");
+            } catch (e) {
+                console.error("Failed to delete DB:", e);
+            }
+
+            // 4. Set new version and reload if needed, or just proceed to login
+            localStorage.setItem('guaruja_app_version', currentVersion);
+            
+            // Re-render overlay explicitly
+            if (document.getElementById('loginOverlay')) {
+                document.getElementById('loginOverlay').style.display = 'block';
+                document.getElementById('loginOverlay').classList.remove('hidden');
+            }
+            console.log("✨ Nuclear Reset Complete. Ready for new version.");
+        }
+
         // ============================================
         // DETECTAR FLUXO DE RECUPERAÇÃO DE SENHA
         // O Supabase redireciona de volta com #access_token=...&type=recovery
