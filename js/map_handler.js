@@ -1064,8 +1064,10 @@ window.initMap = async function () {
     // Alias para compatibilidade com chamadas antigas
     const loadReferences = window.loadReferenciasGeo;
 
-    window.Loading.setProgress(30);
-    window.Loading.setProgress(40);
+    if (window.Loading) {
+        window.Loading.setProgress(30);
+        window.Loading.setProgress(40);
+    }
 
     let isCachedLoaded = false;
     window.currentCity = window.currentCity || 'Guarujá';
@@ -1099,61 +1101,45 @@ window.initMap = async function () {
             if (window.Onboarding) window.Onboarding.checkAndStart();
         }
 
-        // 2. Network Fetch (Background if cached)
+        // 2. Stop Global Chunked Fetch (Nuclear Performance Fix)
+        // But keep a SEED of 500 lotes for macro labels (Neighborhoods)
         if (!isCachedLoaded) {
-            window.Loading.show('Carregando Dados...', 'Buscando arquivo de lotes');
-        }
-
-        // Fetch data from Supabase (Chunked)
-        let rawData = [];
-        let from = 0;
-        const step = 1000;
-        let hasMore = true;
-
-        while (hasMore) {
+            window.Loading.show('Iniciando Mapa...', 'Carregando semente de dados');
             const { data, error } = await window.supabaseApp
                 .from('lotes')
                 .select('*')
                 .eq('municipio', window.currentCity || 'Guarujá')
-                .range(from, from + step - 1);
+                .limit(500);
 
-            if (error) throw new Error(error.message);
-
-            if (data && data.length > 0) {
-                rawData = rawData.concat(data);
-                if (!isCachedLoaded) {
-                    window.Loading.show('Carregando Dados...', `Baixado ${rawData.length.toLocaleString()} registros...`);
-                }
-                from += step;
-                if (data.length < step) hasMore = false;
-            } else {
-                hasMore = false;
+            if (!error && data) {
+                const initialLotes = data.map(row => ({
+                    ...row,
+                    metadata: {
+                        inscricao: row.inscricao,
+                        zona: row.zona,
+                        setor: row.setor,
+                        lote: row.lote_geo,
+                        quadra: row.quadra,
+                        loteamento: row.loteamento,
+                        bairro: row.bairro,
+                        valor_m2: row.valor_m2 ? row.valor_m2.toString().replace('.', ',') : null
+                    },
+                    bounds_utm: {
+                        minx: row.minx, miny: row.miny, maxx: row.maxx, maxy: row.maxy
+                    }
+                }));
+                window.allLotes = initialLotes;
             }
         }
 
-        if (!isCachedLoaded) window.Loading.setProgress(60);
+        // Add Listener to fetch data on Viewport change
+        window.map.addListener('idle', () => {
+             console.log("📍 Map Idle: Checking Viewport for data update...");
+             window.loadLotesInViewport();
+        });
 
-        // Transform Supabase Flat Structure to App Nested Structure
-        const newAllLotes = rawData.map(row => ({
-            ...row,
-            metadata: {
-                inscricao: row.inscricao,
-                zona: row.zona,
-                setor: row.setor,
-                lote: row.lote_geo,
-                quadra: row.quadra,
-                loteamento: row.loteamento,
-                bairro: row.bairro,
-                valor_m2: row.valor_m2 ? row.valor_m2.toString().replace('.', ',') : null
-            },
-            bounds_utm: {
-                minx: row.minx, miny: row.miny, maxx: row.maxx, maxy: row.maxy
-            },
-            unidades: []
-        }));
 
         // Update State & Cache
-        window.allLotes = newAllLotes;
         await window.saveLotesToCache(window.allLotes);
 
         // Setup Realtime Subscription
@@ -1192,8 +1178,7 @@ window.initMap = async function () {
         } else {
             setTimeout(() => {
                 Loading.hide();
-                Toast.success(`${window.allLotes.length.toLocaleString()} lotes carregados!`);
-                if (window.Onboarding) window.Onboarding.checkAndStart();
+                // O primeiro carregamento ocorrerá via listener 'idle' disparado logo após o init
             }, 500);
         }
     } catch (e) {
@@ -1204,6 +1189,89 @@ window.initMap = async function () {
             Loading.hide();
             Toast.error(`Não foi possível carregar os dados: ${e.message}`, 'Erro Crítico');
         }
+    }
+};
+
+/**
+ * Viewport-Based Data Fetching (BBOX)
+ * Fetches lotes within the current map view from Supabase.
+ */
+window.loadLotesInViewport = async function() {
+    if (!window.map || !window.supabaseApp) return;
+    
+    const bounds = window.map.getBounds();
+    if (!bounds) return;
+
+    const ne = bounds.getNorthEast();
+    const sw = bounds.getSouthWest();
+    
+    // Convert Lat/Lng bounds to UTM scale for numeric comparison
+    const utmNE = window.latLonToUtm(ne.lat(), ne.lng());
+    const utmSW = window.latLonToUtm(sw.lat(), sw.lng());
+    
+    const padding = 200; // Margem extra para evitar requisições constantes em pequenos movimentos
+
+    try {
+        const zoom = window.map.getZoom();
+        // Só carrega lotes em nível de detalhe alto para não sobrecarregar
+        if (zoom < 15) {
+            console.log("☁️ Zoom baixo demais para lotes. Pulando busca.");
+            return;
+        }
+
+        const { data, error } = await window.supabaseApp
+            .from('lotes')
+            .select('*')
+            .eq('municipio', window.currentCity || 'Guarujá')
+            .gte('maxx', utmSW.x - padding)
+            .lte('minx', utmNE.x + padding)
+            .gte('maxy', utmSW.y - padding)
+            .lte('miny', utmNE.y + padding)
+            .limit(1000); 
+
+        if (error) throw error;
+        if (!data || data.length === 0) return;
+
+        // Mesclar novos dados no window.allLotes
+        let newCount = 0;
+        const existingInscricoes = new Set(window.allLotes.map(l => l.inscricao));
+        
+        const processedNew = data
+            .filter(row => !existingInscricoes.has(row.inscricao))
+            .map(row => {
+                newCount++;
+                return {
+                    ...row,
+                    metadata: {
+                        inscricao: row.inscricao,
+                        zona: row.zona,
+                        setor: row.setor,
+                        lote: row.lote_geo,
+                        quadra: row.quadra,
+                        loteamento: row.loteamento,
+                        bairro: row.bairro,
+                        valor_m2: row.valor_m2 ? row.valor_m2.toString().replace('.', ',') : null
+                    },
+                    bounds_utm: {
+                        minx: row.minx, miny: row.miny, maxx: row.maxx, maxy: row.maxy
+                    }
+                };
+            });
+
+        if (newCount > 0) {
+            window.allLotes = window.allLotes.concat(processedNew);
+            console.log(`📦 Viewport: +${newCount} lotes novos.`);
+            
+            // Re-processa hierarquia e renderiza
+            processDataHierarchy();
+            window.renderHierarchy();
+            
+            const totalLotesEl = document.getElementById('totalLotes');
+            if (totalLotesEl) totalLotesEl.innerText = `${window.allLotes.length.toLocaleString()} Lotes`;
+        }
+
+    } catch (err) {
+        console.warn("[BBOX Fetch] Erro:", err);
     }
 };
 

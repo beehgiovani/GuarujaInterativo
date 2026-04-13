@@ -135,37 +135,19 @@ async function loadInitialData() {
             window.allLotes = cache.data;
             console.log("📦 Data loaded from Cache");
         } else {
-            // Fetch from Supabase (Limit 2000 for demo performance, normally 50k)
-            const { data, error } = await window.supabaseApp
-                .from('lotes')
-                .select('*')
-                .limit(2000);
-
-            if (error) throw error;
-            window.allLotes = data;
-
-            // Save to Cache
-            window.saveLotesToCache(data);
-            console.log("🌐 Data loaded from Server");
+            console.log("🌐 Incremental loading enabled: Skipping initial mass fetch.");
+            window.allLotes = [];
         }
 
-        // Process and Render
-        window.processDataHierarchy();
-        window.renderHierarchy();
-
-        if (totalLotesEl) totalLotesEl.innerText = window.allLotes.length.toLocaleString();
-
-        // Auto-expand sidebar on mobile if results found
-        if (window.innerWidth <= 768) {
-            const sidebar = document.getElementById('sidebar');
-            const backdrop = document.getElementById('sidebarBackdrop');
-            if (sidebar) sidebar.classList.add('active');
-            if (backdrop) backdrop.classList.add('active');
+        // Process and Render (If cache exists)
+        if (window.allLotes.length > 0) {
+            window.processDataHierarchy();
+            window.renderHierarchy();
+            if (totalLotesEl) totalLotesEl.innerText = window.allLotes.length.toLocaleString();
         }
 
     } catch (e) {
         console.error("Data load failed:", e);
-        Toast.error("Falha ao carregar dados.");
     }
 }
 
