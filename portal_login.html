@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso do Proprietário | Guarujá Geo Lab</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/layout.css?v=2.0">
+    <link rel="stylesheet" href="css/portal_login_styles.css?v=1.0">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <!-- hCaptcha (Bot Protection) -->
+    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+</head>
+<body class="dark-theme login-page">
+    <div class="login-wrapper">
+        <!-- Left Side: Splash Info -->
+        <div class="login-splash">
+            <div class="splash-overlay"></div>
+            <div class="splash-content">
+                <div class="brand-badge">PORTAL EXCLUSIVO</div>
+                <img src="assets/logo_white.png" alt="Logo" class="splash-logo">
+                <h1>Venda seu <br><span>Imóvel</span> com Inteligência</h1>
+                <p>O maior hub imobiliário do litoral. Conecte sua propriedade a centenas de corretores e venda pelo valor real de mercado.</p>
+                
+                <ul class="benefit-list">
+                    <li><i class="fas fa-check-circle"></i> Acompanhe o valor venal do seu imóvel</li>
+                    <li><i class="fas fa-check-circle"></i> Anuncie para centenas de corretores certificados</li>
+                    <li><i class="fas fa-check-circle"></i> Valide seus dados e garanta segurança jurídica</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Right Side: Login Form -->
+        <div class="login-form-container">
+            <div class="form-box">
+                <header>
+                    <h2>Bem-vindo de volta</h2>
+                    <p>Entre com suas credenciais de proprietário</p>
+                </header>
+
+                <form id="portal-login-form" onsubmit="event.preventDefault();">
+                    <div class="form-group">
+                        <label for="email">E-mail</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-envelope"></i>
+                            <input type="email" id="email" placeholder="seu@email.com" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="label-row">
+                            <label for="password">Senha</label>
+                            <a href="#" onclick="window.PortalAuth.forgotPassword()" class="forgot-link">Esqueceu a senha?</a>
+                        </div>
+                        <div class="input-with-icon">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="password" placeholder="••••••••" required>
+                        </div>
+                    </div>
+
+                    <div id="login-error" class="error-msg" style="display: none;"></div>
+
+                    <!-- hCaptcha widget -->
+                    <div id="hcaptcha-container" style="margin: 20px 0; display: flex; justify-content: center;">
+                        <div class="h-captcha"
+                             data-sitekey="e1eafec4-ed60-45d2-a634-b50e4dfe0df2"
+                             data-theme="dark">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-login-submit" id="btn-submit">
+                        Entrar no Portal <i class="fas fa-arrow-right"></i>
+                    </button>
+                    
+                    <div class="form-footer">
+                        <p>Ainda não tem acesso? <a href="#" onclick="window.PortalAuth.showSignUp()" class="signup-link">Cadastrar meu Imóvel</a></p>
+                    </div>
+                </form>
+
+                <footer class="legal-footer">
+                    <div class="links">
+                        <a href="termos_uso.html">Termos</a>
+                        <a href="privacidade.html">Privacidade</a>
+                    </div>
+                    <p>&copy; 2026 Guarujá Geo Lab. Inteligência em Tempo Real.</p>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase_client.js"></script>
+    <script src="js/portal_auth_handler.js"></script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+/* 
+ * MAIN_HUB_STYLES.CSS - Estilos para a Página de Seleção de Portal
+ */
+
+.hub-page {
+    background-color: #020617;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.hub-container {
+    width: 100%;
+    max-width: 1100px;
+    padding: 60px 20px;
+    text-align: center;
+    z-index: 5;
+}
+
+.hub-header {
+    margin-bottom: 80px;
+    animation: fadeInDown 0.8s ease-out;
+}
+
+.hub-logo {
+    height: 70px;
+    margin-bottom: 32px;
+}
+
+.hub-header h1 {
+    font-size: 42px;
+    font-weight: 800;
+    margin: 0 0 16px;
+}
+
+.hub-header h1 span {
+    color: #3b82f6;
+}
+
+.hub-header p {
+    font-size: 18px;
+    color: #94a3b8;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Portal Selector Grid */
+.portal-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 32px;
+    margin-bottom: 80px;
+    animation: fadeInUp 0.8s ease-out 0.2s backwards;
+}
+
+@media (max-width: 768px) {
+    .portal-selector {
+        grid-template-columns: 1fr;
+    }
+}
+
+.portal-card {
+    position: relative;
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 32px;
+    padding: 60px 40px;
+    text-decoration: none;
+    color: white;
+    text-align: left;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.portal-card:hover {
+    transform: translateY(-10px);
+    border-color: rgba(59, 130, 246, 0.3);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+}
+
+.card-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.4s;
+}
+
+.portal-card:hover .card-bg {
+    opacity: 1;
+}
+
+.card-content {
+    position: relative;
+    z-index: 2;
+}
+
+.card-icon {
+    width: 70px;
+    height: 70px;
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    margin-bottom: 32px;
+    transition: transform 0.3s;
+}
+
+.portal-card:hover .card-icon {
+    transform: rotate(-5deg) scale(1.1);
+}
+
+.portal-card h3 {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 16px;
+}
+
+.portal-card p {
+    color: #94a3b8;
+    line-height: 1.6;
+    margin-bottom: 40px;
+    font-size: 16px;
+    flex-grow: 1;
+}
+
+.card-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    color: white;
+    font-size: 15px;
+}
+
+.card-btn i {
+    font-size: 12px;
+    transition: transform 0.2s;
+}
+
+.portal-card:hover .card-btn i {
+    transform: translateX(5px);
+}
+
+/* Specific Card Styles */
+.owner-card:hover {
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.owner-card:hover .card-bg {
+    background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.1), transparent);
+}
+
+/* Hub Footer */
+.hub-footer {
+    color: #475569;
+    font-size: 14px;
+}
+
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 16px;
+}
+
+.footer-links a {
+    color: #64748b;
+    text-decoration: none;
+}
+
+.footer-links a:hover {
+    color: #3b82f6;
+}
+
+/* Background Blobs */
+.hub-blobs {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.blob1 {
+    position: absolute;
+    top: -10%;
+    left: -10%;
+    width: 40vw;
+    height: 40vw;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%);
+}
+
+.blob2 {
+    position: absolute;
+    bottom: -10%;
+    right: -10%;
+    width: 40vw;
+    height: 40vw;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%);
+}
+
+/* Animations */
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}

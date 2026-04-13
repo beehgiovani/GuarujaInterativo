@@ -32,6 +32,30 @@
         ],
         "rewrites": [
             {
+                "source": "/portalCliente",
+                "destination": "/portal.html"
+            },
+            {
+                "source": "/portal",
+                "destination": "/portal.html"
+            },
+            {
+                "source": "/portalLogin",
+                "destination": "/portal_login.html"
+            },
+            {
+                "source": "/corretor",
+                "destination": "/mapa.html"
+            },
+            {
+                "source": "/mapa",
+                "destination": "/mapa.html"
+            },
+            {
+                "source": "/",
+                "destination": "/index.html"
+            },
+            {
                 "source": "**",
                 "destination": "/index.html"
             }

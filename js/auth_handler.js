@@ -3,7 +3,7 @@
  */
 
 // ─── hCaptcha Site Key ────────────────────────────────────────────────────────
-const HCAPTCHA_SITEKEY = 'b0061b42-b086-4cec-b162-22cc6708a84a';
+const HCAPTCHA_SITEKEY = 'e1eafec4-ed60-45d2-a634-b50e4dfe0df2';
 // ─────────────────────────────────────────────────────────────────────────────
 
 window.Auth = {
@@ -403,6 +403,54 @@ window.Auth = {
         }
     },
 
+    deleteAccount: async function() {
+        const role = String(window.Monetization?.userRole || 'user').toLowerCase();
+        if (role === 'master' || role === 'admin') {
+            window.Toast.error("❌ Administradores não podem excluir suas próprias contas por este menu.");
+            return;
+        }
+
+        const confirm = window.confirm("⚠️ ATENÇÃO: Você tem certeza que deseja EXCLUIR sua conta?\n\nEsta ação é irreversível e você perderá acesso a todos os seus desbloqueios, créditos e histórico.");
+        if (!confirm) return;
+
+        window.Loading.show("Excluindo conta...", "Removendo seus dados com segurança");
+
+        try {
+            const { data: { user } } = await window.supabaseApp.auth.getUser();
+            if (!user) throw new Error("Usuário não identificado.");
+
+            // 1. Marcar perfil como inativo/deletado (Soft Delete para auditoria)
+            const { error: profileError } = await window.supabaseApp
+                .from('profiles')
+                .update({ 
+                    is_active: false, 
+                    updated_at: new Date().toISOString(),
+                    email: `deleted_${user.id}@guarujainterativo.com.br`,
+                    cpf_cnpj: `DELETED_${user.id}`
+                })
+                .eq('id', user.id);
+
+            if (profileError) throw profileError;
+
+            // 2. Registrar no log de auditoria
+            await window.supabaseApp.from('audit_logs').insert({
+                user_id: user.id,
+                action: 'ACCOUNT_DELETION_REQUEST',
+                detail: `Usuário solicitou exclusão definitiva da conta. Email anterior: ${user.email}`
+            });
+
+            window.Toast.success("Sua conta foi desativada e programada para exclusão definitiva.");
+            
+            // 3. Logout
+            setTimeout(() => this.logout(), 2500);
+
+        } catch (e) {
+            console.error("Erro ao excluir conta:", e);
+            window.Toast.error("Erro ao processar solicitação: " + e.message);
+            window.Loading.hide();
+        }
+    },
+
 
     handleAuthenticatedUser: async function(user) {
         if (this._appInitialized) {
@@ -415,8 +463,40 @@ window.Auth = {
             await window.Monetization.loadUserProfile(user.id);
         }
 
-        // 2. Verificar Status de Aprovação (Manual Approval Gate - RELAXED)
+        // 2. Verificar Perfil Completo (Forçado)
+        if (window.Monetization && window.Monetization.userProfile) {
+            const data = window.Monetization.userProfile;
+            const role = String(data.role || 'user').toLowerCase();
+            const isMaster = role === 'admin' || role === 'master';
+            
+            if (!isMaster) {
+                const missingFields = [];
+                if (!data.broker_name || data.broker_name.trim() === '') missingFields.push('broker_name');
+                if (!data.phone || data.phone.trim() === '') missingFields.push('phone');
+                if (!data.cpf_cnpj || data.cpf_cnpj.trim() === '') missingFields.push('cpf_cnpj');
+                if (!data.creci || data.creci.trim() === '') missingFields.push('creci');
+
+                if (missingFields.length > 0) {
+                    console.log('⚠️ Perfil incompleto detectado no login:', missingFields);
+                    if (window.Monetization.showProfileCompletionModal) {
+                        window.Monetization.showProfileCompletionModal(missingFields);
+                    }
+                }
+            }
+        }
+
+        // 3. Redirecionamento Automático para Proprietários
         const profile = window.Monetization ? window.Monetization.userProfile : null;
+        if (profile && profile.user_type === 'proprietario') {
+            const isPortal = window.location.pathname.includes('/portalCliente') || window.location.pathname.includes('portal.html');
+            if (!isPortal) {
+                console.log("📍 Proprietário identificado. Redirecionando para /portalCliente...");
+                window.location.href = '/portalCliente';
+                return;
+            }
+        }
+
+        // 4. Verificar Status de Aprovação (Manual Approval Gate - RELAXED)
         const status = profile ? profile.status : 'pending'; 
 
         if (status === 'rejected') {

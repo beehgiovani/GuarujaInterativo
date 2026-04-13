@@ -2,6 +2,10 @@ const CACHE_NAME = 'guarugeo-cache-v3.0';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
+    './mapa.html',
+    './portal_login.html',
+    './css/main_hub_styles.css',
+    './css/portal_login_styles.css',
     './css/layout.css',
     './css/sidebar_styles.css',
     './css/map_styles.css',
@@ -78,6 +82,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
     if (event.request.url.includes('supabase.co') || event.request.url.includes('googleapis.com')) return;
+    
+    // Ignorar rotas do portal para evitar cache viciado do index.html (Mapa)
+    if (event.request.url.includes('/portal')) {
+        console.log('[Service Worker] Bypassing cache for portal route');
+        return;
+    }
 
     // Special logic for the big JSON - Cache First
     if (event.request.url.includes('lotes_merged.json')) {

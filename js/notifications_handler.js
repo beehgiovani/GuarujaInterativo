@@ -237,6 +237,7 @@ class NotificationsHandler {
                 let icon = '🔔';
                 if (n.tipo === 'certidao') icon = '📄';
                 if (n.tipo === '100_match' || n.is_ad) icon = '🔥';
+                if (n.tipo === 'owner_opportunity') icon = '🏠';
 
                 const bg = n.lida ? 'white' : '#fff7e6'; // Highlight unread with slight yellow
                 const date = new Date(n.created_at).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -298,6 +299,9 @@ class NotificationsHandler {
                 window.open(url, '_blank');
             }
         }
+
+        // NOVO: Disparar evento global para handlers específicos (ex: OpportunityHandler)
+        window.dispatchEvent(new CustomEvent('notification-click', { detail: notif }));
 
         this.renderDropdown();
     }
@@ -369,7 +373,7 @@ class NotificationsHandler {
             }
         };
 
-        const icon = (n.is_ad || n.tipo === '100_match') ? '🔥' : '📄';
+        const icon = (n.is_ad || n.tipo === '100_match') ? '🔥' : (n.tipo === 'owner_opportunity' ? '🏠' : '📄');
 
         toast.innerHTML = `
             <div class="toast-icon">${icon}</div>
@@ -381,9 +385,14 @@ class NotificationsHandler {
         `;
         document.getElementById('toast-container')?.appendChild(toast);
 
-        // Sound for ads
-        if (n.is_ad) {
-            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGJ0fPTgjMGHm7A7+OZSA0PVqzn77NeHAU3kdb0zXosBSJ1xu/fljkKElut5O6rWhYLRJzQ8Lp6LgU2iNPz0oMyBh5uwO7lmEgOD1as5O+3YhwGN5HW88x7LAUR');
+        // Sound for ads and opportunities
+        if (n.is_ad || n.tipo === 'owner_opportunity') {
+            // Som diferenciado: Um 'ping' limpo para oportunidades
+            const audioSrc = n.tipo === 'owner_opportunity' 
+                ? 'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAIAAAAf39/f39/f38=' // Placeholder de exemplo ou som curto
+                : 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBTGJ0fPTgjMGHm7A7+OZSA0PVqzn77NeHAU3kdb0zXosBSJ1xu/fljkKElut5O6rWhYLRJzQ8Lp6LgU2iNPz0oMyBh5uwO7lmEgOD1as5O+3YhwGN5HW88x7LAUR';
+            
+            const audio = new Audio(audioSrc);
             audio.play().catch(e => console.warn('Sound play blocked:', e)); 
         }
 

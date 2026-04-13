@@ -186,6 +186,7 @@ window.Monetization = {
             full_name: { label: 'Nome Completo',      placeholder: 'Ex: Bruno Giovani',          type: 'text',  mask: null },
             phone:     { label: 'WhatsApp / Telefone', placeholder: 'Ex: (13) 99999-9999',        type: 'tel',   mask: 'phone' },
             cpf_cnpj:  { label: 'CPF',                 placeholder: 'Ex: 000.000.000-00',         type: 'text',  mask: 'cpf' },
+            creci:     { label: 'Número do CRECI',      placeholder: 'Ex: 123456-F',               type: 'text',  mask: null },
         };
 
         const fieldsHtml = missingFields.map(key => {
@@ -464,6 +465,12 @@ window.Monetization = {
                             <input type="text" id="p-phone" value="${this.userProfile?.phone || ''}" placeholder="(13) 90000-0000" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
                         </div>
 
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Número do CRECI</label>
+                            <input type="text" id="p-creci" value="${this.userProfile?.creci || ''}" placeholder="Ex: 123456-F" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                            <small style="color: #94a3b8; font-size: 10px;">Obrigatório para corretores. Sujeito a verificação.</small>
+                        </div>
+
                         <div style="margin-bottom: 25px;">
                             <label style="display: block; font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Nome do Corretor / Imobiliária</label>
                             <input type="text" id="p-broker" value="${this.userProfile?.broker_name || ''}" placeholder="Ex: João Silva ou Imobiliária Guarujá" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
@@ -519,6 +526,7 @@ window.Monetization = {
         const documentRaw = document.getElementById('p-document').value;
         const brokerName = document.getElementById('p-broker').value;
         const phone = document.getElementById('p-phone').value;
+        const creci = document.getElementById('p-creci').value;
 
         // Limpa documento para validar apenas números
         const documentVal = documentRaw.replace(/\D/g, '');
@@ -533,6 +541,10 @@ window.Monetization = {
         }
         if (!phone || phone.length < 8) {
             window.Toast.warning("Preencha o seu WhatsApp corretamente.");
+            return;
+        }
+        if (!creci || creci.length < 4) {
+            window.Toast.warning("O número do CRECI é obrigatório para corretores.");
             return;
         }
 
@@ -563,6 +575,7 @@ window.Monetization = {
                     cpf_cnpj: documentVal,
                     broker_name: brokerName,
                     phone: phone,
+                    creci: creci,
                     profile_completed: true
                 })
                 .eq('id', user.id);
@@ -736,7 +749,7 @@ window.Monetization = {
 
     isEliteOrAbove: function() {
         const role = String(this.userRole || 'user').toLowerCase();
-        return ['admin', 'master', 'elite'].includes(role);
+        return ['admin', 'master', 'elite', 'vip'].includes(role); // VIP ANUAL = Elite ou acima
     },
 
     promptUnlockLote: function(loteInscricao, unitId, price = 1) {

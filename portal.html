@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal do Proprietário | Guarujá Geo Lab</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/layout.css?v=2.0">
+    <link rel="stylesheet" href="css/portal_styles.css?v=1.0">
+    <link rel="stylesheet" href="css/portal_mobile_styles.css?v=1.0">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+</head>
+<body class="dark-theme portal-body">
+    <!-- Navbar -->
+    <nav class="portal-nav">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <img src="assets/logo_white.png" alt="Guarujá Geo Lab" class="nav-logo">
+                <span class="nav-title">Portal do Proprietário</span>
+            </div>
+            <div class="nav-user">
+                <div class="user-info">
+                    <span id="owner-name">Carregando...</span>
+                    <span id="owner-role">Proprietário Verificado</span>
+                </div>
+                <button class="btn-logout" onclick="window.Auth.logout()">Sair <i class="fas fa-sign-out-alt"></i></button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="portal-main">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1>Seu Patrimônio Mapeado</h1>
+                <p>Gerencie seus imóveis, acompanhe a valorização e anuncie para centenas de corretores.</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-primary-rich" onclick="window.Portal.showAnnounceFlow()">
+                    <i class="fas fa-plus"></i> Anunciar Novo Imóvel
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Grid -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-building"></i></div>
+                <div class="stat-data">
+                    <span class="stat-value" id="stat-total-units">--</span>
+                    <span class="stat-label">Unidades Vinculadas</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-data">
+                    <span class="stat-value" id="stat-market-value">--</span>
+                    <span class="stat-label">Valor Venal Total</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;"><i class="fas fa-bullhorn"></i></div>
+                <div class="stat-data">
+                    <span class="stat-value" id="stat-brokers-reached">--</span>
+                    <span class="stat-label">Corretores Alcançados</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="dashboard-grid-layout">
+            <!-- Left: Main Units List -->
+            <div class="dashboard-primary">
+                <section class="units-section">
+                    <div class="section-header">
+                        <h2>Meus Imóveis</h2>
+                        <div class="filter-group">
+                            <input type="text" id="unit-search" placeholder="Filtrar por inscrição ou endereço..." onkeyup="window.Portal.filterUnits()">
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="portal-dashboard-empty" class="auth-loading-state" style="display: none; text-align: center; padding: 4rem 2rem;">
+                        <i class="fas fa-home fa-3x" style="color: var(--portal-text-muted); margin-bottom: 20px;"></i>
+                        <h3 style="font-weight: 800;">Nenhum imóvel encontrado</h3>
+                        <p style="color: var(--portal-text-muted); margin-bottom: 30px;">Clique no botão acima para anunciar o seu primeiro imóvel.</p>
+                    </div>
+
+                    <!-- Staging (Pending Approval) -->
+                    <div id="staging-container" style="display: none; margin-bottom: 30px;">
+                        <h3 style="font-size: 1rem; color: #fbbf24; margin-bottom: 15px;">
+                            <i class="fas fa-clock"></i> Pendente de Moderação
+                        </h3>
+                        <div id="staging-units-grid" class="units-grid">
+                            <!-- Staging units added here -->
+                        </div>
+                    </div>
+
+                    <div id="units-container" class="units-grid">
+                        <!-- Skeleton Loading -->
+                        <div class="skeleton-card"></div>
+                        <div class="skeleton-card"></div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right: Activity Feed -->
+            <aside class="dashboard-sidebar">
+                <section class="activity-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-bolt" style="color: #fbbf24;"></i> Atividade Recente</h3>
+                    </div>
+                    <div id="activity-feed-container" class="activity-feed">
+                        <!-- Gerado via JS -->
+                        <div class="activity-item-skeleton"></div>
+                        <div class="activity-item-skeleton"></div>
+                        <div class="activity-item-skeleton"></div>
+                    </div>
+                </section>
+
+                <section class="tips-section" style="margin-top: 2rem;">
+                    <div class="card-premium-gradient" style="padding: 1.5rem; border-radius: 20px; color: white;">
+                        <h4 style="margin: 0 0 10px;">Dica Premium</h4>
+                        <p style="font-size: 0.8rem; opacity: 0.9; margin: 0;">Mantenha suas fotos atualizadas para atrair mais corretores Elite.</p>
+                    </div>
+                </section>
+            </aside>
+        </div>
+    </main>
+
+    <!-- Announce / Edit Modal -->
+    <div id="modal-announce" class="portal-modal">
+        <div class="portal-modal-content" style="max-width: 800px;">
+            <div class="portal-modal-header">
+                <h2>Gerenciar Meu Imóvel</h2>
+                <button class="modal-close" onclick="window.Portal.closeModals()">&times;</button>
+            </div>
+            
+            <div class="modal-tabs">
+                <button type="button" class="tab-btn active" onclick="window.Portal.switchTab(event, 'tab-unit')">Minha Unidade</button>
+                <button type="button" class="tab-btn" onclick="window.Portal.switchTab(event, 'tab-building')">O Condomínio</button>
+                <button type="button" class="tab-btn" onclick="window.Portal.switchTab(event, 'tab-media')">Preço e Fotos</button>
+            </div>
+
+            <div class="portal-modal-body">
+                <form id="announce-form">
+                    <!-- Tab 1: Unit Data -->
+                    <div id="tab-unit" class="tab-pane active">
+                        <div class="form-row">
+                            <div class="form-group col">
+                                <label>Área Útil (m²)</label>
+                                <input type="number" id="field-metragem" step="0.01" placeholder="Ex: 85.50">
+                            </div>
+                            <div class="form-group col">
+                                <label>Vagas</label>
+                                <input type="number" id="field-vagas" placeholder="Ex: 2">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col">
+                                <label>Quartos</label>
+                                <input type="number" id="field-quartos" placeholder="Ex: 2">
+                            </div>
+                            <div class="form-group col">
+                                <label>Suítes</label>
+                                <input type="number" id="field-suites" placeholder="Ex: 1">
+                            </div>
+                            <div class="form-group col">
+                                <label>Banheiros</label>
+                                <input type="number" id="field-banheiros" placeholder="Ex: 2">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Destaques (Tags separadas por vírgula)</label>
+                            <input type="text" id="field-caracteristicas" placeholder="Ex: Vista Mar, Sacada, Reformado">
+                        </div>
+                        <div class="form-group">
+                            <label>Descrição do Imóvel para Corretores</label>
+                            <textarea id="field-descricao" rows="4" placeholder="Descreva os pontos fortes do seu imóvel..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Building Confirmation -->
+                    <div id="tab-building" class="tab-pane">
+                        <div class="form-group">
+                            <label>Nome do Edifício (Como é conhecido)</label>
+                            <input type="text" id="field-building-name" placeholder="Ex: Edifício Saint Michel">
+                        </div>
+                        <p class="field-hint">Selecione o que o seu condomínio oferece:</p>
+                        <div class="amenities-checklist">
+                            <label class="check-item"><input type="checkbox" id="check-piscina"> Piscina</label>
+                            <label class="check-item"><input type="checkbox" id="check-academia"> Academia</label>
+                            <label class="check-item"><input type="checkbox" id="check-salao_festas"> Salão de Festas</label>
+                            <label class="check-item"><input type="checkbox" id="check-churrasqueira"> Churrasqueira</label>
+                            <label class="check-item"><input type="checkbox" id="check-servico_praia"> Serviço de Praia</label>
+                            <label class="check-item"><input type="checkbox" id="check-portaria_24h"> Portaria 24h</label>
+                            <label class="check-item"><input type="checkbox" id="check-elevador"> Elevador</label>
+                            <label class="check-item"><input type="checkbox" id="check-bicicletario"> Bicicletário</label>
+                        </div>
+                    </div>
+
+                    <!-- Tab 3: Media and Photos -->
+                    <div id="tab-media" class="tab-pane">
+                        <div class="form-row">
+                            <div class="form-group col">
+                                <label>Tipo de Oferta</label>
+                                <select id="field-status_venda">
+                                    <option value="venda">Venda</option>
+                                    <option value="locacao">Locação</option>
+                                    <option value="particular">Manter Apenas Privado</option>
+                                </select>
+                            </div>
+                            <div class="form-group col">
+                                <label>Valor do Imóvel (R$)</label>
+                                <input type="number" id="field-valor_real" placeholder="Ex: 650000">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Fotos do Imóvel</label>
+                            <div class="upload-area" id="property-upload-area" style="padding: 20px; border-style: dotted;">
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 24px;"></i>
+                                <p style="font-size: 0.8rem; margin: 10px 0;">Clique ou arraste fotos aqui</p>
+                                <input type="file" id="property-photo-input" multiple accept="image/*" style="display: none;">
+                            </div>
+                            
+                            <div id="property-preview-grid" class="preview-grid" style="margin-top: 15px;">
+                                <!-- Fotos existentes e novas aparecerão aqui -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <input type="hidden" id="field-inscricao">
+                        <button type="button" class="btn-cancel" onclick="window.Portal.closeModals()">Cancelar</button>
+                        <button type="submit" class="btn-success">Salvar e Atualizar Mapa</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onboarding Modal (First Login) -->
+    <div id="modal-onboarding" class="portal-modal">
+        <div class="portal-modal-content onboarding-content">
+            <div class="onboarding-stepper">
+                <div class="step active" data-step="1">1 <span>Perfil</span></div>
+                <div class="step" data-step="2">2 <span>Imóvel</span></div>
+                <div class="step" data-step="3">3 <span>Fotos</span></div>
+            </div>
+
+            <div class="onboarding-body">
+                <!-- Step 1: Personal Data -->
+                <div class="onboarding-pane active" id="onboarding-step-1">
+                    <h2>Bem-vindo! Vamos completar seu perfil</h2>
+                    <p>Precisamos de algumas informações básicas para validar sua conta.</p>
+                    <div class="form-group">
+                        <label>Nome Completo</label>
+                        <input type="text" id="onb-name" placeholder="Seu nome completo">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col">
+                            <label>CPF / CNPJ</label>
+                            <input type="text" id="onb-cpf" oninput="window.Auth.maskCpf(this)" placeholder="000.000.000-00">
+                        </div>
+                        <div class="form-group col">
+                            <label>Telefone / WhatsApp</label>
+                            <input type="text" id="onb-phone" oninput="window.Auth.maskPhone(this)" placeholder="+55 (13) 00000-0000">
+                        </div>
+                    </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Property Basic Data -->
+                <div class="onboarding-pane" id="onboarding-step-2">
+                    <h2>Seu Primeiro Imóvel</h2>
+                    <p>Qual imóvel você deseja gerenciar primeiro?</p>
+                    <div class="form-group">
+                        <label>Possui Inscrição Imobiliária (IPTU)?</label>
+                        <input type="text" id="onb-inscricao" placeholder="Ex: 1-0012-003-004 (Opcional)">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col">
+                            <label>Área Útil (m²)</label>
+                            <input type="number" id="onb-metragem" step="0.01">
+                        </div>
+                        <div class="form-group col">
+                            <label>Quartos</label>
+                            <input type="number" id="onb-quartos">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo do Imóvel</label>
+                        <select id="onb-tipo">
+                            <option value="Apartamento">Apartamento</option>
+                            <option value="Casa">Casa</option>
+                            <option value="Terreno">Terreno</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Step 3: Photos and Finish -->
+                <div class="onboarding-pane" id="onboarding-step-3">
+                    <h2>Fotos e Validação</h2>
+                    <p>Adicione fotos do imóvel para acelerar a aprovação.</p>
+                    <div class="upload-area" id="onb-upload-dropzone" onclick="document.getElementById('onb-photo-input').click()">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Clique ou arraste fotos aqui</span>
+                        <input type="file" id="onb-photo-input" multiple accept="image/*" hidden>
+                    </div>
+                    <div id="onb-preview-grid" class="preview-grid"></div>
+                    <div class="alert-info">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Seu cadastro passará por validação dos nossos Administradores em até 24h.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="onboarding-footer">
+                <button class="btn-secondary" id="onb-prev" style="visibility: hidden;">Voltar</button>
+                <button class="btn-primary-rich" id="onb-next">Próximo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase_client.js"></script>
+    <script src="js/auth_handler.js"></script>
+    <script src="js/portal_handler.js"></script>
+</body>
+</html>

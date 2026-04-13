@@ -1,0 +1,100 @@
+/* 
+ * PORTAL_MOBILE_STYLES.CSS - Otimizações Premium para Dispositivos Móveis
+ * Foco em Touch Targets, Swipe e Fullscreen Modals
+ */
+
+@media (max-width: 768px) {
+    :root {
+        --mobile-safe-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* 1. Ajustes de Layout e Espaçamento */
+    .portal-main {
+        padding: 1.2rem;
+    }
+
+    .dashboard-header h1 {
+        font-size: 1.8rem !important;
+    }
+
+    /* 2. Modal Fullscreen no Mobile */
+    .portal-modal-content {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        border-radius: 0 !important;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .portal-modal-body {
+        flex: 1;
+        padding: 1.5rem !important;
+    }
+
+    .onboarding-body {
+        padding: 20px !important;
+    }
+
+    /* 3. Onboarding Stepper Mobile */
+    .onboarding-stepper {
+        padding: 15px 10px !important;
+    }
+
+    .onboarding-stepper .step span {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 12px;
+    }
+
+    .onboarding-stepper .step {
+        font-size: 10px !important;
+    }
+
+    /* 4. Inputs Amigáveis ao Toque */
+    .form-group input, 
+    .form-group select, 
+    .form-group textarea {
+        font-size: 16px !important; /* Evita zoom automático no iOS */
+        padding: 16px !important;
+        min-height: 52px;
+    }
+
+    .btn-primary-rich, .btn-success {
+        width: 100%;
+        min-height: 54px;
+        font-size: 16px;
+    }
+
+    /* 5. Dashboard Cards Mobile */
+    .unit-card {
+        padding: 1.2rem !important;
+    }
+
+    .units-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+
+    /* 6. Navbar Mobile */
+    .nav-container {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+
+    .nav-user {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .user-info {
+        text-align: left;
+    }
+
+    /* 7. Footer de Modal Fixo na Base */
+    .modal-footer, .onboarding-footer {
+        padding: 15px 20px calc(15px + var(--mobile-safe-bottom)) !important;
+    }
+}

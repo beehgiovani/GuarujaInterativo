@@ -52,9 +52,11 @@ window.HubHandler = {
 
         // Sempre esconde admin por padrão — só abre se role === 'master'
         const role = window.Monetization?.userRole || window.Monetization?.userProfile?.role || '';
-        const isAdmin = (role === 'master');
+        const isAdmin = (role === 'master' || role === 'admin');
+        const deleteBtn = document.getElementById('btn-delete-account');
 
         if (adminApp) adminApp.style.display = isAdmin ? 'flex' : 'none';
+        if (deleteBtn) deleteBtn.style.display = isAdmin ? 'none' : 'flex';
 
         if (window.Monetization?.userProfile) {
             const up = window.Monetization.userProfile;
@@ -98,6 +100,8 @@ window.HubHandler = {
             if (window.Institutional) {
                 window.Institutional.showTrainingModal();
             }
+        } else if (appId === 'owner-portal') {
+            window.location.href = '/portalCliente';
         } else if (appId === 'admin') {
             // SEGURANÇA: dupla verificação de role antes de abrir o painel
             const role = window.Monetization?.userRole || window.Monetization?.userProfile?.role || '';
@@ -186,6 +190,11 @@ window.HubHandler = {
                             <div class="hub-app-icon"><i class="fas fa-users"></i></div>
                             <div class="hub-app-title">Meu CRM</div>
                         </div>
+
+                        <div class="hub-app-card app-owner" onclick="window.HubHandler.launchApp('owner-portal')">
+                            <div class="hub-app-icon" style="background: linear-gradient(135deg, #6366f1, #4f46e5);"><i class="fas fa-home-user"></i></div>
+                            <div class="hub-app-title">Portal do Proprietário</div>
+                        </div>
                         
                         <div class="hub-app-card app-wallet" onclick="window.HubHandler.launchApp('wallet')">
                             <div class="hub-app-icon"><i class="fas fa-box-open"></i></div>
@@ -223,9 +232,14 @@ window.HubHandler = {
                         <button class="hub-footer-btn" onclick="window.HubHandler.closeHub(); window.NotificationsHandler && window.NotificationsHandler.toggleDropdown(event)">
                             <i class="fas fa-bell"></i> Notificações <span id="hub-notif-count" class="hub-notif-badge">0</span>
                         </button>
-                        <button class="hub-footer-btn logout" onclick="window.HubHandler.closeHub(); window.Auth && window.Auth.logout()">
-                            Sair do Sistema <i class="fas fa-sign-out-alt"></i>
-                        </button>
+                        <div id="hub-danger-zone" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                            <button class="hub-footer-btn" onclick="window.HubHandler.closeHub(); window.Auth && window.Auth.logout()" style="justify-content: center; width: 100%; background: rgba(255,255,255,0.05);">
+                                Sair do Sistema <i class="fas fa-sign-out-alt" style="margin-left: 8px;"></i>
+                            </button>
+                            <button id="btn-delete-account" class="hub-footer-btn" onclick="window.Auth && window.Auth.deleteAccount()" style="justify-content: center; width: 100%; color: #f87171; font-size: 11px; font-weight: 600; background: transparent; border: 1px solid rgba(248, 113, 113, 0.2); opacity: 0.8;">
+                                <i class="fas fa-user-times" style="margin-right: 8px;"></i> Excluir Minha Conta
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

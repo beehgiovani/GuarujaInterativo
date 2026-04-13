@@ -1,0 +1,286 @@
+/* 
+ * PORTAL_LOGIN_STYLES.CSS - Estilização Premium para o Login do Proprietário
+ */
+
+:root {
+    --portal-primary: #3b82f6;
+    --portal-primary-hover: #2563eb;
+    --portal-bg: #0f172a;
+    --portal-card: #1e293b;
+    --portal-text: #f8fafc;
+    --portal-muted: #94a3b8;
+    --portal-border: rgba(255, 255, 255, 0.08);
+}
+
+body.login-page {
+    background-color: var(--portal-bg);
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', sans-serif;
+    color: var(--portal-text);
+    overflow: hidden;
+}
+
+.login-wrapper {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* Splash Section (Left) */
+.login-splash {
+    flex: 1.3;
+    background: url('../assets/portal_splash_bg.jpg') no-repeat center center;
+    background-size: cover;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+}
+
+@media (max-width: 1024px) {
+    .login-splash {
+        display: none;
+    }
+}
+
+.splash-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, rgba(15, 23, 42, 0.5), #0f172a);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+}
+
+.splash-content {
+    position: relative;
+    z-index: 2;
+    max-width: 600px;
+}
+
+.brand-badge {
+    display: inline-block;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--portal-primary);
+    padding: 6px 14px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    margin-bottom: 24px;
+}
+
+.splash-logo {
+    height: 60px;
+    margin-bottom: 30px;
+}
+
+.splash-content h1 {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 20px;
+}
+
+.splash-content h1 span {
+    color: var(--portal-primary);
+}
+
+.splash-content p {
+    font-size: 18px;
+    color: var(--portal-muted);
+    line-height: 1.6;
+    margin-bottom: 40px;
+}
+
+.benefit-list {
+    list-style: none;
+    padding: 0;
+}
+
+.benefit-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #cbd5e1;
+}
+
+.benefit-list li i {
+    color: var(--portal-primary);
+    font-size: 18px;
+}
+
+/* Form Section (Right) */
+.login-form-container {
+    flex: 1;
+    background: var(--portal-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    border-left: 1px solid var(--portal-border);
+}
+
+.form-box {
+    width: 100%;
+    max-width: 420px;
+}
+
+.form-box header {
+    margin-bottom: 32px;
+}
+
+.form-box h2 {
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0 0 8px;
+}
+
+.form-box header p {
+    color: var(--portal-muted);
+    margin: 0;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--portal-muted);
+}
+
+.forgot-link {
+    font-size: 12px;
+    color: var(--portal-primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.input-with-icon {
+    position: relative;
+}
+
+.input-with-icon i {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--portal-muted);
+    font-size: 16px;
+}
+
+.input-with-icon input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--portal-border);
+    border-radius: 12px;
+    padding: 14px 16px 14px 48px;
+    color: #fff;
+    font-size: 15px;
+    outline: none;
+    transition: all 0.2s;
+    box-sizing: border-box;
+}
+
+.input-with-icon input:focus {
+    border-color: var(--portal-primary);
+    background: rgba(59, 130, 246, 0.05);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+.btn-login-submit {
+    width: 100%;
+    background: var(--portal-primary);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 32px;
+    transition: all 0.2s;
+    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2);
+}
+
+.btn-login-submit:hover {
+    background: var(--portal-primary-hover);
+    transform: translateY(-2px);
+}
+
+.btn-login-submit:active {
+    transform: scale(0.98);
+}
+
+.form-footer {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 14px;
+    color: var(--portal-muted);
+}
+
+.signup-link {
+    color: var(--portal-primary);
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.error-msg {
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.legal-footer {
+    margin-top: 60px;
+    border-top: 1px solid var(--portal-border);
+    padding-top: 24px;
+}
+
+.legal-footer .links {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.legal-footer a {
+    color: var(--portal-muted);
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.legal-footer a:hover {
+    color: var(--portal-text);
+}
+
+.legal-footer p {
+    font-size: 11px;
+    color: rgba(148, 163, 184, 0.5);
+    margin: 0;
+}

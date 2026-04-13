@@ -467,13 +467,21 @@ window.ProprietarioTooltip = {
                                 <div style="font-size: 10px; color: ${statusColor}; font-weight: 600; margin-bottom: 4px;">
                                     ${u.status_venda || 'N/A'}
                                 </div>
-                                ${u.valor_venal ? `<div style="font-size: 12px; color: #334155; font-weight: 600;">R$ ${(u.valor_venal).toLocaleString('pt-BR')}</div>` : ''}
+                                ${u.valor_real ? `<div style="font-size: 14px; color: #1e293b; font-weight: 900;">R$ ${(u.valor_real).toLocaleString('pt-BR')}</div>` : ''}
+                                ${u.valor_venal ? `<div style="font-size: 10px; color: #94a3b8; font-weight: 500;">Venal: R$ ${(u.valor_venal).toLocaleString('pt-BR')}</div>` : ''}
                             </div>
-                            <button onclick="window.ProprietarioTooltip.solicitarTransferencia('${u.inscricao}', '${lote.building_name || 'Lote'}')" 
-                                    style="background: none; border: none; color: #94a3b8; font-size: 10px; cursor: pointer; text-decoration: underline;"
-                                    onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">
-                                <i class="fas fa-exchange-alt"></i> Outro Dono?
-                            </button>
+                            
+                            <div style="display:flex; gap:8px; justify-content:flex-end;">
+                                <button onclick="window.ProprietarioTooltip.showPriceHistory('${u.inscricao}', '${lote.building_name || 'Imóvel'}')" 
+                                        style="background: #f1f5f9; border: none; color: #64748b; font-size: 10px; padding:4px 8px; border-radius:4px; cursor: pointer; font-weight:700;">
+                                    <i class="fas fa-chart-line"></i> Histórico
+                                </button>
+                                <button onclick="window.ProprietarioTooltip.solicitarTransferencia('${u.inscricao}', '${lote.building_name || 'Lote'}')" 
+                                        style="background: none; border: none; color: #94a3b8; font-size: 10px; cursor: pointer; text-decoration: underline;"
+                                        onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">
+                                    Donos?
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -482,6 +490,62 @@ window.ProprietarioTooltip = {
 
         html += '</div></div>';
         return html;
+    },
+
+    async showPriceHistory(inscricao, local) {
+        window.Loading.show("Consultando valorização...");
+        try {
+            const { data, error } = await window.supabaseApp.rpc('get_unit_price_history', { p_inscricao: inscricao });
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                window.Toast.info("Ainda não há histórico de valorização comercial para este imóvel.");
+                return;
+            }
+
+            const historyHtml = data.map(h => {
+                const isPositive = h.variacao_percentual >= 0;
+                const icon = isPositive ? 'fa-arrow-up' : 'fa-arrow-down';
+                const color = isPositive ? '#10b981' : '#ef4444';
+                
+                return `
+                    <div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <div>
+                            <div style="font-size:10px; color:#94a3b8;">${new Date(h.created_at).toLocaleDateString()}</div>
+                            <div style="font-size:12px; font-weight:700;">R$ ${h.valor_novo.toLocaleString()}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:11px; font-weight:900; color:${color};">
+                                <i class="fas ${icon}"></i> ${Math.abs(h.variacao_percentual).toFixed(1)}%
+                            </div>
+                            <div style="font-size:9px; color:#64748b;">${h.motivo || 'Revisão'}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const modalHtml = `
+                <div id="price-history-overlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:210000; display:flex; align-items:center; justify-content:center;">
+                    <div style="background:#0f172a; color:#fff; width:350px; border-radius:16px; padding:25px; border:1px solid rgba(255,255,255,0.1);">
+                        <h4 style="margin:0 0 5px 0; font-size:16px;">Tendência de Valorização</h4>
+                        <p style="font-size:11px; color:#94a3b8; margin-bottom:20px;">${local} (${inscricao})</p>
+                        
+                        <div style="max-height:300px; overflow-y:auto;">
+                            ${historyHtml}
+                        </div>
+                        
+                        <button onclick="document.getElementById('price-history-overlay').remove()" style="width:100%; padding:10px; background:#1e293b; border:none; color:#fff; border-radius:8px; margin-top:20px; cursor:pointer;">Fechar</button>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        } catch (e) {
+            console.error(e);
+            window.Toast.error("Erro ao buscar histórico.");
+        } finally {
+            window.Loading.hide();
+        }
     },
 
     async solicitarTransferencia(inscricao, local) {
