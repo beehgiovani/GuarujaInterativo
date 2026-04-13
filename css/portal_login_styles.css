@@ -60,6 +60,10 @@ body.login-page {
     position: relative;
     z-index: 2;
     max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
 }
 
 .brand-badge {
@@ -76,8 +80,9 @@ body.login-page {
 }
 
 .splash-logo {
-    height: 60px;
+    height: 140px;
     margin-bottom: 30px;
+    filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3));
 }
 
 .splash-content h1 {
@@ -101,6 +106,8 @@ body.login-page {
 .benefit-list {
     list-style: none;
     padding: 0;
+    display: inline-block;
+    text-align: left;
 }
 
 .benefit-list li {
