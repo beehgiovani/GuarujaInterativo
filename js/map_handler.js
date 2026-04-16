@@ -12,6 +12,7 @@ window.currentLevel = 0;
 window.currentZone = null;
 window.currentSector = null;
 window.georefs = []; // Global store for POIs (Praias, Comércios, etc)
+window.allLotesSet = new Set(); // Cache para checagem rápida de duplicatas
 
 // --- FEATURE RESTORATION HELPER FUNCTIONS ---
 
@@ -1083,6 +1084,7 @@ window.initMap = async function () {
         if (cached && cached.data && cached.data.length > 0) {
             console.log("Loading from Cache...", cached.data.length);
             window.allLotes = cached.data;
+            window.allLotesSet = new Set(window.allLotes.map(l => l.inscricao));
 
             // Render Cache Immediately
             window.processDataHierarchy();
@@ -1109,7 +1111,7 @@ window.initMap = async function () {
                 .from('lotes')
                 .select('*')
                 .eq('municipio', window.currentCity || 'Guarujá')
-                .limit(500);
+                .limit(2000); // Aumentado de 500 para cobrir mais bairros no início
 
             if (!error && data) {
                 const initialLotes = data.map(row => ({
@@ -1129,6 +1131,7 @@ window.initMap = async function () {
                     }
                 }));
                 window.allLotes = initialLotes;
+                window.allLotesSet = new Set(initialLotes.map(l => l.inscricao));
             }
         }
 
@@ -1214,7 +1217,7 @@ window.loadLotesInViewport = async function() {
     try {
         const zoom = window.map.getZoom();
         // Só carrega lotes em nível de detalhe alto para não sobrecarregar
-        if (zoom < 15) {
+        if (zoom < 14) { // Reduzido de 15 para 14 para capturar dados em nível de bairro
             console.log("☁️ Zoom baixo demais para lotes. Pulando busca.");
             return;
         }
@@ -1227,19 +1230,19 @@ window.loadLotesInViewport = async function() {
             .lte('minx', utmNE.x + padding)
             .gte('maxy', utmSW.y - padding)
             .lte('miny', utmNE.y + padding)
-            .limit(1000); 
+            .limit(2000); // Aumentado de 1000 para 2000 (limite recomendado do Supabase)
 
         if (error) throw error;
         if (!data || data.length === 0) return;
 
-        // Mesclar novos dados no window.allLotes
+        // Mesclar novos dados no window.allLotes sem recriar o Set toda vez (Performance)
         let newCount = 0;
-        const existingInscricoes = new Set(window.allLotes.map(l => l.inscricao));
         
         const processedNew = data
-            .filter(row => !existingInscricoes.has(row.inscricao))
+            .filter(row => !window.allLotesSet.has(row.inscricao))
             .map(row => {
                 newCount++;
+                window.allLotesSet.add(row.inscricao);
                 return {
                     ...row,
                     metadata: {
@@ -1402,9 +1405,12 @@ window.goUpLevel = function() {
     if (window.currentLevel === 2) {
         window.currentLevel = 1;
         window.currentSector = null;
+        window.map.setZoom(15);
     } else if (window.currentLevel === 1) {
         window.currentLevel = 0;
         window.currentZone = null;
+        window.map.setZoom(13);
+        window.map.setCenter({ lat: -23.9608, lng: -46.2694 });
     }
     window.renderHierarchy();
 };
@@ -1418,6 +1424,9 @@ window.renderHierarchy = function() {
         console.warn("Skipping renderHierarchy: Map or container not ready.");
         return;
     }
+
+    // Sync Breadcrumbs UI
+    window.updateBreadcrumbs();
 
     // Toggle Back Button Visibility
     if (mapBackBtn) {
@@ -1863,8 +1872,74 @@ function goUpLevel() {
         window.map.setCenter({ lat: -23.9934, lng: -46.2567 });
         window.map.setZoom(13);
     }
-    window.renderHierarchy();
+    // Update Breadcrumbs
+    window.updateBreadcrumbs();
 }
+
+/**
+ * window.updateBreadcrumbs
+ * Updates the hierarchy navigation bar based on current level
+ */
+window.updateBreadcrumbs = function() {
+    const container = document.getElementById('mapBreadcrumbs');
+    if (!container) return;
+
+    if (window.currentLevel === 0) {
+        container.classList.add('hidden');
+        return;
+    }
+
+    container.classList.remove('hidden');
+    
+    let html = `
+        <div class="breadcrumb-item" onclick="window.navigateToLevel(0)">
+            <i class="fas fa-city"></i> Guarujá
+        </div>
+    `;
+
+    if (window.currentLevel >= 1 && window.currentZone !== null) {
+        html += `<div class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></div>`;
+        html += `
+            <div class="breadcrumb-item ${window.currentLevel === 1 ? 'active' : ''}" 
+                 onclick="${window.currentLevel > 1 ? `window.navigateToLevel(1, '${window.currentZone}')` : ''}">
+                <i class="fas fa-layer-group"></i> Zona ${window.currentZone}
+            </div>
+        `;
+    }
+
+    if (window.currentLevel >= 2 && window.currentSector !== null) {
+        html += `<div class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></div>`;
+        html += `
+            <div class="breadcrumb-item active">
+                <i class="fas fa-vector-square"></i> Setor ${window.currentSector}
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+};
+
+/**
+ * window.navigateToLevel
+ * Handles jumping back to a specific level with appropriate zoom
+ */
+window.navigateToLevel = function(level, zoneId = null) {
+    if (level === 0) {
+        window.currentLevel = 0;
+        window.currentZone = null;
+        window.currentSector = null;
+        window.map.setZoom(13);
+        // Center city approximately
+        window.map.setCenter({ lat: -23.9608, lng: -46.2694 });
+    } else if (level === 1) {
+        window.currentLevel = 1;
+        window.currentZone = zoneId;
+        window.currentSector = null;
+        window.map.setZoom(15);
+    }
+    
+    window.renderHierarchy();
+};
 
 // ========================================
 // EXPORTS
