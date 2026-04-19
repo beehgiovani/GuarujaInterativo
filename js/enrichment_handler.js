@@ -78,11 +78,12 @@ window.Enrichment = {
             .eq('cpf_cnpj', doc)
             .maybeSingle();
 
-        if (this._isCacheValid(cachedProp?.dados_enrichment, cachedProp?.data_enriquecimento)) {
-            // Servir do cache — NÃO cobra créditos se já existe no banco interno
+        const isAlreadyUnlocked = window.Monetization.isUnlockedEnrichment(doc);
+
+        if (this._isCacheValid(cachedProp?.dados_enrichment, cachedProp?.data_enriquecimento) && isAlreadyUnlocked) {
+            // Só libera do cache sem cobrar se JÁ foi desbloqueado pelo usuário (ou é Master)
             window.Loading.show('Visualizando Ficha...', 'Recuperando do banco local (Gratuito)...');
             try {
-                // await window.Monetization.consumeCredits(0, `Ficha Avançada (cache) ${unit.inscricao}`);
                 window.Toast.success(`Ficha de ${cachedProp.nome_completo} (Cache Local)`);
                 this.highlightOwnerPortfolio(doc, cachedProp.nome_completo);
                 if (window.ProprietarioTooltip && cachedProp.id) {
@@ -158,10 +159,11 @@ window.Enrichment = {
             nome_proprietario = cachedProp.nome_completo;
         }
 
-        if (this._isCacheValid(cachedProp?.dados_enrichment, cachedProp?.data_enriquecimento)) {
+        const isAlreadyUnlocked = window.Monetization.isUnlockedEnrichment(doc);
+
+        if (this._isCacheValid(cachedProp?.dados_enrichment, cachedProp?.data_enriquecimento) && isAlreadyUnlocked) {
             window.Loading.show('Visualizando Ficha...', 'Recuperando do banco local (Gratuito)...');
             try {
-                // window.Monetization.consumeCredits(0, `Ficha Avançada (cache) ${doc}`);
                 window.Toast.success(`Dados de ${cachedProp.nome_completo} (Cache Local)`);
                 this.highlightOwnerPortfolio(doc, cachedProp.nome_completo);
                 if (window.ProprietarioTooltip && cachedProp.id) {

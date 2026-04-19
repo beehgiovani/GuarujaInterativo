@@ -17,40 +17,37 @@ window.AdminHandler = {
         window.Loading.show('Abrindo Painel...', 'Carregando dados...');
         try {
             const modal = document.createElement('div');
-            modal.className = 'custom-modal-overlay active';
+            modal.className = 'admin-fullscreen-dashboard';
             modal.id = 'adminPanelModal';
-            modal.style.zIndex = '10030';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0f172a; z-index: 100000; display: flex; flex-direction: column; overflow: hidden;';
             
             modal.innerHTML = `
-                <div class="custom-modal" style="max-width: 900px; width: 95%; background: var(--background-dark); color: white; border: 1px solid rgba(255,255,255,0.1); overflow: hidden;">
-                    <div class="custom-modal-header" style="background: rgba(0,0,0,0.3); color: white; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 25px 30px;">
-                        <div class="custom-modal-title" style="display: flex; align-items: center; gap: 12px;">
-                            <div style="width: 32px; height: 32px; background: #2563eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px;">
-                                <i class="fas fa-hammer"></i>
-                            </div>
-                            <div>
-                                <div style="font-size: 18px; font-weight: 800; line-height: 1;">Painel de Controle Master</div>
-                                <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-top: 4px; letter-spacing: 1px;">Gestão de Dados & Usuários</div>
-                            </div>
+                <div class="custom-modal-header" style="background: #1e293b; color: white; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+                    <div class="custom-modal-title" style="display: flex; align-items: center; gap: 15px;">
+                        <div style="width: 44px; height: 44px; background: linear-gradient(135deg, #2563eb, #1e40af); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 4px 12px rgba(37,99,235,0.4);">
+                            <i class="fas fa-crown"></i>
                         </div>
-                        <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()" style="color: white; opacity: 0.5;">&times;</button>
+                        <div>
+                            <div style="font-size: 24px; font-weight: 900; line-height: 1; letter-spacing: -0.5px;">Hub Master</div>
+                            <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; margin-top: 6px; letter-spacing: 1px; font-weight: 800;">Global Command Center</div>
+                        </div>
                     </div>
-                    <div class="admin-tabs" style="display: flex; background: rgba(0,0,0,0.2); padding: 0 10px; overflow-x: auto;">
-                        <button class="admin-tab active" onclick="window.Admin.switchTab(this, 'dashboard')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: white; cursor: pointer; border-bottom: 3px solid #2563eb; font-size: 13px;">📊 Dashboard</button>
-                        <button class="admin-tab" onclick="window.Admin.switchTab(this, 'users')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">👥 Usuários</button>
-                        <button class="admin-tab" onclick="window.Admin.switchTab(this, 'monetization')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">💰 Planos</button>
-                        <button class="admin-tab" onclick="window.Admin.switchTab(this, 'transactions')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">💵 Vendas</button>
-                      <!--  <button class="admin-tab" onclick="window.Admin.switchTab(this, 'neighborhoods')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">🏙️ Bairros</button>-->
-                        <button class="admin-tab" onclick="window.Admin.switchTab(this, 'support')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">💬 Suporte</button>
-                        <button class="admin-tab" onclick="window.Admin.switchTab(this, 'curatorship')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">🏛️ Curadoria</button>
-                        <button class="admin-tab" onclick="window.Admin.switchTab(this, 'crm')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">🤝 CRM Admin</button>
-                        <button class="admin-tab" onclick="window.Admin.switchTab(this, 'leiloes')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">⚖️ Leilões</button>
-                        <button class="admin-tab" onclick="window.Admin.switchTab(this, 'settings')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">⚙️ Config</button>
-                        <button class="admin-tab" onclick="window.Admin.switchTab(this, 'audit')" style="flex: 1; min-width: 100px; padding: 18px; border: none; background: none; font-weight: 700; color: #94a3b8; cursor: pointer; font-size: 13px;">📜 Auditoria</button>
-                    </div>
-                    <div id="adminPanelContent" style="padding: 30px; max-height: 75vh; overflow-y: auto;">
-                        <!-- Content injected by switchTab -->
-                    </div>
+                    <button class="custom-modal-close" onclick="this.closest('#adminPanelModal').remove()" style="color: white; opacity: 0.6; font-size: 32px; background: none; border: none; cursor: pointer; transition: 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">&times;</button>
+                </div>
+                <div class="admin-tabs" style="display: flex; background: #0f172a; padding: 0 20px; overflow-x: auto; border-bottom: 1px solid rgba(255,255,255,0.05); flex-shrink: 0;">
+                    <button class="admin-tab active" onclick="window.Admin.switchTab(this, 'dashboard')" style="flex: 0 0 auto; min-width: 120px; padding: 20px 15px; border: none; background: none; font-weight: 800; color: white; cursor: pointer; border-bottom: 3px solid #2563eb; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.2s;">📊 Dashboard</button>
+                    <button class="admin-tab" onclick="window.Admin.switchTab(this, 'users')" style="flex: 0 0 auto; min-width: 120px; padding: 20px 15px; border: none; background: none; font-weight: 800; color: #64748b; cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.2s;">👥 Usuários</button>
+                    <button class="admin-tab" onclick="window.Admin.switchTab(this, 'monetization')" style="flex: 0 0 auto; min-width: 120px; padding: 20px 15px; border: none; background: none; font-weight: 800; color: #64748b; cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.2s;">💰 Planos</button>
+                    <button class="admin-tab" onclick="window.Admin.switchTab(this, 'transactions')" style="flex: 0 0 auto; min-width: 120px; padding: 20px 15px; border: none; background: none; font-weight: 800; color: #64748b; cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.2s;">💵 Vendas</button>
+                    <button class="admin-tab" onclick="window.Admin.switchTab(this, 'support')" style="flex: 0 0 auto; min-width: 120px; padding: 20px 15px; border: none; background: none; font-weight: 800; color: #64748b; cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.2s;">💬 Suporte</button>
+                    <button class="admin-tab" onclick="window.Admin.switchTab(this, 'curatorship')" style="flex: 0 0 auto; min-width: 120px; padding: 20px 15px; border: none; background: none; font-weight: 800; color: #64748b; cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.2s;">🏛️ Curadoria</button>
+                    <button class="admin-tab" onclick="window.Admin.switchTab(this, 'crm')" style="flex: 0 0 auto; min-width: 120px; padding: 20px 15px; border: none; background: none; font-weight: 800; color: #64748b; cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.2s;">🤝 CRM Admin</button>
+                    <button class="admin-tab" onclick="window.Admin.switchTab(this, 'leiloes')" style="flex: 0 0 auto; min-width: 120px; padding: 20px 15px; border: none; background: none; font-weight: 800; color: #64748b; cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.2s;">⚖️ Leilões</button>
+                    <button class="admin-tab" onclick="window.Admin.switchTab(this, 'settings')" style="flex: 0 0 auto; min-width: 120px; padding: 20px 15px; border: none; background: none; font-weight: 800; color: #64748b; cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.2s;">⚙️ Config</button>
+                    <button class="admin-tab" onclick="window.Admin.switchTab(this, 'audit')" style="flex: 0 0 auto; min-width: 120px; padding: 20px 15px; border: none; background: none; font-weight: 800; color: #64748b; cursor: pointer; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.2s;">📜 Auditoria</button>
+                </div>
+                <div id="adminPanelContent" style="flex: 1; padding: 30px; overflow-y: auto; background: #0f172a;">
+                    <!-- Content injected by switchTab -->
                 </div>
             `;
             document.body.appendChild(modal);
@@ -101,6 +98,107 @@ window.AdminHandler = {
             await this.renderAuditLogs(content);
         } else if (tab === 'settings') {
             await this.renderSettings(content);
+        }
+    },
+
+    renderDashboard: async function(container) {
+        window.Loading.show('Coletando Analytics...', 'Processando métricas globais');
+        try {
+            // 1. Fetch Pendencies
+            const [usersRes, plansRes, editsRes] = await Promise.all([
+                window.supabaseApp.from('profiles').select('id, email, status').eq('status', 'pending'),
+                window.supabaseApp.from('pending_plan_activations').select('id, plano_solicitado').eq('status', 'pending'),
+                window.supabaseApp.from('user_unit_edits').select('id, field_name').eq('is_approved', false)
+            ]);
+            
+            const pendingUsers = usersRes.data || [];
+            const pendingPlans = plansRes.data || [];
+            const pendingEdits = editsRes.data || [];
+            
+            // 2. Fetch "Tubarões" / VGV (Top 100 properties)
+            const { data: tubaroes } = await window.supabaseApp
+                .from('unidades')
+                .select('valor_vendavel, status_venda, inscr_imob')
+                .gt('valor_vendavel', 5000000)
+                .limit(50);
+                
+            let vgvGlobal = 0;
+            let sharkCount = 0;
+            if (tubaroes) {
+                sharkCount = tubaroes.length;
+                vgvGlobal = tubaroes.reduce((acc, curr) => acc + (curr.valor_vendavel || 0), 0);
+            }
+
+            container.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 30px;">
+                    <!-- SUMMARY CARDS -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                        <!-- ACTION REQUIRED CARD -->
+                        <div style="background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.02)); border: 1px solid rgba(245,158,11,0.3); border-radius: 16px; padding: 25px; transition: transform 0.2s;" class="admin-dash-card" onclick="document.querySelector('.admin-tab:nth-child(2)').click()">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                                <div style="width: 45px; height: 45px; background: rgba(245,158,11,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #f59e0b;"><i class="fas fa-user-clock"></i></div>
+                                <span style="background: #f59e0b; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; letter-spacing: 1px;">URGENTE</span>
+                            </div>
+                            <div style="font-size: 36px; font-weight: 900; color: white; line-height: 1;">${pendingUsers.length}</div>
+                            <div style="font-size: 13px; color: #94a3b8; font-weight: 600; margin-top: 8px;">Cadastros Pendentes</div>
+                            <button style="margin-top: 20px; width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(245,158,11,0.5); background: transparent; color: #fbbf24; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;"><i class="fas fa-arrow-right"></i> Avaliar Agora</button>
+                        </div>
+
+                        <!-- CURATORSHIP -->
+                        <div style="background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.02)); border: 1px solid rgba(16,185,129,0.2); border-radius: 16px; padding: 25px; transition: transform 0.2s;" class="admin-dash-card" onclick="document.querySelector('.admin-tab:nth-child(6)').click()">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                                <div style="width: 45px; height: 45px; background: rgba(16,185,129,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #10b981;"><i class="fas fa-edit"></i></div>
+                            </div>
+                            <div style="font-size: 36px; font-weight: 900; color: white; line-height: 1;">${pendingEdits.length}</div>
+                            <div style="font-size: 13px; color: #94a3b8; font-weight: 600; margin-top: 8px;">Edições em Moderação</div>
+                        </div>
+
+                        <!-- FINANCE / SHARKS -->
+                        <div style="background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(59,130,246,0.02)); border: 1px solid rgba(59,130,246,0.2); border-radius: 16px; padding: 25px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                                <div style="width: 45px; height: 45px; background: rgba(59,130,246,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #3b82f6;"><i class="fas fa-fish"></i></div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 10px; color: #94a3b8; text-transform: uppercase; font-weight: 800;">Tubaroes (>R$5M)</div>
+                                    <div style="font-size: 16px; font-weight: 800; color: #60a5fa;">${sharkCount} rastreados</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 5px; font-weight: 600; text-transform: uppercase;">VGV Global High-End</div>
+                            <div style="font-size: 32px; font-weight: 900; color: white; line-height: 1;">R$ ${(vgvGlobal / 1000000000).toFixed(2)} Bi</div>
+                            <div style="font-size: 11px; color: #3b82f6; margin-top: 8px; font-weight: 600;"><i class="fas fa-chart-line"></i> Analytics de Oferta Ativa</div>
+                        </div>
+                    </div>
+
+                    <!-- USER QUICK LIST -->
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 25px;">
+                        <h3 style="margin: 0 0 20px 0; color: white; font-size: 16px; display: flex; align-items: center; gap: 10px;"><i class="fas fa-bolt" style="color:#fbbf24;"></i> Solicitações Recentes de Cadastro</h3>
+                        ${pendingUsers.length === 0 ? '<div style="color:#64748b; font-size: 13px;">Nenhum usuário aguardando liberação. Ótimo trabalho!</div>' : 
+                        `
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                ${pendingUsers.slice(0, 5).map(u => `
+                                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                                        <div style="display: flex; align-items: center; gap: 15px;">
+                                            <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 800; color: white;">${u.email.charAt(0).toUpperCase()}</div>
+                                            <div>
+                                                <div style="font-weight: 700; color: white; font-size: 14px;">${u.email}</div>
+                                                <div style="font-size: 11px; color: #94a3b8;">Aguardando liberação de acesso base.</div>
+                                            </div>
+                                        </div>
+                                        <button onclick="window.Admin.approveUser('${u.id}', '${u.email}')" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(16,185,129,0.3); transition: 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">Liberar</button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `}
+                    </div>
+                </div>
+                <style>
+                    .admin-dash-card:hover { transform: translateY(-5px); cursor: pointer; }
+                </style>
+            `;
+        } catch (e) {
+            console.error(e);
+            container.innerHTML = `<div style="color: #ef4444; padding: 20px;">Erro ao carregar Dashboard. DB Offline?</div>`;
+        } finally {
+            window.Loading.hide();
         }
     },
 

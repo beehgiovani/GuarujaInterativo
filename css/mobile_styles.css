@@ -130,7 +130,8 @@
 
     .login-form-side {
         width: 100% !important;
-        height: auto !important; /* Liberação para o banner carrossel */
+        height: auto !important;
+        /* Liberação para o banner carrossel */
         max-width: 100% !important;
         border-radius: 0 !important;
         padding: 30px 20px !important;
@@ -236,13 +237,28 @@
         max-height: 85vh !important;
         border-radius: 20px 20px 0 0 !important;
         transform: none !important;
-        /* Override translate centering */
         margin: 0 !important;
-        box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.2) !important;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3) !important;
         overflow-y: auto !important;
-        /* Smooth Entrance */
-        animation: slideUp 0.3s ease-out;
+        animation: slideUp 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
         z-index: 10000 !important;
+        background: #fff;
+    }
+
+    /* Bottom Sheet Drag Handle (Visual Context) */
+    .lot-tooltip::before {
+        content: '';
+        position: sticky;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 5px;
+        background: rgba(255, 255, 255, 0.3);
+        /* Branco para bater com o header dark */
+        border-radius: 4px;
+        z-index: 1001;
+        display: block;
     }
 
     @keyframes slideUp {
@@ -325,7 +341,7 @@
         margin: 0 -20px !important;
         /* Adjust for mobile padding */
         background: rgba(15, 23, 42, 0.95) !important;
-        border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
     }
 
     .lot-tab-btn {
@@ -625,20 +641,26 @@
 
     /* Tooltip body – more padding so data rows are easier to read */
     .lot-tooltip-body {
-        padding: 20px 16px !important;
+        padding: 24px 20px !important;
+        /* Mais respiro */
     }
 
     /* Info Blocks Mobile Grid */
     .lot-tooltip .info-block {
-        padding: 8px !important;
+        padding: 12px 8px !important;
+        /* Mais fácil para clicar/copiar */
+        border-bottom: 1px solid #f1f5f9;
+        margin-bottom: 4px;
     }
 
     .lot-tooltip .info-label {
-        font-size: 9px !important;
+        font-size: 10px !important;
+        letter-spacing: 0.5px;
     }
 
     .lot-tooltip .info-value {
-        font-size: 13px !important;
+        font-size: 14px !important;
+        margin-top: 4px;
     }
 
     /* --- TOOLTIP ACTION BUTTONS (inside enrichment card) --- */
@@ -906,5 +928,56 @@
     .btn-mobile-warning:active {
         transform: scale(0.98);
         background: #f1f5f9;
+    }
+
+    /* --- MOBILE LOADING OVERLAY OPTIMIZATION (Discreet Pill) --- */
+    #loading-overlay {
+        background: transparent !important;
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        align-items: flex-start !important;
+        padding-top: 15px !important;
+        pointer-events: none !important;
+        /* Allow clicking through if background is transparent */
+    }
+
+    #loading-overlay .loading-content {
+        background: #0f172a !important;
+        /* Dark theme to match UI */
+        border-radius: 30px !important;
+        padding: 12px 20px !important;
+        flex-direction: row !important;
+        /* Side by side */
+        align-items: center !important;
+        gap: 12px !important;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
+        width: auto !important;
+        max-width: 90vw !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+
+    #loading-overlay .spinner {
+        width: 18px !important;
+        height: 18px !important;
+        border: 2px solid rgba(255, 255, 255, 0.2) !important;
+        border-top: 2px solid #3b82f6 !important;
+        margin-bottom: 0 !important;
+    }
+
+    #loading-overlay .loading-text {
+        font-size: 13px !important;
+        color: #fff !important;
+        margin-top: 0 !important;
+        font-weight: 600 !important;
+        text-align: left !important;
+    }
+
+    #loading-overlay .loading-subtext {
+        display: none !important;
+        /* Hide subtext to keep it small */
+    }
+
+    #loading-overlay .progress-bar-container {
+        display: none !important;
     }
 }

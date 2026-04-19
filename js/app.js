@@ -57,6 +57,7 @@ async function init() {
     // 3. Setup Listeners
     window.setupSearchAndFilters();
     setupAppListeners();
+    setupPWAOfflineListeners();
 
     // 4. Load User Private Edits (Curation Rule)
     if (window.loadUserPendingEdits) {
@@ -470,3 +471,37 @@ async function checkGlobalAlert() {
 }
 
 console.log("✅ Main App (app.js) initialized");
+
+// ========================================
+// PWA OFFLINE UX LISTENER
+// ========================================
+function setupPWAOfflineListeners() {
+    const updateOnlineStatus = () => {
+        const isOnline = navigator.onLine;
+        let pwaBanner = document.getElementById('pwa-offline-banner');
+        
+        if (!isOnline) {
+            if (!pwaBanner) {
+                pwaBanner = document.createElement('div');
+                pwaBanner.id = 'pwa-offline-banner';
+                pwaBanner.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; background: #ef4444; color: white; text-align: center; padding: 6px; font-size: 11px; font-weight: 800; z-index: 999999; box-shadow: 0 2px 10px rgba(239,68,68,0.4); text-transform: uppercase; letter-spacing: 1px; transition: top 0.3s ease;';
+                pwaBanner.innerHTML = '<i class="fas fa-wifi-slash" style="margin-right: 5px;"></i> Modo Bunkers Ativo: Gravando no dispositivo...';
+                document.body.appendChild(pwaBanner);
+            }
+            window.Toast.warning("Aviso de PWA Offline", "Modo Avião ativado. Salvando localmente.");
+        } else {
+            if (pwaBanner) {
+                pwaBanner.style.background = '#10b981';
+                pwaBanner.innerHTML = '<i class="fas fa-wifi" style="margin-right: 5px;"></i> Conexão restabelecida. Sincronizando com a Nuvem...';
+                setTimeout(() => pwaBanner.remove(), 2500);
+            }
+        }
+    };
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    
+    if (!navigator.onLine) {
+        setTimeout(updateOnlineStatus, 1500); 
+    }
+}

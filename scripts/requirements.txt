@@ -1,8 +1,0 @@
-requests>=2.28.0
-beautifulsoup4>=4.11.0
-folium>=0.14.0
-opencv-python>=4.7.0
-numpy
-google-generativeai
-python-dotenv
-

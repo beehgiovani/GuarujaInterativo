@@ -299,10 +299,14 @@ window.performSearch = async function (query) {
     const type = window.currentSearchType;
     let results = [];
 
-    // VERIFICADOR DE PRIVILÉGIOS 
     const role = window.Monetization ? window.Monetization.userRole : 'user';
+    const isElite = window.Monetization ? window.Monetization.isEliteOrAbove() : false;
     const isOwnerSearchAllowed = window.Monetization ? window.Monetization.checkFeatureAccess('search_owner') : false;
-    const isBuildingSearchAllowed = window.Monetization ? window.Monetization.checkFeatureAccess('search_building') : true; // Usually minimal building search allowed
+    
+    // Pro/User: Só pesquisa no que já desbloqueou
+    const restrictionActive = !isElite && !window.isGuest; 
+    const unlockedLots = Array.from(window.Monetization?.unlockedLots || []);
+    const unlockedPersons = Array.from(window.Monetization?.unlockedPersons || []);
 
     const searchBox = document.querySelector('.search-box');
     if (searchBox) searchBox.classList.add('loading');
@@ -338,6 +342,16 @@ window.performSearch = async function (query) {
             } else {
                 queryBuilder = queryBuilder
                     .textSearch('endereco_completo', tsQuery, { config: 'portuguese' });
+            }
+
+            if (restrictionActive) {
+               // Para usuários restritos, só buscamos se houver lotes desbloqueados no buffer
+               if (unlockedLots.length > 0) {
+                   queryBuilder = queryBuilder.in('lote_inscricao', unlockedLots.slice(0, 500)); // Limite de 500 para evitar overflow de clausula IN
+               } else {
+                   // Se não tem nada desbloqueado, não retorna nada nesta categoria
+                   queryBuilder = queryBuilder.eq('inscricao', 'NONE');
+               }
             }
 
             const { data: streets } = await queryBuilder.limit(20);
@@ -445,8 +459,6 @@ window.performSearch = async function (query) {
         // 3. New Owner Search (Unified Only)
         // Acesso restrito
         if (isOwnerSearchAllowed && (type === 'all' || type === 'owner')) {
-            // Normaliza termo para bater com a coluna 'nome_busca' (que é lower + unaccent)
-            // Atenção: Esta lógica depende da migration 12_fix_accents ter sido rodada no banco
             const term = query.trim();
             let ownerQuery = window.supabaseApp
                 .from('proprietarios')
@@ -454,7 +466,6 @@ window.performSearch = async function (query) {
                 .limit(20);
 
             if (isNumeric) {
-                // Se houver números, busca por CPF (limpo) ou Nome (parcial)
                 ownerQuery = ownerQuery.or(`cpf_cnpj.ilike.%${cleanDigits}%,nome_completo.ilike.%${term}%`);
             } else {
                 ownerQuery = ownerQuery.ilike('nome_completo', `%${term}%`);
@@ -462,12 +473,15 @@ window.performSearch = async function (query) {
 
             const { data: owners } = await ownerQuery;
             
-            // Note: Proprietarios table might need a municipio link in the future 
-            // but for now they are global or matched via units.
-
             if (owners && owners.length > 0) {
-                results = results.concat(owners.map(owner => {
-                    const isUnlocked = window.Monetization && (window.Monetization.isEliteOrAbove() || window.Monetization.isUnlockedPerson(owner.cpf_cnpj));
+                // Filtro Pro/User: Só vê o que já desbloqueou
+                let filteredOwners = owners;
+                if (restrictionActive) {
+                    filteredOwners = owners.filter(o => unlockedPersons.includes(String(o.cpf_cnpj).replace(/\D/g, '')));
+                }
+
+                results = results.concat(filteredOwners.map(owner => {
+                    const isUnlocked = window.Monetization && (window.Monetization.isUnlockedPerson(owner.cpf_cnpj));
                     return {
                         type: 'Proprietário',
                         label: (owner.nome_completo && owner.nome_completo !== 'null') ? (isUnlocked ? owner.nome_completo : window.maskName(owner.nome_completo)) : 'Sem Nome',

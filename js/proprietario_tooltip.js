@@ -581,7 +581,7 @@ window.ProprietarioTooltip = {
             return '';
         }
 
-        const isUnlocked = window.Monetization.isUnlockedPerson(cpf_cnpj);
+        const isUnlocked = window.Monetization.isUnlockedEnrichment(cpf_cnpj);
 
         let html = `<div class="section" style="margin-bottom: 24px;">
             <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
@@ -645,7 +645,7 @@ window.ProprietarioTooltip = {
         const enderecos = dados.addresses || [];
         if (enderecos.length === 0) return '';
 
-        const isUnlocked = window.Monetization.isUnlockedPerson(cpf_cnpj);
+        const isUnlocked = window.Monetization.isUnlockedEnrichment(cpf_cnpj);
 
         let html = `<div class="section" style="margin-bottom: 24px;">
             <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
@@ -685,7 +685,7 @@ window.ProprietarioTooltip = {
         const empresas = dados.related_companies || [];
         if (empresas.length === 0) return '';
 
-        const isUnlocked = window.Monetization.isUnlockedPerson(cpf_cnpj);
+        const isUnlocked = window.Monetization.isUnlockedEnrichment(cpf_cnpj);
 
         let html = `<div class="section" style="margin-bottom: 24px;">
             <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
@@ -731,7 +731,7 @@ window.ProprietarioTooltip = {
         const familia = dados.family_persons || [];
         if (familia.length === 0) return '';
 
-        const isUnlocked = window.Monetization.isUnlockedPerson(cpf_cnpj);
+        const isUnlocked = window.Monetization.isUnlockedEnrichment(cpf_cnpj);
 
         let html = `<div class="section" style="margin-bottom: 24px;">
             <h3 style="font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">

@@ -292,9 +292,14 @@
                             <span onclick="window.Auth.resendConfirmation(document.getElementById('loginUser').value)" style="color: #3b82f6; font-weight: 700; cursor: pointer;">Reenviar e-mail</span>
                         </div>
 
-                        <p id="toggleAuthLink" style="margin-top: 20px; font-size: 13px; cursor: pointer; color: #3b82f6;" onclick="window.Auth.toggleAuthMode('signup')">
+                        <p id="toggleAuthLink" style="margin-top: 20px; font-size: 13px; cursor: pointer; color: #3b82f6; width: 100%; text-align: center;" onclick="window.Auth.toggleAuthMode('signup')">
                             Não tem conta? <b>Solicitar Acesso</b>
                         </p>
+                        
+                        <!-- Destaque para envio de proprietários -->
+                        <div style="margin-top: 10px; font-size: 11px; color: #94a3b8; text-align: center;">
+                            É Proprietário de Imóvel no Guarujá? <br>Faça o acesso para gerenciar sua propriedade.
+                        </div>
 
                         <a href="https://wa.me/5513992058836?text=Oi%20Bruno,%20estou%20com%20problemas%20para%20me%20cadastrar/acessar%20o%20Guarujá%20Interativo." 
                            target="_blank" 
@@ -947,11 +952,11 @@
     <script src="https://js.stripe.com/v3/"></script>
     
     <!-- App Logic -->
-    <link rel="stylesheet" href="css/anuncios_styles.css?v=1.16">
-    <script src="js/monetization_handler.js?v=1.16"></script>
-    <script src="js/search_handler.js?v=1.16"></script>
-    <script src="js/tooltip_handler.js?v=1.16"></script>
-    <script src="js/neighborhood_handler.js?v=1.16"></script>
+    <link rel="stylesheet" href="css/anuncios_styles.css?v=1.17">
+    <script src="js/monetization_handler.js?v=1.17"></script>
+    <script src="js/search_handler.js?v=1.17"></script>
+    <script src="js/tooltip_handler.js?v=1.17"></script>
+    <script src="js/neighborhood_handler.js?v=1.17"></script>
     <script src="js/osm_handler.js?v=1.16"></script>
     <script src="js/map_handler.js?v=1.16"></script>
     <script src="js/editor_handler.js?v=1.16"></script>
@@ -969,7 +974,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script src="js/analytics_tracker.js"></script>
     <script src="js/analytics_dashboard.js"></script>
-    <script src="js/proprietario_tooltip.js"></script>
+    <script src="js/proprietario_tooltip.js?v=1.17"></script>
     <!-- <script src="js/infosimples_handler.js"></script> -->
     <script src="js/gemini_chat_handler.js"></script>
     <script src="js/ai_history_handler.js"></script>

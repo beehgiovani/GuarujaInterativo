@@ -16,14 +16,33 @@ window.Monetization = {
         if (!cpf_cnpj) return false;
         const clean = String(cpf_cnpj).replace(/\D/g, '');
         
-        // NOVO: Mesmo para Admin/Master, verificamos se o dado foi 'desbloqueado' na sessão atual.
-        // Se quisermos que Admin veja TUDO direto (sem clicar no olho), voltamos o bypass.
-        // Mas para fins de teste da 'máscara', deixamos ele passar pelo fluxo do olho.
         const role = String(this.userRole || 'user').toLowerCase();
         const isMaster = role === 'admin' || role === 'master';
+        const isElite = this.isEliteOrAbove();
         
-        return this.unlockedPersons.has(clean) || (isMaster && window.DEBUG_MODE); 
-        // Nota: DEBUG_MODE ou similar pode ser usado aqui se quisermos bypass automático em dev.
+        // MASTER: Tudo liberado visualmente
+        if (isMaster) return true;
+
+        // ELITE / VIP: Visualiza dados básicos de identidade (Nome/CPF) sem gastar fichas
+        if (isElite) return true;
+
+        // DEMAIS TIERS: Requer desbloqueio prévio do lote/unidade para ver identidade básica
+        // Nota: O desbloqueio de identidade pode ser atrelado ao desbloqueio do lote em si.
+        return this.unlockedLots.has(clean) || this.unlockedPersons.has(clean);
+    },
+
+    // NOVO: Verifica se o usuário tem acesso aos dados de enriquecimento (Telefones/Emails)
+    isUnlockedEnrichment: function(cpf_cnpj) {
+        if (!cpf_cnpj) return false;
+        const clean = String(cpf_cnpj).replace(/\D/g, '');
+        const role = String(this.userRole || 'user').toLowerCase();
+        const isMaster = role === 'admin' || role === 'master';
+
+        // MASTER: Sempre tem acesso a tudo
+        if (isMaster) return true;
+
+        // TODOS OS OUTROS (VIP, Elite, Pro, etc): Exige ter pago os créditos de enriquecimento
+        return this.unlockedPersons.has(clean);
     },
 
     init: async function() {
@@ -49,20 +68,21 @@ window.Monetization = {
         if (window.isGuest) return false;
         
         switch (feature) {
-            case 'unlock_lote':     return isStart; // Desbloquear fichas de imóveis
-            case 'radar_mercado':   return isPro;   // Radar Farol (básico)
-            case 'search_owner':    return isPro;   // Busca por proprietário
+            case 'unlock_lote':     return isStart; // Desbloquear fichas de imóveis (Start+)
+            case 'radar_mercado':   return isPro;   // Radar Farol (Pro+)
+            case 'search_owner':    return isElite; // Elite+ pode pesquisar livremente no banco interno
             case 'crm_history':     return isPro;   // CRM pessoal
-            case 'advanced_ai':     return isElite; // Radar Farol completo
+            case 'advanced_ai':     return isElite; // Radar Farol completo (Elite+)
             case 'dossier_pdf': 
-            case 'pdf_dossier':     return isElite; // Dossiê PDF automático
+            case 'pdf_dossier':     return isElite; // Dossiê PDF automático (Elite+)
             case 'search_opportunity': return isElite; // Alertas de oportunidade
             case 'regional_insights':  return isElite; // Relatórios avançados
             case 'mapear_patrimonio':  return isElite;
             case 'link_cliente':    return isPro;
-            case 'marketing_tools': return isPro;
+            case 'marketing_tools': return isElite; // Elite+ para ferramentas de marketing avançadas
             case 'owner_history':   return isElite;
             case 'edit_private':    return isPro;
+            case 'admin_panel':     return isMaster; // Apenas Master/Admin
             default: return true;
         }
     },

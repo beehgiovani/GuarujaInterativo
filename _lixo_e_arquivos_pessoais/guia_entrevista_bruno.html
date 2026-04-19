@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia de Preparação - Bruno Giovani</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #020617;
+            --accent: #2563eb;
+            --tech: #0891b2;
+            --success: #10b981;
+            --bg: #f8fafc;
+            --white: #ffffff;
+            --text: #1e293b;
+            --muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            line-height: 1.5;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--white);
+            padding: 50px;
+            border-radius: 12px;
+            box-shadow: 0 4px 40px rgba(0,0,0,0.06);
+        }
+
+        header {
+            border-bottom: 4px solid var(--primary);
+            padding-bottom: 25px;
+            margin-bottom: 35px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        h1 { font-size: 28px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
+        .date { font-size: 12px; color: var(--muted); font-weight: 600; }
+
+        .section { margin-bottom: 40px; }
+        .section-title { 
+            font-size: 13px; 
+            font-weight: 800; 
+            color: var(--accent); 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        /* GRID DE EVIDÊNCIAS DE ENGENHARIA */
+        .tech-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .tech-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            border-top: 4px solid var(--tech);
+        }
+        .tech-tag {
+            font-size: 9px;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: var(--tech);
+            background: #ecfeff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            display: inline-block;
+        }
+        .tech-title { font-weight: 800; font-size: 15px; color: var(--primary); margin-bottom: 8px; }
+        .tech-desc { font-size: 12.5px; color: #475569; margin-bottom: 12px; }
+        .tech-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            background: #1e293b;
+            color: #38bdf8;
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        .pitch-box {
+            background: #eff6ff;
+            border-left: 5px solid var(--accent);
+            padding: 20px;
+            font-size: 14.5px;
+            color: #1e40af;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .footer {
+            margin-top: 60px;
+            padding-top: 25px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        @media print {
+            body { padding: 0; background: white; }
+            .container { box-shadow: none; width: 100%; max-width: 100%; padding: 20px; }
+            .tech-grid { grid-template-columns: 1fr; }
+            .no-print { display: none; }
+        }
+
+        .btn-action {
+            position: fixed; bottom: 30px; right: 30px;
+            background: var(--primary); color: white; border: none;
+            padding: 15px 30px; border-radius: 50px; font-weight: 800;
+            cursor: pointer; box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+            text-transform: uppercase; letter-spacing: 1px; font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div>
+            <h1>Deep Tech Prep: Bruno Giovani</h1>
+            <p style="font-size: 15px; font-weight: 600; color: var(--muted);">Software Engineer Principal · Especialista GIS & Automação</p>
+        </div>
+        <div class="date">Call Técnica | 17 de Abril, 2026</div>
+    </header>
+
+    <div class="section">
+        <div class="section-title">O Diferencial Arquitetural</div>
+        <div class="pitch-box">
+            "Minha senioridade reside na capacidade de construir sistemas resilientes onde o padrão não atende. No <b>Guaruja Geo Lab</b>, não apenas renderizei mapas; eu implementei um motor de busca espacial híbrido que resolve coordenadas UTM em tempo real e uma estratégia de cache PWA que sustenta megabytes de dados geoespaciais sem comprometer a memória do dispositivo."
+        </div>
+    </div>
+
+    <!-- SEÇÃO TÉCNICA PROFUNDA -->
+    <div class="section">
+        <div class="section-title">Engenharia Hídrica (Nível Sênior)</div>
+        <div class="tech-grid">
+            
+            <div class="tech-card">
+                <span class="tech-tag">Inteligência Espacial</span>
+                <div class="tech-title">Hibridismo de Busca (UTM + Spherical)</div>
+                <div class="tech-desc">Implementei uma busca espacial em dois estágios: primeiro um <i>Bounding Box</i> preciso em UTM (vetorial) e, se falhar, um fallback de proximidade esférica via Haversine.</div>
+                <div class="tech-code">
+                    google.maps.geometry.spherical.<br>computeDistanceBetween(center, latLng)
+                </div>
+            </div>
+
+            <div class="tech-card" style="border-top-color: #7c3aed;">
+                <span class="tech-tag" style="background:#f5f3ff; color:#7c3aed;">PWA / Cache Strategy</span>
+                <div class="tech-title">Stale-While-Revalidate Customizado</div>
+                <div class="tech-desc">Gerenciei o Ciclo de Vida do Service Worker para cachear seletivamente o JSON de lotes (18k+ registros), garantindo performance offline e atualizações silenciosas.</div>
+                <div class="tech-code">
+                    caches.match(request).then(response => {<br>
+                    &nbsp;&nbsp;return response || fetch(request);<br>
+                    })
+                </div>
+            </div>
+
+            <div class="tech-card" style="border-top-color: #10b981;">
+                <span class="tech-tag" style="background:#ecfdf5; color:#10b981;">Financial Security</span>
+                <div class="tech-title">Integridade de Transação (Idempotência)</div>
+                <div class="tech-desc">Lógica de "Data Police" no front e back. Verificação de unicidade de documentos (CPF/CNPJ) e normalização via Regex antes de qualquer persistência no Supabase.</div>
+                <div class="tech-code">
+                    documentVal.replace(/\D/g, '');<br>
+                    if (existingDoc) throw Error(...);
+                </div>
+            </div>
+
+            <div class="tech-card" style="border-top-color: #f59e0b;">
+                <span class="tech-tag" style="background:#fffbeb; color:#f59e0b;">Real-Time UX</span>
+                <div class="tech-title">Sincronização via Eventos (Observables)</div>
+                <div class="tech-desc">Desacoplei a UI de Monetização do resto da App. O sistema é orientado por eventos: quando o tier do usuário muda, o mapa se reconfigura sozinho via CustomEvents.</div>
+                <div class="tech-code">
+                    window.dispatchEvent(new CustomEvent(<br>
+                    &nbsp;&nbsp;'monetizationReady', { detail: { role } }<br>
+                    ));
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- SEÇÃO MASTER EVIDENCE: APLICAÇÕES REAIS -->
+    <div class="section">
+        <div class="section-title">Case Study: Aplicações Reais (Guarujá Geo Lab)</div>
+        <table style="background: #f8fafc; border: 2px solid var(--primary);">
+            <thead>
+                <tr>
+                    <th style="width: 30%; background: var(--primary); color: white;">Conceito Sênior</th>
+                    <th style="background: var(--primary); color: white;">Aplicação Real no Projeto</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><b>Event-Driven & Decoupling</b></td>
+                    <td>Uso de <b>CustomEvents</b> para desacoplamento entre módulos no <b>GeoLab Pro</b> (GIS vs Monetização).</td>
+                </tr>
+                <tr>
+                    <td><b>Performance & GIS</b></td>
+                    <td>Busca espacial híbrida (<b>UTM + Haversine</b>) e carga sob demanda no <b>GeoLab Pro</b> para gerenciar 18k+ lotes.</td>
+                </tr>
+                <tr>
+                    <td><b>Offline First & PWA</b></td>
+                    <td>Sincronização via <b>Service Worker (v3.0)</b> e persistência local <b>IndexedDB</b> no ecossistema <b>GeoLab</b>.</td>
+                </tr>
+                <tr>
+                    <td><b>Integridade Financeira</b></td>
+                    <td><b>PIX EMV (CRC16)</b> manual + Integração com <b>Stripe</b> e lógica de idempotência no <b>GeoLab Pro</b>.</td>
+                </tr>
+                <tr>
+                    <td><b>Clean Data & SQL</b></td>
+                    <td>Pipelines de ingestão no <b>MetroMar</b> com OCR e queries otimizadas no <b>PredictMed AI</b>.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="section">
+        <div class="section-title">FAQ de Alto Impacto (Modo Sênior)</div>
+        <div style="font-size: 13px; color: #334155; display: grid; gap: 15px;">
+            <p>🔴 <b>P: "Como você lida com performance de grandes volumes no front?"</b><br>
+               🟢 <b>R:</b> "No Web, uso <i>On-demand Loading</i>. No Android/Kotlin, uso <b>Paging 3</b> e <b>RecyclerView</b> com <i>DiffUtil</i>. No Jetpack Compose, garanto a performance usando <b>Stable</b> types e <i>LazyColumn</i>, evitando recomposições desnecessárias através do <i>State Hoisting</i>."</p>
+
+            <p>🔴 <b>P: "Qual sua estratégia para depurar e gerir logs em produção?"</b><br>
+               🟢 <b>R:</b> "No <b>Kotlin/Android</b>, utilizo o <b>BuildConfig.DEBUG</b> para condicionar logs. Na camada de release, 'planto' o <b>Timber</b> com uma <i>ReleaseTree</i> que reporta apenas Provedores de Crash (Crashlytics) e uso o <b>Proguard/R8</b> para remover chamadas de debug do código compilado."</p>
+
+            <p>🔴 <b>P: "Hilt ou Koin? Como você escolhe a Injeção de Dependência?"</b><br>
+               🟢 <b>R:</b> "Para projetos puramente Android, prefiro o <b>Hilt</b> por ser baseado no Dagger e gerar código em tempo de compilação (erros aparecem antes do app rodar). O <b>Koin</b> é excelente para KMP (Kotlin Multiplatform) por ser 100% Kotlin e não depender de geração de código (service locator), sendo mais leve em alguns contextos."</p>
+
+            <p>🔴 <b>P: "Como você evita Memory Leaks ao usar Coroutines?"</b><br>
+               🟢 <b>R:</b> "Sempre respeito o <b>LifecycleScope</b>. Nunca uso <i>GlobalScope</i>. No ViewModel, uso exclusivamente o <b>viewModelScope</b>, que cancela todas as tarefas automaticamente quando o componente é destruído, garantindo que não fiquem processos pendentes em segundo plano."</p>
+
+            <p>🔴 <b>P: "Qual sua abordagem para manter a Consistência de Dados Offline?"</b><br>
+               🟢 <b>R:</b> "Utilizo a abordagem <i>Single Source of Truth</i> via <b>Room</b>. O dado sempre vem do banco local; a API apenas atualiza o banco. No projeto Web (Guarugeo), usei lógica similar com <b>IndexedDB</b> no Service Worker para persistir os lotes e garantir funcionamento instável."</p>
+        </div>
+    </div>
+
+    <div class="section" style="border: 2px solid var(--tech); border-radius: 12px; padding: 20px; background: #f0f9ff;">
+        <div class="section-title" style="color: var(--tech);">Automação & RPA (Foco TO Brasil)</div>
+        <div style="font-size: 13px; color: #334155; display: grid; gap: 15px;">
+            <p>🤖 <b>Extração Geoespacial (MetroMarGeo):</b> "Desenvolvi uma engine em Python para extração massiva de dados imobiliários de fontes governamentais, utilizando OCR e Regex para converter PDFs e imagens em Big Data estruturado."</p>
+
+            <p>📧 <b>Monitoramento de E-mails:</b> "Implementei robôs para monitoramento de fluxos de entrada, identificando gatilhos de vistorias e automações de resposta baseadas em OCR, reduzindo o tempo de triagem manual em 80%."</p>
+
+            <p>⚡ <b>Data Enrichment:</b> "Criei automações que cruzam dados de múltiplas fontes (Supabase + APIs Externas) para enriquecimento de leads e propriedades, gerando inteligência de mercado em tempo real para corretores."</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Backend & Cloud Stack</div>
+        <div style="font-size: 13px; color: #334155; display: grid; gap: 15px;">
+            <p>🌩️ <b>Edge Functions (Supabase/Deno):</b> "Uso para processar lógica próximo ao usuário, reduzindo latência. No meu projeto, elas gerenciam webhooks do Stripe/Pix e automações de enriquecimento de dados sem precisar de um servidor ligado 24/7."</p>
+
+            <p>🍃 <b>Spring Boot vs Framework:</b> "O <b>Spring Framework</b> é a base (Injeção de Dep., Bean Management). O <b>Spring Boot</b> é a camada de produtividade que traz 'autolayout' e um servidor embarcado, permitindo que eu foque na regra de negócio e não em configuração XML."</p>
+
+            <p>⚙️ <b>Kafka (Mensageria):</b> "Uso para arquiteturas distribuídas e alto volume. É imbatível para garantir que eventos não se percam (persistência no disco) e para desacoplar microserviços de forma assíncrona usando tópicos e partições."</p>
+
+            <p>☁️ <b>AWS Lambda:</b> "Trabalho com o conceito <i>Serverless</i> para tarefas curtas e disparadas por eventos (S3 upload, DynamoDB alteração). Foco em otimizar o 'Cold Start' e manter as funções granulares e independentes."</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Engenharia de Performance & Estrutura</div>
+        <div style="font-size: 13px; color: #334155; display: grid; gap: 15px;">
+            <p>🏗️ <b>Modularização:</b> "Prefiro a modularização por <b>Features</b> em vez de apenas camadas. Isso permite que times diferentes trabalhem em recursos isolados, melhora o tempo de build (incremental) e facilita o reaproveitamento de código em outros apps ou módulos KMP."</p>
+
+            <p>💾 <b>Queries Otimizadas:</b> "No SQL/Room, foco em evitar o <i>N+1</i> usando <b>@Relation</b> e <b>@Transaction</b>. No banco, não abro mão de <b>Índices</b> em colunas de busca frequente e sempre substituo o <i>SELECT *</i> por apenas os campos necessários, reduzindo o tráfego de memória."</p>
+
+            <p>📊 <b>Collections (List, Set, Map):</b>
+                <br>• <b>List:</b> Coleção ordenada, aceita duplicatas. Uso para listas simples (ex: histórico).
+                <br>• <b>Set:</b> Elementos únicos. Uso para garantir que não existam duplicatas (ex: IDs de lotes selecionados no mapa).
+                <br>• <b>Map:</b> Pares Chave-Valor. Uso para buscas rápidas (O(1)) por ID ou Cache em memória."</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">Kotlin Idiomático & Avançado</div>
+...
+        <div style="font-size: 13px; color: #334155; display: grid; gap: 15px;">
+            <p>🚀 <b>Sealed Classes/Interfaces:</b> "Uso para representar estados da UI de forma exaustiva (ex: <i>UiState.Loading, UiState.Success, UiState.Error</i>). Isso garante que o compilador me avise se eu esquecer de tratar algum estado no <i>when</i>."</p>
+
+            <p>🚀 <b>Flows (State vs Shared):</b> "Uso o <b>StateFlow</b> para estados que precisam de um valor inicial e 'replay' para novos observadores (como a lista de imóveis). Já o <b>SharedFlow</b> uso para eventos únicos que não devem ser repetidos, como navegação ou disparar um Toast."</p>
+
+            <p>🚀 <b>Extensions & Functional:</b> "Aproveito o poder das <i>Extension Functions</i> para limpar o código e funções de alta ordem como <i>map, filter e flatMap</i> para manipular coleções de dados de forma declarativa e concisa."</p>
+
+            <p>🚀 <b>Null Safety:</b> "Minha regra é: fugir do '!!'. Uso <i>safe calls (?.)</i>, <i>Elvis operator (?:)</i> e <i>let/run</i> para garantir que o app seja resiliente a NullPointerExceptions, tratando nulos como estados esperados."</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        Bruno Giovani Pereira — Especialista Kotlin/Android (Guarugeo Case Study)
+    </div>
+</div>
+
+<button class="btn-action no-print" onclick="window.print()">
+    Gerar PDF Sênior
+</button>
+
+</body>
+</html>

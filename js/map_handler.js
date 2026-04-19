@@ -1135,15 +1135,15 @@ window.initMap = async function () {
             }
         }
 
-        // Add Listener to fetch data on Viewport change
-        window.map.addListener('idle', () => {
-             console.log("📍 Map Idle: Checking Viewport for data update...");
-             window.loadLotesInViewport();
-        });
+        // 3. Desativado carregamento automático por zoom (BBOX)
+        // A navegação agora é estritamente de hierarquia: Zona -> Setor -> Lote
 
-
-        // Update State & Cache
+        // Update State & Cache (Initial Seed/Cache)
         await window.saveLotesToCache(window.allLotes);
+
+        // 4. Iniciar Sincronização Total Silenciosa (Para evitar lacunas)
+        // Não usamos await aqui, roda em background
+        window.syncFullData();
 
         // Setup Realtime Subscription
         window.supabaseApp.channel('public:all_changes')
@@ -1157,7 +1157,9 @@ window.initMap = async function () {
 
         if (!isCachedLoaded) Loading.setProgress(90);
 
+        // Processa hierarquia inicial (Zonas)
         processDataHierarchy();
+        window.currentLevel = 0; // Garantir que comece no nível de Zonas
         window.renderHierarchy();
 
         const totalLotesEl = document.getElementById('totalLotes');
@@ -1181,7 +1183,7 @@ window.initMap = async function () {
         } else {
             setTimeout(() => {
                 Loading.hide();
-                // O primeiro carregamento ocorrerá via listener 'idle' disparado logo após o init
+                // O carregamento inicial foi realizado via renderHierarchy() acima
             }, 500);
         }
     } catch (e) {
@@ -1278,6 +1280,219 @@ window.loadLotesInViewport = async function() {
     }
 };
 
+/**
+ * SINCRONIZAÇÃO TOTAL SILENCIOSA
+ * Baixa iterativamente todos os lotes em chunks, alimentando o UI e o Cache
+ * sem travar o mapa, para reverter os problemas de zonas/setores vazios.
+ */
+window.syncFullData = async function() {
+    if (!window.supabaseApp) return;
+
+    let toastId = null;
+    let isFetching = true;
+    let from = 0;
+    const chunkSize = 1000;
+    let totalDownloaded = 0;
+    
+    // Mostra o toast somente se ainda não houver dados o suficiente (ex: > 10.000)
+    // ou se quisermos mostrar que a base tá alimentando
+    if (!window.allLotes || window.allLotes.length < 15000) {
+        toastId = window.Toast ? window.Toast.info("Preenchendo lacunas do mapa...", "Sincronizando Base", 0) : null;
+    }
+
+    try {
+        console.log(`[Sync] Iniciando Sincronização Total em Background`);
+
+        while (isFetching) {
+            const to = from + chunkSize - 1;
+            console.log(`[Sync] Baixando lotes: ${from} a ${to}`);
+
+            const { data, error } = await window.supabaseApp
+                .from('lotes')
+                .select('*')
+                .eq('municipio', window.currentCity || 'Guarujá')
+                .range(from, to);
+
+            if (error) {
+                console.error("[Sync] Erro na paginação:", error);
+                break; // Se deu erro, sai do loop silenciosamente
+            }
+
+            if (!data || data.length === 0) {
+                console.log("[Sync] Finalizado. Todos os lotes alcançados.");
+                break;
+            }
+
+            // Filtrar e preparar apenas lotes novos
+            let newLotesFiltered = [];
+            for (const row of data) {
+                if (!window.allLotesSet.has(row.inscricao)) {
+                    window.allLotesSet.add(row.inscricao);
+                    newLotesFiltered.push({
+                        ...row,
+                        metadata: {
+                            inscricao: row.inscricao,
+                            zona: row.zona,
+                            setor: row.setor,
+                            lote: row.lote_geo,
+                            quadra: row.quadra,
+                            loteamento: row.loteamento,
+                            bairro: row.bairro,
+                            valor_m2: row.valor_m2 ? row.valor_m2.toString().replace('.', ',') : null
+                        },
+                        bounds_utm: {
+                            minx: row.minx, miny: row.miny, maxx: row.maxx, maxy: row.maxy
+                        }
+                    });
+                }
+            }
+
+            totalDownloaded += newLotesFiltered.length;
+
+            if (newLotesFiltered.length > 0) {
+                // Junta com existing
+                window.allLotes = window.allLotes.concat(newLotesFiltered);
+                
+                // Reprocessa hierarquia silenciosamente (já está atômico internamente)
+                window.processDataHierarchy();
+                
+                // Atualiza contadores
+                const totalLotesEl = document.getElementById('totalLotes');
+                if (totalLotesEl) totalLotesEl.innerText = `${window.allLotes.length.toLocaleString()} Lotes`;
+                
+                // Se o usuário estiver num nível alto, re-renderiza os nós suavemente
+                if (window.currentLevel === 0) {
+                    window.renderHierarchy();
+                }
+            }
+
+            // Próximo lote
+            if (data.length < chunkSize) {
+                // Chegou no fim da tabela
+                break;
+            }
+
+            from += chunkSize;
+        }
+
+        // Salvar tudo pro cache após a varredura total
+        if (totalDownloaded > 0) {
+            console.log(`[Sync] Completado. ${totalDownloaded} novos lotes salvos no Cache Local.`);
+            await window.saveLotesToCache(window.allLotes);
+            if (toastId && window.Toast) {
+                window.Toast.hide(toastId);
+                window.Toast.success("Mapa 100% Sincronizado Offline", "Concluído");
+            }
+        } else {
+            // Se baixou zero novos, esconde direto
+            if (toastId && window.Toast) window.Toast.hide(toastId);
+        }
+
+    } catch (err) {
+        console.warn("[Sync] Falha na sincronização background:", err);
+        if (toastId && window.Toast) window.Toast.hide(toastId);
+    }
+};
+
+/**
+ * Hierarchical Data Fetching (BY ZONE)
+ * Loads everything for a specific zone.
+ */
+window.loadZoneData = async function(zoneId) {
+    if (!window.supabaseApp) return;
+    
+    // Feedback visual
+    const toastId = window.Toast ? window.Toast.info(`Sincronizando Zona ${zoneId}...`, "Aguarde", 0) : null;
+    
+    try {
+        console.log(`[Hierarchy] Fetching Zone ${zoneId}...`);
+        const { data, error } = await window.supabaseApp
+            .from('lotes')
+            .select('*')
+            .eq('municipio', window.currentCity || 'Guarujá')
+            .eq('zona', zoneId);
+
+        if (error) throw error;
+        if (!data || data.length === 0) return;
+
+        let newCount = 0;
+        const processed = data
+            .filter(row => !window.allLotesSet.has(row.inscricao))
+            .map(row => {
+                newCount++;
+                window.allLotesSet.add(row.inscricao);
+                return {
+                    ...row,
+                    metadata: {
+                        inscricao: row.inscricao, zona: row.zona, setor: row.setor,
+                        lote: row.lote_geo, quadra: row.quadra, bairro: row.bairro,
+                        valor_m2: row.valor_m2 ? row.valor_m2.toString().replace('.', ',') : null
+                    },
+                    bounds_utm: { minx: row.minx, miny: row.miny, maxx: row.maxx, maxy: row.maxy }
+                };
+            });
+
+        if (newCount > 0) {
+            window.allLotes = window.allLotes.concat(processed);
+            window.processDataHierarchy();
+            console.log(`[Hierarchy] Zone ${zoneId}: +${newCount} novos registros.`);
+        }
+    } catch (err) {
+        console.error("Error loading zone data:", err);
+    } finally {
+        if (toastId && window.Toast) window.Toast.hide(toastId);
+    }
+};
+
+/**
+ * Hierarchical Data Fetching (BY SECTOR)
+ * Ensures all lotes for a sector are present.
+ */
+window.loadSectorData = async function(sectorId) {
+    if (!window.supabaseApp) return;
+
+    const toastId = window.Toast ? window.Toast.info(`Carregando Setor ${sectorId}...`, "Sincronizando", 0) : null;
+
+    try {
+        console.log(`[Hierarchy] Fetching Sector ${sectorId}...`);
+        const { data, error } = await window.supabaseApp
+            .from('lotes')
+            .select('*')
+            .eq('municipio', window.currentCity || 'Guarujá')
+            .eq('setor', sectorId);
+
+        if (error) throw error;
+        if (!data || data.length === 0) return;
+
+        let newCount = 0;
+        const processed = data
+            .filter(row => !window.allLotesSet.has(row.inscricao))
+            .map(row => {
+                newCount++;
+                window.allLotesSet.add(row.inscricao);
+                return {
+                    ...row,
+                    metadata: {
+                        inscricao: row.inscricao, zona: row.zona, setor: row.setor,
+                        lote: row.lote_geo, quadra: row.quadra, bairro: row.bairro,
+                        valor_m2: row.valor_m2 ? row.valor_m2.toString().replace('.', ',') : null
+                    },
+                    bounds_utm: { minx: row.minx, miny: row.miny, maxx: row.maxx, maxy: row.maxy }
+                };
+            });
+
+        if (newCount > 0) {
+            window.allLotes = window.allLotes.concat(processed);
+            window.processDataHierarchy();
+            console.log(`[Hierarchy] Sector ${sectorId}: +${newCount} lotes.`);
+        }
+    } catch (err) {
+        console.error("Error loading sector data:", err);
+    } finally {
+        if (toastId && window.Toast) window.Toast.hide(toastId);
+    }
+};
+
 // ========================================
 // HIERARCHY PROCESSING
 // ========================================
@@ -1311,12 +1526,18 @@ function processDataHierarchy() {
                 sectors: {},
                 count: 0,
                 latSum: 0,
-                lngSum: 0
+                lngSum: 0,
+                latMin: Infinity, latMax: -Infinity,
+                lngMin: Infinity, lngMax: -Infinity
             };
         }
         window.cityData[zona].count++;
         window.cityData[zona].latSum += ll.lat;
         window.cityData[zona].lngSum += ll.lng;
+        window.cityData[zona].latMin = Math.min(window.cityData[zona].latMin, ll.lat);
+        window.cityData[zona].latMax = Math.max(window.cityData[zona].latMax, ll.lat);
+        window.cityData[zona].lngMin = Math.min(window.cityData[zona].lngMin, ll.lng);
+        window.cityData[zona].lngMax = Math.max(window.cityData[zona].lngMax, ll.lng);
 
         if (!window.cityData[zona].sectors[setor]) {
             window.cityData[zona].sectors[setor] = {
@@ -1325,13 +1546,19 @@ function processDataHierarchy() {
                 lotes: [],
                 count: 0,
                 latSum: 0,
-                lngSum: 0
+                lngSum: 0,
+                latMin: Infinity, latMax: -Infinity,
+                lngMin: Infinity, lngMax: -Infinity
             };
         }
         window.cityData[zona].sectors[setor].lotes.push(lote);
         window.cityData[zona].sectors[setor].count++;
         window.cityData[zona].sectors[setor].latSum += ll.lat;
         window.cityData[zona].sectors[setor].lngSum += ll.lng;
+        window.cityData[zona].sectors[setor].latMin = Math.min(window.cityData[zona].sectors[setor].latMin, ll.lat);
+        window.cityData[zona].sectors[setor].latMax = Math.max(window.cityData[zona].sectors[setor].latMax, ll.lat);
+        window.cityData[zona].sectors[setor].lngMin = Math.min(window.cityData[zona].sectors[setor].lngMin, ll.lng);
+        window.cityData[zona].sectors[setor].lngMax = Math.max(window.cityData[zona].sectors[setor].lngMax, ll.lng);
     }
 
     // --- Multi-Centroid Calculation for Large Zones ---
@@ -1525,11 +1752,28 @@ window.renderHierarchy = function() {
                         title: `ZONA ${zone.id}`
                     });
 
-                    marker.addListener('gmp-click', () => {
+                    marker.addListener('gmp-click', async () => {
+                        // MOBILE AUTO-COLLAPSE
+                        if (window.innerWidth <= 768 && window.closeMobileSidebar) window.closeMobileSidebar();
+
+                        // Navegação Hierárquica: Carrega dados antes de descer
+                        if (window.loadZoneData) await window.loadZoneData(zoneKey);
+                        
                         window.currentLevel = 1;
                         window.currentZone = zoneKey;
-                        window.map.setCenter({ lat: pt.lat, lng: pt.lng });
-                        window.map.setZoom(15);
+                        
+                        // Ajuste inteligente de câmera (fitBounds) instead of setZoom
+                        if (zone.latMin !== Infinity) {
+                            const bounds = new google.maps.LatLngBounds(
+                                { lat: zone.latMin, lng: zone.lngMin },
+                                { lat: zone.latMax, lng: zone.lngMax }
+                            );
+                            window.map.fitBounds(bounds, 50); // padding de 50px
+                        } else {
+                            window.map.setCenter({ lat: pt.lat, lng: pt.lng });
+                            window.map.setZoom(15);
+                        }
+                        
                         window.renderHierarchy();
                     });
                     googleMarkers.push(marker);
@@ -1604,14 +1848,32 @@ window.renderHierarchy = function() {
                     map: window.map,
                     position: { lat: centerLat, lng: centerLng },
                     content: content,
-                    title: `Setor ${sector.id}`
+                    title: `Setor ${sector.id}`,
+                    collisionBehavior: google.maps.CollisionBehavior.REQUIRED
                 });
 
-                marker.addListener('gmp-click', () => {
+                marker.addListener('gmp-click', async () => {
+                    // MOBILE AUTO-COLLAPSE
+                    if (window.innerWidth <= 768 && window.closeMobileSidebar) window.closeMobileSidebar();
+
+                    // Navegação Hierárquica: Carrega dados do setor antes de descer
+                    if (window.loadSectorData) await window.loadSectorData(sectorKey);
+
                     window.currentLevel = 2;
                     window.currentSector = sectorKey;
-                    window.map.setCenter({ lat: centerLat, lng: centerLng });
-                    window.map.setZoom(17);
+                    
+                    // Ajuste inteligente de câmera (fitBounds) para ver todos os lotes do setor
+                    if (sector.latMin !== Infinity) {
+                        const bounds = new google.maps.LatLngBounds(
+                            { lat: sector.latMin, lng: sector.lngMin },
+                            { lat: sector.latMax, lng: sector.lngMax }
+                        );
+                        window.map.fitBounds(bounds, 30);
+                    } else {
+                        window.map.setCenter({ lat: centerLat, lng: centerLng });
+                        window.map.setZoom(17);
+                    }
+
                     window.renderHierarchy();
                 });
                 googleMarkers.push(marker);
@@ -1727,10 +1989,14 @@ window.renderHierarchy = function() {
                 map: window.map,
                 position: { lat: lote._lat, lng: lote._lng },
                 content: content,
-                title: displayLabel
+                title: displayLabel,
+                collisionBehavior: google.maps.CollisionBehavior.REQUIRED
             });
 
             marker.addListener('gmp-click', async () => {
+                // MOBILE AUTO-COLLAPSE
+                if (window.innerWidth <= 768 && window.closeMobileSidebar) window.closeMobileSidebar();
+
                 const fullLote = await window.fetchLotDetails(lote.inscricao);
                 if (fullLote) {
                     // Decouple rendering from touchend event to avoid performance violations (1s+ lag)

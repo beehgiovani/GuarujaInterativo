@@ -451,60 +451,89 @@ window.loadLeads = async function () {
         const { data: { user } } = await window.supabaseApp.auth.getUser();
         if (!user) return;
 
-        // O Supabase RLS já garante que o usuário só vê os SEUS dados,
-        // mas filtrando explicitamente por user_id é uma boa prática e evita confusão.
         const { data: leads, error } = await window.supabaseApp
             .from('leads')
             .select('*')
             .eq('user_id', user.id)
-            .order('status', { ascending: false }) // Quentes primeiro
-            .order('created_at', { ascending: false });
+            .order('updated_at', { ascending: false });
 
         if (error) throw error;
 
+        // Renderização Base
         if (!leads || leads.length === 0) {
             listContainer.innerHTML = `
                 <div style="padding: 40px 20px; text-align: center; color: #94a3b8;">
                     <i class="fas fa-user-friends" style="font-size: 32px; opacity: 0.2; margin-bottom: 12px; display: block;"></i>
-                    <p style="font-size: 13px; font-weight: 500; color: #64748b;">Sua carteira está vazia.</p>
-                    <p style="font-size: 11px; margin-top: 8px;">Adicione clientes clicando no "+" acima ou através do Radar Farol.</p>
+                    <p style="font-size: 13px; font-weight: 500; color: #64748b;">Sua carteira Kanban está vazia.</p>
                 </div>`;
             return;
         }
 
-        // --- DASHBOARD DE PERFORMANCE (TOP DA SIDEBAR) ---
         const hotLeads = leads.filter(l => l.status === 'Quente').length;
         const totalValue = leads.reduce((acc, l) => acc + (l.valor_max || 0), 0);
 
         let dashboardHTML = `
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-                <div style="background: #fdf2f2; border: 1px solid #fee2e2; padding: 12px; border-radius: 12px; box-shadow: 0 2px 4px rgba(239,68,68,0.05);">
-                    <div style="font-size: 9px; color: #ef4444; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">🔥 Quentes</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; padding: 0 10px;">
+                <div style="background: #fdf2f2; border: 1px solid #fee2e2; padding: 12px; border-radius: 12px;">
+                    <div style="font-size: 9px; color: #ef4444; font-weight: 800; text-transform: uppercase;">🔥 Quentes</div>
                     <div style="font-size: 18px; font-weight: 900; color: #991b1b;">${hotLeads}</div>
                 </div>
-                <div style="background: #f0fdf4; border: 1px solid #dcfce7; padding: 12px; border-radius: 12px; box-shadow: 0 2px 4px rgba(22,163,74,0.05);">
-                    <div style="font-size: 9px; color: #16a34a; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">💰 Potencial</div>
+                <div style="background: #f0fdf4; border: 1px solid #dcfce7; padding: 12px; border-radius: 12px;">
+                    <div style="font-size: 9px; color: #16a34a; font-weight: 800; text-transform: uppercase;">💰 Potencial Global</div>
                     <div style="font-size: 18px; font-weight: 900; color: #166534;">R$ ${(totalValue/1000000).toFixed(1)}M</div>
                 </div>
             </div>
+            <div style="padding: 0 10px; margin-bottom: 10px; color: #64748b; font-size: 11px; font-weight: 700;">
+                <i class="fas fa-arrows-alt-h"></i> Arraste os cards (Touch ou Mouse) entre as colunas para atualizar.
+            </div>
         `;
 
-        // Render metrics + List
-        listContainer.innerHTML = dashboardHTML + leads.map(lead => createSidebarLeadCard(lead)).join('');
-        
-        // Setup Search Listener
+        // Kanban Board Generation
+        const renderKanban = (data) => {
+            const columns = {
+                'Frio': { id: 'Frio', title: '❄️ Frio', color: '#3b82f6', bg: '#eff6ff', border: '#bfdbfe', items: [] },
+                'Morno': { id: 'Morno', title: '🌤️ Morno', color: '#f59e0b', bg: '#fffbeb', border: '#fde68a', items: [] },
+                'Quente': { id: 'Quente', title: '🔥 Quente', color: '#ef4444', bg: '#fef2f2', border: '#fecaca', items: [] },
+                'Fechado': { id: 'Fechado', title: '✅ Fechado', color: '#10b981', bg: '#f0fdf4', border: '#bbf7d0', items: [] }
+            };
+
+            data.forEach(l => {
+                const status = columns[l.status] ? l.status : 'Frio';
+                columns[status].items.push(l);
+            });
+
+            return `
+                <div class="kanban-board" style="display: flex; gap: 15px; padding: 0 10px 20px 10px; overflow-x: auto; scroll-snap-type: x mandatory; min-height: 400px;">
+                    ${Object.values(columns).map(col => `
+                        <div class="kanban-column" data-status="${col.id}" style="scroll-snap-align: start; flex: 0 0 280px; background: #f8fafc; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0;">
+                            <div style="padding: 12px 15px; background: ${col.bg}; border-bottom: 2px solid ${col.border}; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 2;">
+                                <span style="font-weight: 800; font-size: 13px; color: ${col.color};">${col.title}</span>
+                                <span style="background: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 800; color: ${col.color}; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">${col.items.length}</span>
+                            </div>
+                            <div class="kanban-dropzone" style="flex: 1; padding: 10px; min-height: 150px; overflow-y: auto; touch-action: pan-y;">
+                                ${col.items.map(l => createSidebarLeadCard(l)).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        };
+
+        listContainer.innerHTML = dashboardHTML + renderKanban(leads);
+
+        // Search Listener
         const searchInput = document.getElementById('crmSearchInput');
         if (searchInput) {
             searchInput.oninput = (e) => {
                 const query = e.target.value.toLowerCase();
-                const filtered = leads.filter(l => 
-                    l.nome.toLowerCase().includes(query) || 
-                    (l.telefone && l.telefone.includes(query)) ||
-                    (l.email && l.email.toLowerCase().includes(query))
-                );
-                listContainer.innerHTML = dashboardHTML + filtered.map(l => createSidebarLeadCard(l)).join('');
+                const filtered = leads.filter(l => l.nome.toLowerCase().includes(query) || (l.telefone && l.telefone.includes(query)));
+                listContainer.innerHTML = dashboardHTML + renderKanban(filtered);
+                window.initKanbanTouchEvents();
             };
         }
+
+        // Initialize Native Mobile Drag & Drop (Touch Events)
+        window.initKanbanTouchEvents();
 
     } catch (e) {
         console.error('CRM Load error:', e);
@@ -513,49 +542,168 @@ window.loadLeads = async function () {
 };
 
 function createSidebarLeadCard(lead) {
-    const statusColor = lead.status === 'Quente' ? '#ef4444' : (lead.status === 'Morno' ? '#f59e0b' : '#3b82f6');
     const valorFormatted = lead.valor_max ? `R$ ${(lead.valor_max/1000).toFixed(0)}k` : '---';
 
     return `
-        <div class="crm-sidebar-card" style="position: relative; overflow: hidden; background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; margin-bottom: 12px; cursor: pointer;" 
+        <div class="crm-sidebar-card kanban-card" data-lead-id="${lead.id}" draggable="true" style="position: relative; background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 10px; cursor: grab; box-shadow: 0 2px 5px rgba(0,0,0,0.02); touch-action: none; transition: transform 0.2s, box-shadow 0.2s;" 
              onclick="window.openLeadDetail('${lead.id}')">
             
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-                <div style="flex: 1; min-width: 0;">
-                    <div style="font-weight: 800; color: #1e293b; font-size: 14px; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${lead.nome}</div>
-                    <div style="font-size: 10px; color: #94a3b8; display: flex; align-items: center; gap: 4px;">
-                        <i class="fas fa-calendar-day" style="font-size: 9px;"></i> 
-                        Atualizado ${new Date(lead.updated_at || lead.created_at).toLocaleDateString()}
-                    </div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <div style="flex: 1; min-width: 0; pointer-events: none;">
+                    <div style="font-weight: 800; color: #1e293b; font-size: 13px; margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${lead.nome}</div>
+                    <div style="font-size: 10px; color: #94a3b8;"><i class="fas fa-clock"></i> ${new Date(lead.updated_at || lead.created_at).toLocaleDateString()}</div>
                 </div>
-                <span class="heat-tag ${lead.status?.toLowerCase() || 'cold'}">${lead.status || 'Frio'}</span>
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
-                <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #475569; background: #f8fafc; padding: 4px 8px; border-radius: 6px;">
-                    <i class="fas fa-home" style="color: #94a3b8; font-size: 10px;"></i> 
-                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${lead.tipo_imovel || 'Imóvel'}</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #059669; background: #ecfdf5; padding: 4px 8px; border-radius: 6px;">
-                    <i class="fas fa-money-bill-wave" style="font-size: 10px;"></i> 
-                    <span style="font-weight: 700;">${valorFormatted}</span>
-                </div>
+            <div style="display: grid; grid-template-columns: 1fr; gap: 4px; margin-bottom: 10px; pointer-events: none;">
+                <div style="font-size: 11px; color: #059669; font-weight: 800;"><i class="fas fa-money-bill-wave"></i> ${valorFormatted}</div>
+                <div style="font-size: 10px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><i class="fas fa-home"></i> ${lead.tipo_imovel || 'Imóvel'}</div>
             </div>
 
             <div style="display: flex; gap: 6px;" onclick="event.stopPropagation()">
-                <button onclick="window.findMatches('${lead.id}')" style="flex: 1; height: 32px; background: #2563eb; color: white; border: none; border-radius: 8px; font-size: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
-                    <i class="fas fa-search"></i> Matches
+                <button onclick="window.findMatches('${lead.id}')" style="flex: 1; height: 28px; background: #f1f5f9; color: #2563eb; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 10px; font-weight: 800; cursor: pointer;">
+                    <i class="fas fa-search"></i> Match
                 </button>
-                <button onclick="window.openWhatsApp('${lead.telefone}', '${lead.nome}')" style="width: 32px; height: 32px; background: #22c55e; color: white; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                <button onclick="window.openWhatsApp('${lead.telefone}', '${lead.nome}')" style="width: 28px; height: 28px; background: #22c55e; color: white; border: none; border-radius: 6px; cursor: pointer;">
                     <i class="fab fa-whatsapp"></i>
-                </button>
-                <button onclick="window.editLead('${lead.id}')" style="width: 32px; height: 32px; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-edit"></i>
                 </button>
             </div>
         </div>
     `;
 }
+
+// ========================================
+// KANBAN TOUCH & DRAG SYSTEM (PWA Mobile)
+// ========================================
+window.initKanbanTouchEvents = function() {
+    const cards = document.querySelectorAll('.kanban-card');
+    const dropzones = document.querySelectorAll('.kanban-dropzone');
+    
+    let draggedCard = null;
+    let initialX = 0, initialY = 0;
+    let cloneCard = null;
+
+    // --- MOUSE DRAG & DROP (Desktop) ---
+    cards.forEach(card => {
+        card.addEventListener('dragstart', function(e) {
+            draggedCard = this;
+            e.dataTransfer.setData('text/plain', this.dataset.leadId);
+            setTimeout(() => this.style.opacity = '0.4', 0);
+        });
+        card.addEventListener('dragend', function() {
+            this.style.opacity = '1';
+            draggedCard = null;
+        });
+    });
+
+    dropzones.forEach(zone => {
+        zone.addEventListener('dragover', e => {
+            e.preventDefault();
+            zone.closest('.kanban-column').style.transform = 'scale(1.02)';
+        });
+        zone.addEventListener('dragleave', e => {
+            zone.closest('.kanban-column').style.transform = 'none';
+        });
+        zone.addEventListener('drop', async function(e) {
+            e.preventDefault();
+            this.closest('.kanban-column').style.transform = 'none';
+            if (!draggedCard) return;
+            
+            this.appendChild(draggedCard);
+            const newStatus = this.closest('.kanban-column').dataset.status;
+            await window.updateLeadStatus(draggedCard.dataset.leadId, newStatus);
+        });
+    });
+
+    // --- MOBILE TOUCH DRAG PWA ---
+    cards.forEach(card => {
+        card.addEventListener('touchstart', function(e) {
+            // Prevent interference if clicking a button inside
+            if(e.target.tagName.toLowerCase() === 'button' || e.target.closest('button')) return;
+
+            initialX = e.touches[0].clientX;
+            initialY = e.touches[0].clientY;
+            draggedCard = this;
+
+            // Long press delay for scrolling vs dragging
+            this.touchTimer = setTimeout(() => {
+                // visual feedback
+                this.style.opacity = '0.5';
+                
+                // Create absolute clone to follow finger
+                cloneCard = this.cloneNode(true);
+                cloneCard.style.position = 'fixed';
+                cloneCard.style.zIndex = '999999';
+                cloneCard.style.opacity = '0.9';
+                cloneCard.style.width = this.offsetWidth + 'px';
+                cloneCard.style.pointerEvents = 'none'; // so we can detect elements underneath
+                document.body.appendChild(cloneCard);
+                moveClone(e.touches[0]);
+            }, 300); // 300ms hold to drag
+        }, { passive: true });
+
+        card.addEventListener('touchmove', function(e) {
+            if (!cloneCard && this.touchTimer) {
+                // If moved before timer fired, it's a scroll, cancel drag
+                clearTimeout(this.touchTimer);
+                return;
+            }
+            if (cloneCard) {
+                e.preventDefault(); // Stop scrolling while dragging
+                moveClone(e.touches[0]);
+            }
+        }, { passive: false });
+
+        card.addEventListener('touchend', async function(e) {
+            clearTimeout(this.touchTimer);
+            this.style.opacity = '1';
+            
+            if (cloneCard) {
+                const touch = e.changedTouches[0];
+                cloneCard.remove();
+                cloneCard = null;
+
+                // Find element finger dropped on
+                const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (dropTarget) {
+                    const column = dropTarget.closest('.kanban-column');
+                    if (column && column !== draggedCard.closest('.kanban-column')) {
+                        const newStatus = column.dataset.status;
+                        const dropzone = column.querySelector('.kanban-dropzone');
+                        dropzone.appendChild(draggedCard);
+                        await window.updateLeadStatus(draggedCard.dataset.leadId, newStatus);
+                    }
+                }
+            }
+            draggedCard = null;
+        });
+    });
+
+    function moveClone(touch) {
+        if (!cloneCard) return;
+        cloneCard.style.left = (touch.clientX - (cloneCard.offsetWidth / 2)) + 'px';
+        cloneCard.style.top = (touch.clientY - (cloneCard.offsetHeight / 2)) + 'px';
+    }
+};
+
+window.updateLeadStatus = async function(leadId, newStatus) {
+    if(!navigator.onLine) {
+        window.Toast.warning("Sem conexão. Movimento guardado para sincronizar depois.");
+        // Note: For complete PWA, we would save to local IndexedDB fallback here.
+    } else {
+        window.Toast.info(`Atualizando para ${newStatus}...`);
+    }
+
+    try {
+        const { error } = await window.supabaseApp.from('leads').update({ status: newStatus }).eq('id', leadId);
+        if (error) throw error;
+        window.Toast.success('Kanban atualizado!');
+        if(document.getElementById('leadsPanel')) window.showLeadsPanel(); // trigger radar refresh if needed
+    } catch (e) {
+        window.Toast.error("Erro ao mover cliente: " + e.message);
+        window.loadLeads(); // roll back UI
+    }
+};
 
 // ========================================
 // LEAD DETAIL PANEL (Premium View)

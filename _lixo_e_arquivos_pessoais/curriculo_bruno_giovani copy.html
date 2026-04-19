@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bruno Giovani Pereira - Curriculum Vitae</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary:   #0f172a; /* Midnight */
+    --accent:    #10b981; /* Emerald */
+    --accent-dim: #ecfdf5;
+    --secondary: #334155; /* Slate */
+    --personal:  #6366f1; /* Indigo */
+    --light:     #f8fafc;
+    --border:    #f1f5f9;
+    --text:      #1e293b;
+    --muted:     #64748b;
+    --white:     #ffffff;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #e2e8f0;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 840px;
+    margin: 40px auto;
+    background: var(--white);
+    padding: 0;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ── HEADER ─────────────────────────────────────── */
+  .header {
+    background: var(--primary);
+    color: white;
+    padding: 50px 60px;
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 5px solid var(--accent);
+  }
+
+  .header-content h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 6px;
+    line-height: 1;
+  }
+
+  .header-content .subtitle {
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .header-meta {
+    text-align: right;
+    font-size: 11px;
+    opacity: 0.8;
+  }
+
+  .header-meta a {
+    color: white;
+    text-decoration: none;
+    display: block;
+    margin-bottom: 4px;
+    transition: color 0.2s;
+  }
+
+  .header-meta a:hover { color: var(--accent); }
+
+  .contacts-bar {
+    background: #1a2236;
+    padding: 12px 60px;
+    display: flex;
+    gap: 30px;
+    color: rgba(255,255,255,0.7);
+    font-size: 11px;
+    border-bottom: 1px solid #2d3748;
+  }
+
+  .contact-item { display: flex; align-items: center; gap: 8px; }
+  .contact-item svg { width: 14px; height: 14px; fill: var(--accent); }
+
+  /* ── BODY ────────────────────────────────────────── */
+  .main-container {
+    padding: 40px 60px;
+  }
+
+  .section { margin-bottom: 35px; }
+
+  .section-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 25px;
+    border-left: 4px solid var(--accent);
+    padding: 10px 18px;
+    background: linear-gradient(to right, var(--accent-dim), transparent);
+    border-radius: 0 8px 8px 0;
+  }
+
+  /* ── SUMMARY ─────────────────────────────────────── */
+  .summary-text {
+    font-size: 14px;
+    color: var(--secondary);
+    line-height: 1.7;
+    margin-bottom: 10px;
+  }
+
+  /* ── ENTRIES ──────────────────────────── */
+  .entry { margin-bottom: 25px; position: relative; }
+
+  .entry-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .entry-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+
+  .entry-date {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--light);
+    padding: 4px 12px;
+    border-radius: 4px;
+    height: fit-content;
+  }
+
+  .entry-company {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .entry-content {
+    list-style: none;
+    padding-left: 15px;
+  }
+
+  .entry-content li {
+    position: relative;
+    margin-bottom: 5px;
+    color: var(--secondary);
+  }
+
+  .entry-content li::before {
+    content: '→';
+    position: absolute;
+    left: -15px;
+    color: var(--accent);
+    font-weight: bold;
+  }
+
+  /* ── SKILLS ─────────────────────────────────── */
+  .skills-card {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+  }
+
+  .skill-box {
+    background: var(--white);
+    border: 1px solid var(--border);
+    padding: 20px;
+    border-radius: 10px;
+    transition: border-color 0.3s, transform 0.2s;
+  }
+
+  .skill-box:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .skill-box h4 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 15px;
+    letter-spacing: 1.5px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+  }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag {
+    background: var(--light);
+    color: var(--primary);
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid transparent;
+  }
+
+  /* ── CERTS ───────────────────────────────────────── */
+  .certs-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .cert-card {
+    border: 1px solid var(--border);
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .cert-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+  .cert-info .name { font-weight: 700; color: var(--primary); font-size: 12px; margin-bottom: 2px; }
+  .cert-info .issuer { color: var(--muted); font-size: 11px; }
+  .cert-date-badge { font-size: 10px; background: var(--accent-dim); color: var(--accent); padding: 2px 8px; border-radius: 4px; font-weight: 700; }
+
+  /* ── BANNER PROJECTS ──────────────────── */
+  .project-type-banner {
+    background: var(--primary);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: inline-block;
+  }
+
+  /* ── PRINT ─────────────────────────────────────────── */
+  @page {
+    size: A4;
+    margin: 0 !important; /* FORÇA REMOÇÃO DE CABEÇALHOS/RODAPÉS DO NAVEGADOR */
+  }
+  @media print {
+    body { 
+      background: white !important; 
+      -webkit-print-color-adjust: exact; 
+      print-color-adjust: exact;
+    }
+    .page { 
+      margin: 0 !important; 
+      padding: 1.2cm 1.5cm !important; /* Margem ajustada */
+      box-shadow: none !important; 
+      width: 100% !important; 
+      max-width: 100% !important; 
+    }
+    /* Permite que a seção quebre, mas mantém blocos individuais unidos */
+    .entry, .skill-box, .cert-card {
+      page-break-inside: avoid; 
+      break-inside: avoid;
+    }
+    .no-print { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-content">
+      <h1>Bruno Giovani Pereira</h1>
+      <div class="subtitle">Software Engineer Principal</div>
+    </div>
+    <div class="header-meta">
+      <p>Guarujá, SP — Brasil</p>
+      <a href="https://linkedin.com/in/beehgiovani">linkedin.com/in/beehgiovani</a>
+      <a href="https://github.com/beehgiovani">github.com/beehgiovani</a>
+    </div>
+  </header>
+
+  <!-- CONTACTS BAR -->
+  <div class="contacts-bar">
+    <div class="contact-item"><span>📧</span> brunoadmin@guarujainterativo.com.br</div>
+    <div class="contact-item"><span>📱</span> (13) 99205-8836</div>
+    <div class="contact-item"><span>🌐</span> guarujainterativo.com.br</div>
+  </div>
+
+  <div class="main-container">
+    <!-- SUMMARY -->
+    <section class="section">
+      <div class="section-title">Resumo Profissional</div>
+      <p class="summary-text">
+        Software Engineer Principal com sólida experiência de 7+ anos em Geotecnologia (GIS), Automação Avançada (OSINT/LegalTech) e Arquitetura de Sistemas. Especializado em pipelines de extração massiva, arquiteturas orientadas a eventos e construção de plataformas SaaS de alta escala. Especialista em ecossistemas Java/Kotlin, TypeScript e Python voltado para RPA e processamento de Big Data.
+      </p>
+    </section>
+
+    <!-- EXPERIENCE -->
+    <section class="section">
+      <div class="section-title">Experiência Profissional</div>
+      
+      <div class="entry">
+        <div class="entry-header">
+          <div class="entry-title">Consultor de Desenvolvimento Kotlin / Android</div>
+          <div class="entry-date">Jan 2024 – Presente</div>
+        </div>
+        <span class="entry-company">Soo Tech / Agilidade — Remoto</span>
+        <ul class="entry-content">
+          <li>Arquitetura e manutenção de aplicações Android nativas com Kotlin e Jetpack Compose.</li>
+          <li>Integração de ecossistemas REST com autenticação OAuth2/JWT de alta segurança.</li>
+          <li>Mentoria técnica e code-review em ciclos ágeis de alta performance.</li>
+          <li>Otimização de persistência distribuída e tuning de queries PostgreSQL.</li>
+        </ul>
+      </div>
+
+      <div class="entry">
+        <div class="entry-header">
+          <div class="entry-title">Lead Developer – Automação & Data Engineering</div>
+          <div class="entry-date">Jan 2024 – Mar 2026</div>
+        </div>
+        <span class="entry-company">Cimed Indústria de Medicamentos</span>
+        <ul class="entry-content">
+          <li>Liderança de squad multidisciplinar focada em automação de ERP e processos industriais.</li>
+          <li>Desenvolvimento de pipelines de Big Data para análise logística e forecasting de vendas.</li>
+          <li>Arquitetura de dashboards estratégicos e extração massiva via WebScraping estruturado.</li>
+        </ul>
+      </div>
+
+      <div class="entry">
+      <br>  <div class="entry-header">
+          <div class="entry-title">OmniSint: Senior Research Engineer (OSINT & Automation)</div>
+          <div class="entry-date">2021 – Presente</div>
+        </div>
+        <span class="entry-company">DocuGov: Municipal Compliance & Automation Suite</span>
+        <ul class="entry-content">
+          <li>Arquitetura de motores de extração com OCR inteligente para bypass de CAPTCHAs governamentais.</li>
+          <li>Implementação de pipelines de inteligência OSINT cruzando GeoServer WFS e dados tributários.</li>
+          <li>Desenvolvimento de soluções serverless (Edge Functions) para alta disponibilidade de extração.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- PROJECTS -->
+    <section class="section">
+      <div class="section-title">Projetos de Arquitetura Propria</div>
+      
+      <div class="project-type-banner">Flagship GIS Platform</div>
+      <div class="entry">
+        <div class="entry-header">
+          <div class="entry-title">GeoLab Pro: Principal Geospatial Systems Platform</div>
+          <div class="entry-date">2023 – Presente</div>
+        </div>
+        <span class="entry-company">Arquiteto Principal | guarujainterativo.com.br</span>
+        <ul class="entry-content">
+          <li>Plataforma GIS SaaS gerenciando 18k+ lotes com arquitetura Event-Driven (CustomEvents).</li>
+          <li>Backend Realtime com Supabase, Deno Edge Functions e Google Maps Advanced SDK.</li>
+          <li>Sistemas financeiros integrados (Stripe/PIX EMV) com lógica de idempotência rigorosa.</li>
+        </ul>
+      </div>
+
+      <div class="entry">
+        <div class="entry-header">
+          <div class="entry-title">PredictMed AI: Clinical Analytics Ecosystem</div>
+          <div class="entry-date">2023 – Presente</div>
+        </div>
+        <span class="entry-company">Systems Architect — Next.js & AI</span>
+        <ul class="entry-content">
+          <li>Ecossistema de análise clínica preditiva utilizando algoritmos de forecasting em TypeScript.</li>
+          <li>Arquitetura focada em escalabilidade horizontal e segurança de dados médicos (HIPAA-compliant).</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- SKILLS -->
+    <section class="section">
+      <div class="section-title">Arsenal Técnico</div>
+      <div class="skills-card">
+        <div class="skill-box">
+          <h4>Backend & Cloud</h4>
+          <div class="tags">
+            <span class="tag">Kotlin</span><span class="tag">Java</span><span class="tag">Python</span>
+            <span class="tag">Node.js</span><span class="tag">Kafka</span><span class="tag">AWS Lambda</span>
+            <span class="tag">PostgreSQL</span><span class="tag">Supabase</span>
+          </div>
+        </div>
+        <div class="skill-box">
+          <h4>Frontend & Mobile</h4>
+          <div class="tags">
+            <span class="tag">TypeScript</span><span class="tag">React</span><span class="tag">Android Native</span>
+            <span class="tag">Compose</span><span class="tag">Angular</span><span class="tag">Leaflet.js</span>
+            <span class="tag">Capacitor.js</span>
+          </div>
+        </div>
+        <div class="skill-box">
+          <h4>Especialidades</h4>
+          <div class="tags">
+            <span class="tag">RPA/Scraping</span><span class="tag">GIS/Cartografia</span><span class="tag">OCR</span>
+            <span class="tag">OSINT</span><span class="tag">Clean Arch</span><span class="tag">Deno</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CERTS -->
+    <section class="section">
+      <div class="section-title">Formação & Certificações</div>
+      <div class="certs-grid">
+        <!-- Prestige & Strategy -->
+        <div class="cert-card">
+          <div class="cert-info">
+            <div class="name">Executive Strategy: Storytelling & Business English</div>
+            <div class="issuer">U. Chicago / Santander</div>
+          </div>
+          <div class="cert-date-badge">2026</div>
+        </div>
+
+        <!-- Architecture -->
+        <div class="cert-card">
+          <div class="cert-info">
+            <div class="name">Angular Architecture (Pro)</div>
+            <div class="issuer">Loiane Training</div>
+          </div>
+          <div class="cert-date-badge">2026</div>
+        </div>
+
+        <!-- Data -->
+        <div class="cert-card">
+          <div class="cert-info">
+            <div class="name">Data Analytics & DB Administration (Power BI / SQL)</div>
+            <div class="issuer">Santander / Certificação Técnica</div>
+          </div>
+          <div class="cert-date-badge">2026</div>
+        </div>
+        
+        <!-- JavaScript Mastery -->
+        <div class="cert-card" style="border-left: 3px solid var(--accent);">
+          <div class="cert-info">
+            <div class="name">Formação Engenharia JavaScript Full Stack</div>
+            <div class="issuer">Alura (Trilha de 7+ Especializações)</div>
+          </div>
+          <div class="cert-date-badge">2025</div>
+        </div>
+
+        <!-- Historical Foundation -->
+        <div class="cert-card" style="opacity: 0.8; background: #fafafa; grid-column: span 2;">
+          <div class="cert-info">
+            <div class="name">Fundamentos de Tecnologia: Hardware, Redes, Lógica e Desenvolvimento Web</div>
+            <div class="issuer">Formação Técnica & Institutos de Tecnologia (Legado Consolidado)</div>
+          </div>
+          <div class="cert-date-badge">2001 — 2006</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+</body>
+</html>

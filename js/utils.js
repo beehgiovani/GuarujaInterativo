@@ -74,6 +74,13 @@ const Toast = window.Toast = {
 
     info(message, title) {
         return this.show(message, 'info', title);
+    },
+
+    hide(toastEl) {
+        if (toastEl && typeof toastEl.remove === 'function') {
+            toastEl.classList.add('removing');
+            setTimeout(() => toastEl.remove(), 300);
+        }
     }
 };
 
