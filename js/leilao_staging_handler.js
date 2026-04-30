@@ -1,6 +1,4 @@
-// ==========================================
-// LEILÃO STAGING HANDLER
-// ==========================================
+// Leilão staging handler
 // Manages the moderation panel for scraped property auctions (Caixa Leilões).
 
 window.LeilaoStaging = {

@@ -1,6 +1,4 @@
-// ==========================================
-// REGIONAL HANDLER - REGIONAL_HANDLER.JS
-// ==========================================
+// Regional handler - regional_handler.js
 // Lógica para análise de investidores e estatísticas por região (Zona)
 
 window.RegionalHandler = {

@@ -5,9 +5,7 @@ window.initEditorHandlerRefs = function (refs) {
     // Shared state is accessed via window.allLotes, window.Loading, etc.
 };
 
-// ========================================
-// IMAGE UPLOAD HELPER
-// ========================================
+// Image upload helper
 async function uploadToSupabase(file, inscricao) {
     const fileExt = file.name.split('.').pop();
     const fileName = `${inscricao}_${Date.now()}.${fileExt}`;
@@ -26,9 +24,7 @@ async function uploadToSupabase(file, inscricao) {
     return publicUrl;
 }
 
-// ========================================
-// LOT EDITOR (TOOLTIP VERSION)
-// ========================================
+// Lot editor (tooltip version)
 window.editFromTooltip = function (inscricao) {
     // Allow everyone to suggest edits (Admin = Global, User = Private/Curatorship)
     const isAdmin = window.Monetization && (window.Monetization.userRole === 'admin' || window.Monetization.userRole === 'master');
@@ -70,7 +66,8 @@ window.editFromTooltip = function (inscricao) {
                 </div>
                 <input type="hidden" id="edit-gallery-json" value='${JSON.stringify(existingEdits.gallery || lote.gallery || [])}'>
             </div>
-            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
                 <div style="flex: 1;">
                     <label style="display: block; font-weight: 600; font-size: 11px; color: #666;">Andares</label>
                     <input type="number" id="edit-floors" value="${existingEdits.floors || lote.floors || ''}" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
@@ -398,9 +395,7 @@ window.saveEditFromTooltip = async function (inscricao) {
     }
 };
 
-// ========================================
-// UNIT EDITOR
-// ========================================
+// Unit editor
 window.editUnitFromTooltip = function (unitInscricao) {
     // Allow everyone to suggest edits
     console.log('🔧 editUnitFromTooltip called with:', unitInscricao);
@@ -842,9 +837,7 @@ window.updateUnitField = async function (unitInscricao, field, value) {
     }
 };
 
-// ========================================
-// OWNER TRANSFER / SALE FLOW
-// ========================================
+// Owner transfer / sale flow
 window.showOwnerTransferForm = function(unitInscricao) {
     if (!window.Monetization || !window.Monetization.checkFeatureAccess('edit_private')) {
         window.Toast.info('Acesso restrito: Edição disponível para assinantes Pro/Elite.');
@@ -1004,9 +997,7 @@ window.toggleInputType = function (inputId, btn) {
     }
 };
 
-// ========================================
-// LOTE CRUD OPERATIONS
-// ========================================
+// Lote crud operations
 window.deleteLote = async function (lote) {
     if (!confirm(`ATENÇÃO: Deseja realmente EXCLUIR o lote ${lote.inscricao}?\nEsta ação é irreversível!`)) return;
 
@@ -1031,9 +1022,7 @@ window.deleteLote = async function (lote) {
     }
 };
 
-// ========================================
-// PRIVATE EDITS SYNC & MERGE
-// ========================================
+// Private edits sync & merge
 
 window.loadUserPendingEdits = async function() {
     try {
@@ -1349,9 +1338,7 @@ window.deleteUnit = async function (inscricao) {
 };
 
 console.log("✅ Editor Handler module loaded");
-// ========================================
-// MASS UNIT MANAGER (ADMIN ONLY)
-// ========================================
+// Mass unit manager (admin only)
 let currentMassLoteId = null;
 
 window.openMassUnitManager = async function (loteInscricao) {

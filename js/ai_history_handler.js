@@ -1,6 +1,4 @@
-// ==========================================
-// AI HISTORY HANDLER
-// ==========================================
+// Ai history handler
 // Manages persistence of AI generated content (Farol, Marketing, Legal)
 
 window.AIHistoryHandler = {

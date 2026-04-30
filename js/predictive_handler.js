@@ -1,6 +1,4 @@
-// ==========================================
-// PREDICTIVE HANDLER - FAROL PREDITIVO
-// ==========================================
+// Predictive handler - farol preditivo
 // Platinum Level: Intelligence that identifies selling opportunities
 
 window.PredictiveHandler = {

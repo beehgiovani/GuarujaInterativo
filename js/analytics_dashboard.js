@@ -1,6 +1,4 @@
-// ==========================================
-// ANALYTICS DASHBOARD - ANALYTICS_DASHBOARD.JS
-// ==========================================
+// Analytics dashboard - analytics_dashboard.js
 // Dashboard de visualização de analytics com gráficos
 
 window.AnalyticsDashboard = {
@@ -155,9 +153,7 @@ window.AnalyticsDashboard = {
         this.renderTopOwnersTable(topOwnersData);
     },
 
-    // ========================================
-    // DATA FETCHING
-    // ========================================
+    // Data fetching
 
     async fetchStats() {
         const daysAgo = new Date();
@@ -292,9 +288,7 @@ window.AnalyticsDashboard = {
             .slice(0, 10);
     },
 
-    // ========================================
-    // RENDERING
-    // ========================================
+    // Rendering
 
     renderStatsCards(data) {
         document.getElementById('stat-searches').innerText = data.totalSearches.toLocaleString();
@@ -404,9 +398,7 @@ window.AnalyticsDashboard = {
         container.innerHTML = html;
     },
 
-    // ========================================
-    // ACTIONS
-    // ========================================
+    // Actions
 
     async refresh() {
         Loading.show('Atualizando...', 'Carregando novos dados');

@@ -1,6 +1,4 @@
-// ==========================================
-// ENRICHMENT HANDLER - CORE API
-// ==========================================
+// Enrichment handler - core api
 // Integração para enriquecimento de dados (Telefones, Emails)
 
 const ENRICHMENT_API_URL = 'https://ijmgvsztgljribnogtsx.supabase.co/functions/v1/enrich-data'; // Edge Function Production
@@ -439,9 +437,7 @@ window.Enrichment = {
 
         if (error) throw error;
 
-        // ============================================
         // NOVO: Atualizar/Criar Proprietário Unificado
-        // ============================================
         if (unit.cpf_cnpj) {
             const cpfLimpo = unit.cpf_cnpj.replace(/\D/g, '');
             const tipo = cpfLimpo.length === 11 ? 'PF' : 'PJ';
@@ -524,9 +520,7 @@ window.Enrichment = {
         }
     },
 
-    // ========================================
     // API STATUS CHECK (Sidebar)
-    // ========================================
     async checkApiStatus() {
         const statusContainer = document.getElementById('api-status-list');
         if (!statusContainer) return;
@@ -613,9 +607,7 @@ window.Enrichment = {
         }
     },
 
-    // ========================================
-    // CNPJ PUBLICO & PARTNERS
-    // ========================================
+    // Cnpj publico & partners
 
     // Busca dados públicos de CNPJ (Gratuito - receita)
     async fetchPublicCNPJ(cnpj) {
@@ -778,9 +770,7 @@ window.Enrichment = {
         }
     },
 
-    // ========================================
-    // NEW: SHOW FULL DETAILS MODAL (+ INF)
-    // ========================================
+    // New: show full details modal (+ inf)
     async showFullDetails(proprietarioId) {
         if (!proprietarioId || proprietarioId === 'null' || proprietarioId === 'undefined') {
             window.Toast.warning('Proprietário não identificado. Realize a consulta avançada primeiro.');

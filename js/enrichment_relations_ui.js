@@ -1,6 +1,4 @@
-// ==========================================
-// ENRICHMENT RELATIONS UI - ENRICHMENT_RELATIONS_UI.JS
-// ==========================================
+// Enrichment relations ui - enrichment_relations_ui.js
 // Modal de confirmação de vínculos detectados pelo Datastone
 // Chamado automaticamente após enriquecimento de CPF ou CNPJ
 
@@ -61,9 +59,7 @@ window.EnrichmentRelationsUI = {
         }
     },
 
-    // -----------------------------------------------
-    // EXTRAÇÃO DE PESSOAS DO PAYLOAD DATASTONE
-    // -----------------------------------------------
+    // Extração de pessoas do payload datastone
     _extractPersons(data) {
         const persons = [];
 
@@ -94,9 +90,7 @@ window.EnrichmentRelationsUI = {
         return persons;
     },
 
-    // -----------------------------------------------
-    // MATCHING COM O BANCO
-    // -----------------------------------------------
+    // Matching com o banco
     async _matchPersonInDB(person) {
         const { name, cpf } = person;
 
@@ -135,9 +129,7 @@ window.EnrichmentRelationsUI = {
         return { person, action: 'ambiguous', candidates, confidence: 70 };
     },
 
-    // -----------------------------------------------
-    // SALVAR VÍNCULOS NO BANCO
-    // -----------------------------------------------
+    // Salvar vínculos no banco
     async _saveLinks(originId, items) {
         for (const item of items) {
             const destId = item.resolvedId;
@@ -159,9 +151,7 @@ window.EnrichmentRelationsUI = {
         }
     },
 
-    // -----------------------------------------------
-    // CRIAR PERFIL RASCUNHO
-    // -----------------------------------------------
+    // Criar perfil rascunho
     async _createDraftProprietario(person) {
         try {
             const tempDoc = `TEMP_DS_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
@@ -190,9 +180,7 @@ window.EnrichmentRelationsUI = {
         }
     },
 
-    // -----------------------------------------------
-    // MODAL DE CONFIRMAÇÃO
-    // -----------------------------------------------
+    // Modal de confirmação
     _showModal(originId, originName, items) {
         // Remove modal existente
         document.getElementById('relations-confirm-modal')?.remove();
@@ -328,9 +316,7 @@ window.EnrichmentRelationsUI = {
         `;
     },
 
-    // -----------------------------------------------
-    // SALVAR CONFIRMAÇÕES DO MODAL
-    // -----------------------------------------------
+    // Salvar confirmações do modal
     async _saveFromModal(originId) {
         const overlay = document.getElementById('relations-confirm-modal');
         if (!overlay) return;

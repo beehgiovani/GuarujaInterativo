@@ -1,6 +1,4 @@
-// ==========================================
-// MAP HANDLER - MAP_HANDLER.JS
-// ==========================================
+// Map handler - map_handler.js
 // Handles map initialization, hierarchy processing, and rendering
 
 // Variables for internal map state
@@ -242,9 +240,7 @@ window.isHyper3DActive = false;
 window.enterHyper3D = () => console.warn("Hyper 3D Desativado");
 window.exitHyper3D = () => console.warn("Hyper 3D Desativado");
 
-// ========================================
-// MOBILE: GPS & DRAWER LOGIC
-// ========================================
+// Mobile: gps & drawer logic
 
 // GPS Control moved to location_handler.js
 window.addGpsControl = function () {
@@ -389,9 +385,7 @@ function handleRealtimeUpdate(payload) {
     }
 }
 
-// ========================================
-// MAIN INITIALIZATION
-// ========================================
+// Main initialization
 window.initMap = async function () {
     const totalLotesEl = document.getElementById('totalLotes');
     const mapBackBtn = document.getElementById('mapBackBtn');
@@ -1493,9 +1487,7 @@ window.loadSectorData = async function(sectorId) {
     }
 };
 
-// ========================================
-// HIERARCHY PROCESSING
-// ========================================
+// Hierarchy processing
 function processDataHierarchy() {
     window.cityData = {};
 
@@ -1623,9 +1615,7 @@ function processDataHierarchy() {
     window.cityData = window.cityData; // Ensure on window
 }
 
-// ========================================
 // RENDER HIERARCHY (Zones -> Sectors -> Lots)
-// ========================================
 let googleMarkers = []; // Armazenar referências para limpeza
 
 window.goUpLevel = function() {
@@ -2018,9 +2008,7 @@ window.renderHierarchy = function() {
         }
     }
 
-    // ========================================
     // PERSISTENT PRIORITY LAYER (Unlocked/Edited)
-    // ========================================
     // Renderiza lotes liberados/editados mesmo que não estejam no setor/zona atual
     if (window.Monetization && window.Monetization.unlockedLots) {
         const priorityLotIds = window.Monetization.unlockedLots;
@@ -2082,9 +2070,7 @@ window.renderHierarchy = function() {
     updateBackBtn();
 }
 
-// ========================================
-// NAVIGATION
-// ========================================
+// Navigation
 function updateBackBtn() {
     const mapBackBtn = document.getElementById('mapBackBtn');
     if (!mapBackBtn) {
@@ -2207,17 +2193,13 @@ window.navigateToLevel = function(level, zoneId = null) {
     window.renderHierarchy();
 };
 
-// ========================================
-// EXPORTS
-// ========================================
+// Exports
 window.processDataHierarchy = processDataHierarchy;
 window.renderHierarchy = renderHierarchy;
 window.goUpLevel = goUpLevel;
 window.updateBackBtn = updateBackBtn;
 
-// ========================================
-// REALTIME UPDATES
-// ========================================
+// Realtime updates
 window.handleRealtimeUpdate = function (payload) {
     console.log("Realtime Event:", payload);
     const { eventType, table, new: newRow, old: oldRow } = payload;
@@ -2291,9 +2273,7 @@ window.handleRealtimeUpdate = function (payload) {
     }
 };
 
-// ========================================
-// ZONE LEGEND POPULATION
-// ========================================
+// Zone legend population
 window.populateZoneLegend = function () {
     const container = document.getElementById('zoneLegendContainer');
     if (!container) return;
@@ -2339,9 +2319,7 @@ window.populateZoneLegend = function () {
     });
 };
 
-// ========================================
-// CONTEXT MENU
-// ========================================
+// Context menu
 let contextMenuTarget = null;
 let contextMenuPos = null;
 
@@ -2455,9 +2433,7 @@ window.handleContextAction = function (action) {
     }
 };
 
-// ========================================
-// OFF-MARKET VISUAL FILTERS
-// ========================================
+// Off-market visual filters
 window.currentOffMarketFilter = 'todos';
 
 // applyOffMarketFilter removed along with UI filters

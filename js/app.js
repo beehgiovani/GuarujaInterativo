@@ -1,6 +1,4 @@
-// ==========================================
-// GUARUJÁ GEOMAP - MAIN APP (APP.JS)
-// ==========================================
+// Guarujá geomap - main app (app.js)
 // Entry point for the application.
 // Handles initialization, authentication, and module coordination.
 
@@ -21,9 +19,7 @@ window.map = null;
 window.allLotes = [];
 window.editedLotes = {};
 
-// ========================================
-// INITIALIZATION
-// ========================================
+// Initialization
 
 async function init() {
     if (window.map) return; // Prevent double init
@@ -152,9 +148,7 @@ async function loadInitialData() {
     }
 }
 
-// ========================================
-// UI HANDLERS & LISTENERS
-// ========================================
+// Ui handlers & listeners
 
 function setupAppListeners() {
     // Sidebar Tabs (Redirecionado para o Hub 2.0)
@@ -376,9 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// ========================================
-// DATA FETCHING HELPER
-// ========================================
+// Data fetching helper
 window.fetchLotDetails = async function (inscricao) {
     try {
         const { data, error } = await window.supabaseApp
@@ -431,9 +423,7 @@ window.fetchLotDetails = async function (inscricao) {
     }
 };
 
-// ========================================
-// GLOBAL NOTIFICATIONS (ADMIN CONTROLLED)
-// ========================================
+// Global notifications (admin controlled)
 async function checkGlobalAlert() {
     try {
         const { data, error } = await window.supabaseApp
@@ -472,9 +462,7 @@ async function checkGlobalAlert() {
 
 console.log("✅ Main App (app.js) initialized");
 
-// ========================================
-// PWA OFFLINE UX LISTENER
-// ========================================
+// Pwa offline ux listener
 function setupPWAOfflineListeners() {
     const updateOnlineStatus = () => {
         const isOnline = navigator.onLine;

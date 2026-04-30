@@ -1,6 +1,4 @@
-// ==========================================
-// MONETIZATION HANDLER - MONETIZATION_HANDLER.JS
-// ==========================================
+// Monetization handler - monetization_handler.js
 // Manages credits, subscriptions, and Pix payments
 
 window.Monetization = {
@@ -194,9 +192,7 @@ window.Monetization = {
         }
     },
 
-    // ================================================================
-    //  MODAL DE COMPLETAR PERFIL (só campos faltantes)
-    // ================================================================
+    // MODAL DE COMPLETAR PERFIL (só campos faltantes)
     showProfileCompletionModal: function(missingFields = []) {
         // Evita abrir múltiplas vezes
         if (document.getElementById('profile-completion-modal')) return;
@@ -1958,9 +1954,7 @@ window.Monetization = {
         } catch(e) { console.error(e); }
     },
 
-    // ==========================================
-    // [NOVO] SUBSCRIPTION TIMER ENGINE
-    // ==========================================
+    // [novo] subscription timer engine
     
     startSubscriptionTimer: function() {
         if (this._subInterval) clearInterval(this._subInterval);

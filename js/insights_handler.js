@@ -1,6 +1,4 @@
-// ==========================================
 // FAROL INSIGHTS - Inteligência de Mercado
-// ==========================================
 
 window.showFarolInsights = async function () {
     // Verificação de Acesso

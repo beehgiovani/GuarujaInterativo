@@ -325,9 +325,7 @@
     padding: 0 2rem;
     gap: 20px;
 }
-/* ============================================================
-   ONBOARDING STYLES
-   ============================================================ */
+/* Onboarding styles */
 .onboarding-content {
     max-width: 600px !important;
     padding: 0 !important;

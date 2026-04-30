@@ -1,6 +1,4 @@
-// ==========================================
-// SEARCH & FILTER HANDLER (V1.0.1 - REFRESHED)
-// ==========================================
+// Search & filter handler (v1.0.1 - refreshed)
 
 window.currentSearchType = 'all';
 

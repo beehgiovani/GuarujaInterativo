@@ -2,12 +2,12 @@
  * AUTH_HANDLER.JS - Gestão de Acesso Real via Supabase
  */
 
-// ─── hCaptcha Site Key ────────────────────────────────────────────────────────
+// hCaptcha Site Key
 const HCAPTCHA_SITEKEY = 'e1eafec4-ed60-45d2-a634-b50e4dfe0df2';
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 window.Auth = {
-    // ─── UTILS DE MASCARAMENTO DA UI ─────────────────────────────────────────
+    // Utils de mascaramento da ui
     maskCpf: function(input) {
         let v = input.value.replace(/\D/g, ''); // só números
         if (v.length > 14) v = v.substring(0, 14);
@@ -61,7 +61,7 @@ window.Auth = {
             icon.classList.add('fa-eye');
         }
     },
-    // ─────────────────────────────────────────────────────────────────────────
+    
 
     init: async function() {
         // --- 🚀 NUCLEAR RESET / VERSION SYNC ---
@@ -96,19 +96,19 @@ window.Auth = {
             console.log("✨ Nuclear Reset Complete. Ready for new version.");
         }
 
-        // ============================================
+        
         // DETECTAR FLUXO DE RECUPERAÇÃO DE SENHA
         // O Supabase redireciona de volta com #access_token=...&type=recovery
-        // ============================================
+        
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const flowType = hashParams.get('type');
         const hashError = hashParams.get('error');
         const hashErrorCode = hashParams.get('error_code');
 
-        // ============================================
+        
         // DETECTAR ERRO NA URL (link expirado, inválido etc.)
         // Ex: #error=access_denied&error_code=otp_expired
-        // ============================================
+        
         if (hashError) {
             window.history.replaceState(null, '', window.location.pathname); // Limpa URL
             document.getElementById('loginOverlay').style.display = 'block';
@@ -169,7 +169,7 @@ window.Auth = {
         // Listener para mudanças de estado (login/logout)
         window.supabaseApp.auth.onAuthStateChange(async (event, session) => {
 
-            // ─── RECUPERAÇÃO DE SENHA (Supabase v2 PKCE/hash) ───────────────
+            // RECUPERAÇÃO DE SENHA (Supabase v2 PKCE/hash)
             if (event === 'PASSWORD_RECOVERY') {
                 console.log('🔑 PASSWORD_RECOVERY detectado via onAuthStateChange');
                 this._inPasswordRecovery = true; // bloqueia init do mapa
@@ -179,7 +179,7 @@ window.Auth = {
                 return;
             }
 
-            // ─── LOGIN NORMAL ────────────────────────────────────────────────
+            // Login normal
             if (event === 'SIGNED_IN' && session) {
                 // Se estamos em fluxo de recovery, NÃO inicializa o mapa
                 if (this._inPasswordRecovery) {
@@ -756,9 +756,7 @@ window.Auth = {
         }
     },
 
-    // ============================================
-    // MONITOR DE SESSÃO ÚNICA (KICK LOGIC)
-    // ============================================
+    // Monitor de sessão única (kick logic)
     startSessionMonitor: function() {
         if (this._sessionInterval) clearInterval(this._sessionInterval);
         

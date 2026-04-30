@@ -1,6 +1,4 @@
-/* ========================================
-   PREMIUM UNIT GRID & MODALS
-   ======================================== */
+/* Premium unit grid & modals */
 
 .unit-folder-container {
     padding: 10px 0;
@@ -436,9 +434,7 @@
 
 /* SIDEBAR TAB FIX - ver sidebar_styles.css para as regras completas */
 
-/* ========================================
-   PORTFOLIO DASHBOARD ANIMATIONS
-   ======================================== */
+/* Portfolio dashboard animations */
 @keyframes slideDownPortfolio {
     from { transform: translate(-50%, -100%); opacity: 0; }
     to { transform: translate(-50%, 0); opacity: 1; }
@@ -473,9 +469,7 @@
     }
 }
 
-/* ========================================
-   GLOBAL ALERT BAR (MARQUEE)
-   ======================================== */
+/* Global alert bar (marquee) */
 .global-alert-bar {
     position: fixed;
     top: 70px;

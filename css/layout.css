@@ -1,6 +1,4 @@
-/* ============================================================
-   GUARUGEO - LAYOUT & CORE (MODULAR)
-   ============================================================ */
+/* Guarugeo - layout & core (modular) */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
@@ -130,9 +128,7 @@ body {
     background-color: #e5e7eb;
 }
 
-/* ============================================================
-   CURSORES ADAPTATIVOS E ELEMENTOS INTERATIVOS
-   ============================================================ */
+/* Cursores adaptativos e elementos interativos */
 
 /* Global Clickables */
 button,
@@ -247,9 +243,7 @@ textarea {
     }
 }
 
-/* ============================================================
-   UNIFIED DASHBOARD (PREMIUM & COLLAPSIBLE)
-   ============================================================ */
+/* Unified dashboard (premium & collapsible) */
 .stats-panel {
     position: absolute;
     bottom: 30px;
@@ -662,9 +656,7 @@ textarea {
 }
 
 /* Search-box moved to sidebar_styles.css */
-/* ============================================================
-   LOT TOOLTIP HEADER & BUTTONS
-   ============================================================ */
+/* Lot tooltip header & buttons */
 .lot-tooltip-header {
     flex: 0 0 auto;
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);

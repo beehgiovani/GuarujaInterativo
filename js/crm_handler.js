@@ -1,6 +1,4 @@
-// ==========================================
 // CRM HANDLER - Gerenciamento de Leads
-// ==========================================
 
 // Track leads count
 window.currentLeadsCount = 0;
@@ -77,9 +75,7 @@ async function checkNewMatches() {
     }
 }
 
-// ========================================
-// OPEN ADD/EDIT LEAD TOOLTIP
-// ========================================
+// Open add/edit lead tooltip
 window.openAddLeadTooltip = function (leadId = null) {
     // Hide context menu
     if (window.hideContextMenu) window.hideContextMenu();
@@ -302,9 +298,7 @@ window.loadLeadData = async function (leadId) {
     }
 };
 
-// ========================================
-// CLOSE LEAD TOOLTIP
-// ========================================
+// Close lead tooltip
 window.closeLeadTooltip = function () {
     const tooltip = document.getElementById('leadTooltip');
     if (tooltip) {
@@ -313,9 +307,7 @@ window.closeLeadTooltip = function () {
     }
 };
 
-// ==========================================
-// FORM DATA EXTRACTION
-// ==========================================
+// Form data extraction
 function getLeadFormData() {
     const nome = document.getElementById('lead-nome')?.value;
     const telefone = document.getElementById('lead-telefone')?.value;
@@ -363,9 +355,7 @@ function getLeadFormData() {
 }
 window.getLeadFormData = getLeadFormData; // Export for testing
 
-// ========================================
-// SAVE LEAD (CREATE)
-// ========================================
+// Save lead (create)
 window.saveLead = async function () {
     const leadData = getLeadFormData();
     if (!leadData) return;
@@ -391,9 +381,7 @@ window.saveLead = async function () {
     }
 };
 
-// ========================================
-// UPDATE LEAD
-// ========================================
+// Update lead
 window.updateLead = async function (leadId) {
     const leadData = getLeadFormData();
     if (!leadData) return;
@@ -421,9 +409,7 @@ window.updateLead = async function (leadId) {
     }
 };
 
-// ========================================
-// MEU CRM: CARREGAMENTO PESSOAL (SIDEBAR)
-// ========================================
+// Meu crm: carregamento pessoal (sidebar)
 window.loadLeads = async function () {
     const listContainer = document.getElementById('sidebarCRMList');
     if (!listContainer) return;
@@ -572,9 +558,7 @@ function createSidebarLeadCard(lead) {
     `;
 }
 
-// ========================================
 // KANBAN TOUCH & DRAG SYSTEM (PWA Mobile)
-// ========================================
 window.initKanbanTouchEvents = function() {
     const cards = document.querySelectorAll('.kanban-card');
     const dropzones = document.querySelectorAll('.kanban-dropzone');
@@ -705,9 +689,7 @@ window.updateLeadStatus = async function(leadId, newStatus) {
     }
 };
 
-// ========================================
 // LEAD DETAIL PANEL (Premium View)
-// ========================================
 window.openLeadDetail = async function (leadId) {
     window.Loading.show('Abrindo dossiê do cliente...');
     try {
@@ -957,9 +939,7 @@ window.loadLeadMatches = async function(leadId) {
     }
 };
 
-// ========================================
-// VISIT SCHEDULING
-// ========================================
+// Visit scheduling
 window.openScheduleVisit = function(leadId, unitInscricao) {
     const modal = document.createElement('div');
     modal.className = 'custom-modal-overlay active';
@@ -1164,9 +1144,7 @@ function createLeadCard(lead) {
     `;
 }
 
-// ========================================
-// OPEN WHATSAPP
-// ========================================
+// Open whatsapp
 window.openWhatsApp = function (phone, nome) {
     if (!phone) {
         if (window.Toast) window.Toast.warning("Cliente não possui telefone cadastrado.");
@@ -1177,9 +1155,7 @@ window.openWhatsApp = function (phone, nome) {
     window.open(`https://wa.me/55${cleanPhone}?text=${message}`, '_blank');
 };
 
-// ========================================
-// CLOSE LEADS PANEL
-// ========================================
+// Close leads panel
 window.closeLeadsPanel = function () {
     const panel = document.getElementById('leadsPanel');
     if (panel) {
@@ -1188,9 +1164,7 @@ window.closeLeadsPanel = function () {
     }
 };
 
-// ========================================
-// FIND MATCHES FOR LEAD
-// ========================================
+// Find matches for lead
 window.findMatches = async function (leadId) {
     window.Loading.show('Procurando imóveis compatíveis...');
 
@@ -1255,9 +1229,7 @@ window.findMatches = async function (leadId) {
     }
 };
 
-// ========================================
-// DELETE LEAD
-// ========================================
+// Delete lead
 window.deleteLead = async function (leadId) {
     if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
 
@@ -1282,17 +1254,13 @@ window.deleteLead = async function (leadId) {
     }
 };
 
-// ========================================
-// EDIT LEAD TRIGGER
-// ========================================
+// Edit lead trigger
 window.editLead = function (leadId) {
     window.closeLeadsPanel();
     window.openAddLeadTooltip(leadId); // Reuse the add modal logic
 };
 
-// ========================================
-// AI INTEGRATION: SAVE LEAD FROM FAROL
-// ========================================
+// Ai integration: save lead from farol
 // AI Lead Capture logic removed per user plan
 
 window.generateFollowup = async function (leadId) {

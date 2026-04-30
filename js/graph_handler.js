@@ -1,6 +1,4 @@
-// ==========================================
-// GRAPH HANDLER - TEIA DE INFLUÊNCIA
-// ==========================================
+// Graph handler - teia de influência
 // Platinum Level: Interactive relationship mapping
 
 window.GraphHandler = {

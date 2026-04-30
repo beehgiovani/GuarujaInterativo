@@ -1,11 +1,7 @@
-// ==========================================
-// TOOLTIP HANDLER - TOOLTIP_HANDLER.JS
-// ==========================================
+// Tooltip handler - tooltip_handler.js
 // Manages all tooltip functionality: lot tooltips, unit tooltips, carousel
 
-// ========================================
 // HELPER: DETECT & FIX UNIT TYPE (Garage & Commercial)
-// ========================================
 async function checkAndFixUnitType(unit) {
     const textToCheck = (unit.complemento || '') + ' ' + (unit.inscricao || '') + ' ' + (unit.tipo || '');
     const lowerText = textToCheck.toLowerCase();
@@ -49,9 +45,7 @@ async function silentUpdateType(inscricao, newType) {
     }
 }
 
-// ========================================
 // LOT TOOLTIP (Main - with thumbnail grid)
-// ========================================
 async function showLotTooltip(lote, x, y, isRefresh = false) {
     if (!lote) return;
     
@@ -652,7 +646,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
         ${meta.endereco ? `<div style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px dashed #e2e8f0;"><div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px;">Endereço</div><div style="font-size: 14px; color: #1e293b; line-height: 1.4; font-weight: 500;">${meta.endereco}</div></div>` : ''}
     `;
 
-    // ===== LAZER E INFRAESTRUTURA =====
+    // Lazer e infraestrutura
     const lazerKeys = ['piscina', 'academia', 'churrasqueira', 'salao_jogos', 'salao_festas', 'area_verde', 'bicicletario', 'portaria_24h', 'acesso_pcd', 'elevador', 'servico_praia', 'zeladoria'];
     const activeLazer = lazerKeys.filter(k => lote[k] === true);
     if (activeLazer.length > 0 || lote.amenities) {
@@ -709,7 +703,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
         });
     }
 
-    // ===== SOLAR ANALYSIS (V1.2) =====
+    // Solar analysis (v1.2)
     if (window.SolarHandler && lat && lng) {
         try {
            const solarHTML = window.SolarHandler.getSolarWidgetHTML(lat, lng, lote.inscricao);
@@ -717,7 +711,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
         } catch(e) { console.error('Solar Error', e); }
     }
 
-    // ===== DISTANCES (TURF.JS) - System GeoRefs & Drawn Items =====
+    // DISTANCES (TURF.JS) - System GeoRefs & Drawn Items
     if (window.turf && lote.minx) {
         try {
             const centerX = (parseFloat(lote.minx) + parseFloat(lote.maxx)) / 2;
@@ -805,7 +799,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
         }
     }
 
-    // ===== NEIGHBORHOOD CONTEXT (OSM - V1.2) =====
+    // Neighborhood context (osm - v1.2)
     // We add a placeholder div, then call the handler to fill it
     if (lote.inscricao) {
         const osmContainerId = `osm-context-${lote.inscricao}`;
@@ -819,7 +813,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
         }, 100);
     }
 
-    // ===== RESIDENTIAL UNITS =====
+    // Residential units
     if (residentialUnits.length > 0) {
         tooltipHTML += `<div style="display: flex; gap: 16px; flex-wrap: wrap; padding-bottom: 12px; align-items: flex-start; justify-content: flex-start;">`;
         groupKeys.forEach(key => {
@@ -833,7 +827,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
         tooltipHTML += `</div>`; // CLOSED RESIDENTIAL UNITS CONTAINER
     }
 
-    // ===== COMMERCIAL SECTION =====
+    // Commercial section
     if (commercialUnits.length > 0) {
         tooltipHTML += `
             <div style="margin-top: 24px; padding-top: 16px; border-top: 2px dashed #cbd5e1;">
@@ -846,7 +840,7 @@ async function showLotTooltip(lote, x, y, isRefresh = false) {
         tooltipHTML += `</div></div>`;
     }
 
-    // ===== GARAGE SECTION =====
+    // Garage section
     if (garageUnits.length > 0) {
         tooltipHTML += `
             <div style="margin-top: 24px; padding-top: 16px; border-top: 2px dashed #cbd5e1;">
@@ -1683,9 +1677,7 @@ async function checkAndConsolidateOwner(unit) {
 
         // 2. Tentar UPSERT (Criar ou ignorar se existe)
         // Usamos ignoreDuplicates: true para NÃO sobrescrever dados se já existir.
-        // ========================================
-        // GLOBAL INTERACTION HELPERS
-        // ========================================
+        // Global interaction helpers
         window.flyToPOI = function(lat, lng, name) {
             if (!window.map) return;
             
@@ -2021,9 +2013,7 @@ window.showContractOptions = function (inscricao) {
     if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 };
 
-// ==========================================
-// CONTRACT & LEGAL GENERATION
-// ==========================================
+// Contract & legal generation
 
 window.generateContract = async function (inscricao, type) {
     const unit = window.currentLoteForUnit.unidades.find(u => u.inscricao === inscricao);
@@ -2392,9 +2382,7 @@ window.copyToClipboard = function (text) {
 console.log("✅ Tooltip Handler module loaded");
 
 
-// ========================================
 // SECTION MOVED OR REMOVED (Redundant with editor_handler.js)
-// ========================================
 
 // toggleAnunciosSection removed
 
@@ -2487,9 +2475,7 @@ window.triggerManualProprietarioHistory = function(inscricao) {
         });
 };
 
-// ========================================
-// TAB SWITCHER
-// ========================================
+// Tab switcher
 window.switchLotTab = function(tabName) {
     const container = window.currentTooltip;
     if (!container) {
@@ -2525,9 +2511,7 @@ window.switchLotTab = function(tabName) {
     }
 };
 
-// ========================================
-// DOCUMENTATION TAB HELPERS (INLINE EDIT)
-// ========================================
+// Documentation tab helpers (inline edit)
 window.startEditMatricula = function(inscricao) {
     const container = window.currentTooltip;
     if (!container) return;
@@ -2737,9 +2721,7 @@ window.handleQuickAssetUpload = async function(file, inscricao, type) {
     }
 };
 
-// ==========================================
-// UNIT FILE EXPLORER (DADOS DA UNIDADE)
-// ==========================================
+// Unit file explorer (dados da unidade)
 
 window.refreshFileExplorer = function(inscricao) {
     const container = document.getElementById('file-explorer-content');
@@ -2903,6 +2885,4 @@ window.createFolder = function() {
     window.Toast.info('Criação de sub-pastas estará disponível em breve!');
 };
 
-// ==========================================
-// END OF TOOLTIP_HANDLER.JS
-// ==========================================
+// End of tooltip_handler.js

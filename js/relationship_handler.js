@@ -1,6 +1,4 @@
-// ==========================================
-// RELATIONSHIP HANDLER - RELATIONSHIP_HANDLER.JS
-// ==========================================
+// Relationship handler - relationship_handler.js
 // Platinum Level: Connects owners based on shared data
 
 window.RelationshipHandler = {

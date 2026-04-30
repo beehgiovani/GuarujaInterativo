@@ -1,6 +1,4 @@
-/* ============================================================
-   GUARUGEO - MAP & CONTROLS
-   ============================================================ */
+/* Guarugeo - map & controls */
 
 #map {
     flex: 1;
@@ -295,9 +293,7 @@
     color: var(--text-main);
 }
 
-/* ============================================================
-   CONTEXT MENU STYLES (Restored)
-   ============================================================ */
+/* CONTEXT MENU STYLES (Restored) */
 #context-menu {
     display: none;
     position: absolute;
@@ -334,9 +330,7 @@
     margin: 4px 0;
 }
 
-/* ============================================================
-   MOBILE RESPONSIVENESS
-   ============================================================ */
+/* Mobile responsiveness */
 @media (max-width: 768px) {
 
     /* Adjust Stats Panel position */
@@ -398,9 +392,7 @@
     100% { transform: scale(1); }
 }
 
-/* ============================================================
-   GOOGLE MAPS INFOWINDOW OVERRIDES (BEAUTIFICATION)
-   ============================================================ */
+/* Google maps infowindow overrides (beautification) */
 .gm-style-iw.gm-style-iw-c {
     background: rgba(255, 255, 255, 0.95) !important;
     backdrop-filter: blur(15px) !important;
@@ -443,9 +435,7 @@
     margin: 5px !important;
 }
 
-/* ============================================================
-   LOT TOOLTIP TABS
-   ============================================================ */
+/* Lot tooltip tabs */
 .lot-tooltip-tabs {
     display: flex;
     background: #1e293b;
@@ -512,4 +502,4 @@
 .lot-tooltip-body::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 3px;
-}
+}

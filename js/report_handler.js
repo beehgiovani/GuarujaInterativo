@@ -1,6 +1,4 @@
-// ==========================================
 // REPORT HANDLER - Gerador de Dossiês PDF
-// ==========================================
 
 window.ReportHandler = {
     generateDossie: async function(unitInscricao) {

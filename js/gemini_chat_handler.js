@@ -122,9 +122,7 @@ class GeminiChatHandler {
         };
     }
 
-    // ─────────────────────────────────────────────────────────
     // SISTEMA DE PROMPT DINÂMICO — baseado nas funções ativas
-    // ─────────────────────────────────────────────────────────
 
     get systemPrompt() {
         // Lazy build: gerado uma vez e cacheado até invalidação (ex: troca de plano)
@@ -139,7 +137,7 @@ class GeminiChatHandler {
         const can   = (f) => window.Monetization?.canAccess(f) ?? false;
         const isGuest = window.isGuest;
 
-        // ── Identidade base ──────────────────────────────────
+        // Identidade base
         let prompt = `Você é o "GuaruBot" (Farol), assistente de IA do Guarujá GeoMap — plataforma imobiliária inteligente de Guarujá/SP.
 Plano atual do usuário: ${role.toUpperCase()}.
 
@@ -157,7 +155,7 @@ Para buscar dados, gere um bloco JSON no formato:
 \`\`\`
 NUNCA diga "não consigo acessar o banco". Se precisar de dados, USE AS TOOLS.\n`;
 
-        // ── Funcionalidades ativas ────────────────────────────
+        // Funcionalidades ativas
         prompt += `\n## FUNCIONALIDADES DISPONÍVEIS PARA ESTE USUÁRIO (${role.toUpperCase()}):\n`;
         prompt += `- 🗺️ Mapa interativo: navegar, clicar em lotes e ver fichas cadastrais básicas\n`;
         prompt += `- 🔍 Buscar imóveis: por bairro, tipo, valor, área e dormitórios\n`;
@@ -195,7 +193,7 @@ NUNCA diga "não consigo acessar o banco". Se precisar de dados, USE AS TOOLS.\n
             prompt += `- 🕐 Histórico do Proprietário: ver movimentações e histórico de negociações\n`;
         }
 
-        // ── TOOLS disponíveis ─────────────────────────────────
+        // TOOLS disponíveis
         prompt += `\n## TOOLS DISPONÍVEIS:\n`;
         prompt += `- "search_properties": buscar imóveis\n`;
         prompt += `  Args: bairro (string), tipo (Apartamento/Casa/Terreno/Comercial), quartos_min (int), valor_min (float), valor_max (float), area_min (float)\n`;
@@ -209,7 +207,7 @@ NUNCA diga "não consigo acessar o banco". Se precisar de dados, USE AS TOOLS.\n
             prompt += `  Args: type ('compra_venda' | 'autorizacao'), inscricao (código do imóvel), client_name, client_doc, price\n`;
         }
 
-        // ── Exemplos de uso ───────────────────────────────────
+        // Exemplos de uso
         prompt += `\n## EXEMPLOS DE PERGUNTAS QUE VOCÊ PODE RESPONDER:\n`;
         prompt += `- "Busque apartamentos na Enseada com 3 quartos"\n`;
         prompt += `- "Mostre imóveis disponíveis até R$ 800.000 em Guarujá"\n`;

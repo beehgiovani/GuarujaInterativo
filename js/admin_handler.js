@@ -1,6 +1,4 @@
-// ==========================================
-// ADMIN HANDLER - ADMIN_HANDLER.JS
-// ==========================================
+// Admin handler - admin_handler.js
 // Manages users, credits, and system settings
 
 window.AdminHandler = {
@@ -1067,7 +1065,7 @@ window.AdminHandler = {
         `;
     },
 
-    // === MÉTODOS DE SUPORTE PARA MONETIZAÇÃO ===
+    // Métodos de suporte para monetização
 
     savePixConfig: async function() {
         const tipo = document.getElementById('pix-tipo')?.value;

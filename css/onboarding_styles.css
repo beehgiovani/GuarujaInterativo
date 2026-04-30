@@ -3,9 +3,7 @@
  * Glassmorphism Dark, Z-index Garantido, Responsivo Mobile-First
  */
 
-/* ==========================================
-   TOOLTIP CONTAINER (z-index above EVERYTHING)
-   ========================================== */
+/* TOOLTIP CONTAINER (z-index above EVERYTHING) */
 .introjs-overlay {
     z-index: 999997 !important;
 }
@@ -58,9 +56,7 @@
 .introjs-arrow.left   { border-right-color: rgba(15, 23, 42, 0.97) !important; }
 .introjs-arrow.right  { border-left-color: rgba(15, 23, 42, 0.97) !important; }
 
-/* ==========================================
-   HEADER & TITLE
-   ========================================== */
+/* Header & title */
 .introjs-tooltip-header {
     padding: 12px 15px 0 15px !important;
     display: flex !important;
@@ -86,9 +82,7 @@
     color: #ef4444 !important;
 }
 
-/* ==========================================
-   BODY TEXT
-   ========================================== */
+/* Body text */
 .introjs-tooltiptext {
     font-size: clamp(12px, 2vw, 14px) !important;
     color: #cbd5e1 !important;
@@ -108,9 +102,7 @@
     margin-bottom: 5px;
 }
 
-/* ==========================================
-   BUTTONS
-   ========================================== */
+/* Buttons */
 .introjs-tooltipbuttons {
     border-top: 1px solid rgba(255,255,255,0.08) !important;
     padding: 10px 15px !important;
@@ -156,9 +148,7 @@
     box-shadow: 0 4px 12px rgba(16,185,129,0.35) !important;
 }
 
-/* ==========================================
-   PROGRESS BULLETS
-   ========================================== */
+/* Progress bullets */
 .introjs-bullets {
     padding: 5px 15px 0 !important;
 }
@@ -178,9 +168,7 @@
     box-shadow: 0 0 8px rgba(56,189,248,0.5) !important;
 }
 
-/* ==========================================
-   WELCOME MODAL (Tela de Boas-vindas)
-   ========================================== */
+/* WELCOME MODAL (Tela de Boas-vindas) */
 .onboarding-welcome-modal {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -235,9 +223,7 @@
     100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
 }
 
-/* ==========================================
-   MINI-TOUR BADGE (ícone que aparece na primeira visita)
-   ========================================== */
+/* MINI-TOUR BADGE (ícone que aparece na primeira visita) */
 .mini-tour-hint {
     position: absolute;
     top: -8px;
@@ -257,9 +243,7 @@
     z-index: 10;
 }
 
-/* ==========================================
-   RESPONSIVIDADE MOBILE
-   ========================================== */
+/* Responsividade mobile */
 @media (max-width: 640px) {
     .introjs-tooltip {
         max-width: 92vw !important;

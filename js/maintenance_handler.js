@@ -1,6 +1,4 @@
-// ==========================================
-// MAINTENANCE HANDLER - MAINTENANCE_HANDLER.JS
-// ==========================================
+// Maintenance handler - maintenance_handler.js
 // Centralizes support reporting and discrepancy feedback
 
 window.Maintenance = {

@@ -3,9 +3,7 @@
  * Glassmorphism, UI Premium, Mobile Responsive
  */
 
-/* =========================================
-   1. HAMBURGER MENU BUTTON
-   ========================================= */
+/* 1. hamburger menu button */
 .hub-menu-btn {
     background: transparent;
     border: none;
@@ -52,9 +50,7 @@
     margin-bottom: 25px;
 }
 
-/* =========================================
-   2. GLOBAL HUB MODAL (Overlay Desktop)
-   ========================================= */
+/* 2. GLOBAL HUB MODAL (Overlay Desktop) */
 .global-hub-overlay {
     position: fixed;
     top: 0;
@@ -123,9 +119,7 @@
     transform: rotate(90deg);
 }
 
-/* =========================================
-   3. APP GRID (The "Apps")
-   ========================================= */
+/* 3. APP GRID (The "Apps") */
 .hub-apps-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -199,9 +193,7 @@
     background: linear-gradient(135deg, #ef4444, #b91c1c);
 }
 
-/* =========================================
-   4. USER PROFILE BANNER IN HUB
-   ========================================= */
+/* 4. user profile banner in hub */
 .hub-profile-banner {
     display: flex;
     justify-content: space-between;
@@ -290,9 +282,7 @@
     gap: 8px;
 }
 
-/* =========================================
-   5. HUB FOOTER (Logout / Notifications)
-   ========================================= */
+/* 5. HUB FOOTER (Logout / Notifications) */
 .hub-footer {
     margin-top: 40px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -337,9 +327,7 @@
     display: none;
 }
 
-/* =========================================
-   6. RESPONSIVE MODAL FOR APPS (CRM, Wallet)
-   ========================================= */
+/* 6. RESPONSIVE MODAL FOR APPS (CRM, Wallet) */
 .app-modal {
     position: fixed;
     top: 0;
@@ -416,9 +404,7 @@
     color: #0f172a;
 }
 
-/* =========================================
-   7. SIDEBAR 2.0 (Search Engine specific)
-   ========================================= */
+/* 7. SIDEBAR 2.0 (Search Engine specific) */
 /* Sidebar is now purely for search. */
 #sidebar {
     /* Existing constraints mostly fine, overriding some margins */
@@ -504,9 +490,7 @@
     margin-top: 6px;
 }
 
-/* =========================================
-   8. MOBILE RESPONSIVENESS
-   ========================================= */
+/* 8. mobile responsiveness */
 @media (max-width: 768px) {
 
     /* Sidebar as bottom sheet */

@@ -1,8 +1,6 @@
-// ==========================================
-// ANALYTICS TRACKER
-// ==========================================
+// Analytics tracker
 // Captures system usage events and persists to Supabase
-// ==========================================
+
 
 window.Analytics = {
     sessionID: null,

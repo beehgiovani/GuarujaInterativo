@@ -1,6 +1,4 @@
-// ==========================================
-// UTILITY FUNCTIONS - UTILS.JS
-// ==========================================
+// Utility functions - utils.js
 // Core utilities: Toast, Loading, formatDocument, UTM conversions, etc.
 
 // --- PRODUCTION LOG SUPPRESSION ---
@@ -15,9 +13,7 @@ if (!window.DEBUG_MODE) {
     // console.warn and console.error are preserved for critical tracing
 }
 
-// ========================================
-// TOAST NOTIFICATION SYSTEM
-// ========================================
+// Toast notification system
 const Toast = window.Toast = {
     show(message, type = 'info', title = '', duration = 4000) {
         const toastContainer = document.getElementById('toast-container');
@@ -84,9 +80,7 @@ const Toast = window.Toast = {
     }
 };
 
-// ========================================
-// LOADING OVERLAY CONTROLS
-// ========================================
+// Loading overlay controls
 const Loading = window.Loading = {
     show(text = 'Carregando...', subtext = '') {
         const loadingOverlay = document.getElementById('loading-overlay');
@@ -112,9 +106,7 @@ const Loading = window.Loading = {
     }
 };
 
-// ========================================
-// MOBILE SIDEBAR CONTROLS
-// ========================================
+// Mobile sidebar controls
 const MobileSidebar = {
     isOpen: false,
 
@@ -155,9 +147,7 @@ const MobileSidebar = {
     }
 };
 
-// ========================================
-// NAME MASKING FUNCTION
-// ========================================
+// Name masking function
 window.maskName = function(name, showsFull = false) {
     if (!name || name === 'null') return 'Nome Reservado';
     
@@ -178,9 +168,7 @@ window.maskName = function(name, showsFull = false) {
     return `${first.substring(0, 2)}*** ${last.charAt(0)}***`;
 };
 
-// ========================================
-// CPF/CNPJ FORMATTING
-// ========================================
+// Cpf/cnpj formatting
 window.formatDocument = function(doc, visible) {
     if (!doc || doc === 'null') return '-';
     const clean = doc.toString().replace(/\D/g, '');
@@ -332,9 +320,7 @@ window.toggleCpfVisibility = function (btn, docValue) {
     }
 };
 
-// ========================================
-// ZONE COLOR SYSTEM
-// ========================================
+// Zone color system
 const ZoneColors = {
     '1': '#FF6B6B',  // Red
     '2': '#4ECDC4',  // Teal
@@ -353,9 +339,7 @@ function getZoneColor(zona) {
     return ZoneColors[zona] || ZoneColors['default'];
 }
 
-// ========================================
-// UTM COORDINATE CONVERSION
-// ========================================
+// Utm coordinate conversion
 // These UTM conversion functions are assumed to exist in app.js
 // If they don't exist, they should be added here
 
@@ -457,9 +441,7 @@ function latLonToUtm(lat, lng) {
     return { x, y };
 }
 
-// ========================================
-// EXPORT TO WINDOW OBJECT
-// ========================================
+// Export to window object
 window.ZoneColors = ZoneColors;
 window.utmToLatLon = utmToLatLon;
 window.latLonToUtm = latLonToUtm;
@@ -598,9 +580,7 @@ window.loadLotesFromCache = async function () {
 
 // Export Edits removed per user review
 
-// ========================================
-// SIMPLE MARKDOWN PARSER - PREMIUM STYLE
-// ========================================
+// Simple markdown parser - premium style
 window.parseMarkdown = function (text) {
     if (!text) return '';
 
@@ -666,9 +646,7 @@ window.parseMarkdown = function (text) {
 };
 
 
-// ==========================================
-// DATA CLEANING & INTELLIGENCE
-// ==========================================
+// Data cleaning & intelligence
 
 /**
  * Capitaliza nomes de forma inteligente (ignora preposições como 'dos', 'da', 'e')
@@ -702,9 +680,7 @@ window.normalizeEmail = function(email) {
 };
 
 console.log("✅ Utils module loaded (with Data Intelligence)");
-// ==========================================
-// EXPORTING / CSV
-// ==========================================
+// Exporting / csv
 window.downloadCSV = function (data, filename = 'export.csv') {
     if (!data || !data.length) {
         window.Toast.info('Nenhum dado para exportar.');
@@ -746,9 +722,7 @@ window.downloadCSV = function (data, filename = 'export.csv') {
 }
 
 
-// ==========================================
-// FAROL UPDATE HANDLER (DATA POLICE)
-// ==========================================
+// Farol update handler (data police)
 window.confirmFarolUpdate = async function (field, value, btn) {
     const parent = btn.closest('.farol-update-confirm');
 

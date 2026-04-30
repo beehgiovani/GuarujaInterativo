@@ -1,6 +1,4 @@
-// ==========================================
-// PROPRIETARIO TOOLTIP - PROPRIETARIO_TOOLTIP.JS
-// ==========================================
+// Proprietario tooltip - proprietario_tooltip.js
 // Tooltip 360° do proprietário com TODAS as propriedades
 
 // Helper global para toggle de texto de CPF (usado nos cards de sócios)
@@ -762,9 +760,7 @@ window.ProprietarioTooltip = {
         return html;
     },
 
-    // ========================================
-    // INFOSIMPLES - CONSULTAS JURÍDICAS
-    // ========================================
+    // Infosimples - consultas jurídicas
 
     renderCertidoes(prop) {
         // Usar o handler Infosimples para renderizar o seletor

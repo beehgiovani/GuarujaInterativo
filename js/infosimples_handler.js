@@ -1,6 +1,4 @@
-// ==========================================
-// INFOSIMPLES HANDLER - INFOSIMPLES_HANDLER.JS
-// ==========================================
+// Infosimples handler - infosimples_handler.js
 // Integração com Infosimples API para consultas de certidões jurídicas
 
 const INFOSIMPLES_API_URL = 'https://ijmgvsztgljribnogtsx.supabase.co/functions/v1/infosimples-api';
@@ -352,7 +350,7 @@ window.Infosimples = {
             // Clone params to modify safely
             const currentParams = { ...baseParams };
 
-            // === SPECIAL RULES PER CERTIDAO ===
+            // Special rules per certidao
 
             if (id === 'trf3') {
                 // TRF3 Strict Mode: Only CPF, TIPO, ABRANGENCIA

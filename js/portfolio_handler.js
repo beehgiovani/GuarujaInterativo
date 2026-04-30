@@ -1,6 +1,4 @@
-// ==========================================
-// PORTFOLIO HANDLER - PORTFOLIO_HANDLER.JS
-// ==========================================
+// Portfolio handler - portfolio_handler.js
 // Lógica para visualizar o patrimônio consolidado de proprietários no mapa
 
 window.PortfolioHandler = {
