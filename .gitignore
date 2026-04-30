@@ -21,27 +21,20 @@ _PRIVATE_BACKUP/
 npm-debug.log*
 yarn-debug.log*
 .firebase/
-.mypy_cache/
 .DS_Store
 Thumbs.db
 __pycache__/
 *.pyc
 
-# Scripts e Ferramentas Internas (Scripts de Dev)
-scripts/
-migrations/
-scraper/
-scrapers/
-database/
+# Arquivos de Backup e Antigos Movidos
+_lixo_e_arquivos_pessoais/
+_PRIVATE_BACKUP/
 supabase/
-tests/
-email_templates/
 
 # Documentos em Markdown (Exceto os Principais)
 *.md
 !README.md
 !SECURITY.md
-!docs/
 
 # Dependências
 node_modules/

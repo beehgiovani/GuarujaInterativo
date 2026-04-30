@@ -65,11 +65,15 @@ O **Guarujá GeoMap** é uma plataforma web premium desenvolvida para imobiliár
 - **Visualizador Premium**: Modal dedicado para conferência e impressão de certidões HTML/PDF.
 - **Gestão de Saldos**: Controle de custos por consulta.
 
-### 8. Sistema de Notificações 🔔 (Sininho)
-- **Real-time Alert**: Notificações instantâneas via Supabase Realtime.
-- **Golden Bell**: Ícone de sino com badge de contagem de não lidas.
-- **Monitoramento Passivo**: Robô que monitora e-mails e notifica novas certidões prontas.
-- **Toasts Premium**: Balões informativos clicáveis para acesso rápido ao documento.
+### 8. PWA Offline-First (Modo Bunkers) 📡
+- Suporte a cache robusto no nível Service Worker (`sw.js`).
+- Renderização visual ininterrupta ("Modo Avião") em garagens ou locais sem cobertura.
+- Interface customizada mostrando quando o aplicativo opera via cache local.
+
+### 9. Master SaaS Hub 👑
+- Dashboard Full-Screen imersivo focado em gestão e "curadoria de tubarões" (VGV Elevado).
+- Painel de Liberação e moderação de corretores ("One-Click User Moderation").
+- Tracker em tempo real de requisições do sistema.
 
 ---
 
@@ -106,26 +110,16 @@ O **Guarujá GeoMap** é uma plataforma web premium desenvolvida para imobiliár
 
 ```
 guaruja_geo/
-├── mapa_interativo/           # Aplicação Web Principal (Frontend + Handlers)
-├── scraper/                   # Sistema de Scraping (Python)
-│   ├── sources/               # Extratores por fonte (OLX, Google, Serper)
-│   ├── core/                  # DB, Configurações e Matcher
-│   ├── sync/                  # Scripts de sincronização cloud/local
-│   └── cron/                  # Scripts disparados via CRON
-├── scripts/                   # Scripts de Ferramentas e IA
-│   ├── automation/            # Git push, Automação de Releases
-│   ├── ai_tools/              # Debug Gemini, Listagem de Modelos
-│   └── valuation/             # Ferramentas de avaliação por IA
-├── docs/                      # Documentação Centralizada
-│   ├── business/              # Estratégia, Monetização e Prospectos
-│   ├── planning/              # Roadmaps e Tarefas futuras
-│   ├── database/              # Esquema Real Nuvem (Source of Truth)
-│   └── technical/             # Manuais de deploy e comandos Firebase
-├── Antigos/                   # Legacy & Backup (Não deletar sem backup)
-│   ├── migrations/            # Migrations antigas do Supabase
-│   ├── Curriculos/            # Arquivos pessoais (Bruno)
-│   └── drafts/                # Rascunhos de e-mails e notas antigas
-├── supabase/                  # Backend Supabase Configs
+├── mapa_interativo/           # Aplicação Web Principal (Frontend V2)
+|   ├── css/                   # Estilos Modularizados
+|   ├── js/                    # Core Handlers (CRM, Auth, Monetization, PWA)
+|   └── assets/                # Imagens e Lottie Animations
+├── supabase/                  # Backend Supabase Configs & Edge Functions
+├── _lixo_e_arquivos_pessoais/ # 📦 Repositório Frio (Ignorado via Git)
+│   ├── projeto_dados_e_docs/  # Scrapers Python, Backups de Database, Migrations, etc.
+│   └── Curriculos/            # Arquivos pessoais antigos
+├── sw.js                      # Service Worker para PWA Offline-First
+├── manifest.json              # Configurações de Aplicativo
 └── firebase.json              # Configuração Firebase Hosting
 ```
 
