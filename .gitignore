@@ -15,6 +15,7 @@ _PRIVATE_BACKUP/
 *.7z
 *.pdf
 !docs/*.pdf
+!docs/*.html
 
 # Logs e Cache
 *.log
