@@ -7,9 +7,12 @@
 
 :root {
     --portal-primary: #3b82f6;
+    --portal-accent: #10b981;
     --portal-primary-glow: rgba(59, 130, 246, 0.5);
-    --portal-bg: #020617; /* Midnight Black */
-    --portal-card: rgba(30, 41, 59, 0.7); /* Glass color */
+    --portal-bg: #020617;
+    /* Midnight Black */
+    --portal-card: rgba(30, 41, 59, 0.7);
+    /* Glass color */
     --portal-text: #f8fafc;
     --portal-muted: #94a3b8;
     --portal-border: rgba(255, 255, 255, 0.1);
@@ -22,9 +25,11 @@ body.login-page {
     font-family: 'Inter', sans-serif;
     color: var(--portal-text);
     overflow: hidden;
-    background-image: 
-        radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
-        radial-gradient(circle at 100% 100%, rgba(30, 58, 138, 0.2) 0%, transparent 40%);
+    background-image:
+        linear-gradient(135deg, rgba(2, 6, 23, 0.96), rgba(15, 23, 42, 0.92)),
+        url('../assets/l3.png');
+    background-position: center;
+    background-size: cover;
 }
 
 .login-wrapper {
@@ -35,14 +40,19 @@ body.login-page {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 /* Splash Section (Left) */
 .login-splash {
     flex: 1.3;
-    background: url('../assets/portal_splash_bg.jpg') no-repeat center center;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.58), rgba(2, 6, 23, 0.92)), url('../assets/l2.png') no-repeat center center;
     background-size: cover;
     position: relative;
     display: flex;
@@ -63,9 +73,11 @@ body.login-page {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, rgba(2, 6, 23, 0.8), rgba(2, 6, 23, 0.95));
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
+    background:
+        linear-gradient(90deg, rgba(2, 6, 23, 0.54), rgba(2, 6, 23, 0.9)),
+        linear-gradient(180deg, rgba(16, 185, 129, 0.08), rgba(59, 130, 246, 0.12));
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
 }
 
 .splash-content {
@@ -77,8 +89,15 @@ body.login-page {
 }
 
 @keyframes slideUp {
-    from { transform: translateY(30px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .brand-badge {
@@ -142,6 +161,7 @@ body.login-page {
 
 .benefit-list li i {
     color: var(--portal-primary);
+    text-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
     background: rgba(59, 130, 246, 0.1);
     width: 32px;
     height: 32px;
@@ -150,6 +170,41 @@ body.login-page {
     justify-content: center;
     border-radius: 50%;
     font-size: 14px;
+}
+
+.market-signal {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 42px;
+}
+
+.market-signal div {
+    min-height: 74px;
+    padding: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    background: rgba(15, 23, 42, 0.58);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+}
+
+.market-signal strong {
+    display: block;
+    color: #ffffff;
+    font-family: 'Outfit', sans-serif;
+    font-size: 22px;
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.market-signal span {
+    color: #cbd5e1;
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.25;
+    text-transform: uppercase;
 }
 
 /* Form Section (Right) */
@@ -171,9 +226,19 @@ body.login-page {
     -webkit-backdrop-filter: blur(20px);
     backdrop-filter: blur(20px);
     border: 1px solid var(--portal-border);
-    border-radius: 32px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border-radius: 28px;
+    box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.3);
     animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s backwards;
+}
+
+.form-box::before {
+    content: "";
+    display: block;
+    width: 54px;
+    height: 4px;
+    margin: 0 auto 26px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--portal-accent), var(--portal-primary));
 }
 
 .form-box header {
@@ -215,6 +280,7 @@ body.login-page {
 .forgot-link {
     font-size: 13px;
     color: var(--portal-primary);
+    text-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
     text-decoration: none;
     font-weight: 600;
     transition: opacity 0.2s;
@@ -247,7 +313,7 @@ body.login-page {
     color: #fff;
     font-size: 16px;
     outline: none;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     box-sizing: border-box;
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
@@ -255,15 +321,18 @@ body.login-page {
 
 .input-with-icon input:focus {
     border-color: var(--portal-primary);
+    text-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
     background: rgba(15, 23, 42, 0.8);
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
 }
 
-.input-with-icon input:focus + i {
+.input-with-icon input:focus+i {
     color: var(--portal-primary);
+    text-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
 .btn-login-submit {
+    min-height: 56px;
     width: 100%;
     background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: white;
@@ -301,6 +370,7 @@ body.login-page {
 
 .signup-link {
     color: var(--portal-primary);
+    text-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
     text-decoration: none;
     font-weight: 700;
     margin-left: 5px;
@@ -318,6 +388,10 @@ body.login-page {
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+.error-msg.is-hidden {
+    display: none;
 }
 
 .legal-footer {
@@ -358,4 +432,26 @@ body.login-page {
     justify-content: center;
 }
 
+@media (max-width: 640px) {
+    body.login-page {
+        overflow-y: auto;
+    }
+
+    .login-wrapper {
+        min-height: 100vh;
+        height: auto;
+    }
+
+    .login-form-container {
+        padding: 24px 16px;
+    }
+
+    .form-box {
+        padding: 32px 22px;
+        border-radius: 22px;
+    }
+
+    .form-box h2 {
+        font-size: 27px;
+    }
 }

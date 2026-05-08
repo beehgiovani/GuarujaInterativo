@@ -54,6 +54,15 @@ window.ReportHandler = {
         const date = new Date().toLocaleDateString('pt-BR');
         const buildingName = lote.building_name || 'Terreno/Imóvel Individual';
         const address = `${lote.logradouro || ''}, ${lote.numero || ''} - ${lote.bairro || 'Guarujá'}`;
+        const unitImages = this.parseJsonArray(unit.imagens);
+        const lotImages = this.parseJsonArray(lote.gallery);
+        const reportImages = [
+            ...unitImages,
+            lote.image_url,
+            ...lotImages,
+            'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&q=80&w=800',
+            'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=800'
+        ].filter(Boolean);
         
         return `
             <!DOCTYPE html>
@@ -183,8 +192,8 @@ window.ReportHandler = {
 
                     <div class="info-title">Visualização do Ativo</div>
                     <div class="images">
-                        <div class="img-wrap"><img src="${unit.image_url || 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&q=80&w=800'}" alt="Foto 1"></div>
-                        <div class="img-wrap"><img src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&q=80&w=800" alt="Foto 2"></div>
+                        <div class="img-wrap"><img src="${reportImages[0]}" alt="Foto 1"></div>
+                        <div class="img-wrap"><img src="${reportImages[1] || reportImages[0]}" alt="Foto 2"></div>
                     </div>
 
                     <footer>
@@ -195,5 +204,19 @@ window.ReportHandler = {
             </body>
             </html>
         `;
+    },
+
+    parseJsonArray: function(value) {
+        if (!value) return [];
+        if (Array.isArray(value)) return value.filter(Boolean);
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+            } catch (e) {
+                return value.startsWith('http') ? [value] : [];
+            }
+        }
+        return [];
     }
 };

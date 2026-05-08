@@ -2,6 +2,20 @@
 // Bruno Giovani: Máximo de dados expostos, zero peso extra na UI.
 
 window.UnitTooltipUI = {
+    parseArrayField: function(value) {
+        if (!value) return [];
+        if (Array.isArray(value)) return value.filter(Boolean);
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+            } catch (e) {
+                return value.startsWith('http') ? [value] : [];
+            }
+        }
+        return [];
+    },
+
     render: function(unit, parentLote, history = []) {
         const showsFull = window.Monetization?.isUnlocked(unit.inscricao, parentLote.inscricao);
 
@@ -14,18 +28,20 @@ window.UnitTooltipUI = {
         const valorVendavel = fmtCurrency(unit.valor_vendavel);
         const valorEdificado = fmtCurrency(unit.valor_venal_edificado);
         const areaUtil      = fmtArea(unit.area_util);
-        
+        const unitImages    = this.parseArrayField(unit.imagens);
+        const unitFiles     = this.parseArrayField(unit.arquivos);
+
         // Lógica Inteligente de Metragem: Se for AP e muito baixo, deduzir Fração Ideal
         const rawArea = parseFloat(unit.area_total || unit.metragem || unit.area_util || 0);
         const unitType = (unit.tipo || '').toLowerCase();
         // Se for apartamento ou unidade genérica com metragem suspeita (< 40m²), tratamos como Fração Ideal
         const isLowAreaAp = (unitType.includes('ap') || unitType.includes('unid')) && rawArea > 0 && rawArea < 40;
-        
+
         const areaTotalLabel = isLowAreaAp ? 'Fração Ideal' : 'Área Total';
         const areaTotal     = fmtArea(rawArea);
 
         const cep           = unit.cep ? unit.cep.replace(/(\d{5})(\d{3})/, '$1-$2') : null;
-        
+
         // Máscara de Documento (CPF/CNPJ)
         const formatDoc = (doc) => {
             if (!doc) return '***.***.***-**';
@@ -51,12 +67,12 @@ window.UnitTooltipUI = {
         // ID único para atualização assíncrona da imagem
         const imgId = `unit-hero-img-${unit.inscricao || Math.random().toString(36).substr(2, 9)}`;
         const placeholderImg = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=500&q=80';
-        
+
         // Disparar atualização assíncrona (usa parentLote como referência se a unidade não tiver foto própria)
         setTimeout(async () => {
             if (window.MediaHandler) {
                 // Se a unidade tem imagem própria, usa ela, senão busca do lote ou streetview
-                let realImg = (unit.imagens && unit.imagens[0]);
+                let realImg = unitImages[0];
                 if (!realImg) {
                     realImg = await window.MediaHandler.getSmartPhoto(parentLote);
                 }
@@ -74,8 +90,8 @@ window.UnitTooltipUI = {
                 <div class="tooltip-header-img unit-header-img">
                     <img id="${imgId}" src="${placeholderImg}" alt="${unit.complemento || 'Unidade'}" loading="lazy" class="shimmer-loading" onerror="this.src='${placeholderImg}'">
                     <div class="lot-badge-zona">Unidade: ${String(unit.inscricao).slice(-3)}</div>
-                    
-                    <div style="position: absolute; top: 15px; left: 15px; z-index: 10;">
+
+                    <div style="position: absolute; top: 29px; left: 480px; z-index: 10;">
                         ${parentLote ? `
                         <button class="unit-tooltip-back" aria-label="Voltar para Lote" onclick="window.closeUnitTooltipAndReturn('${parentLote.inscricao}')" style="background: rgba(15,23,42,0.6); border: none; color: white; border-radius: 12px; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; cursor: pointer; backdrop-filter: blur(8px); transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
                             <i class="fas fa-arrow-left" style="font-size: 18px;"></i>
@@ -89,7 +105,7 @@ window.UnitTooltipUI = {
                         </button>
                     </div>
 
-                    <div class="header-overlay-info">
+                    <div class="header-overlay-info"  >
                         <span class="unit-type-badge">${unit.tipo || 'Unidade'}</span>
                         <h2 class="unit-title">${parentLote?.building_name || unit.complemento || 'Unidade'}</h2>
                         <p class="unit-subtitle-addr">
@@ -159,11 +175,12 @@ window.UnitTooltipUI = {
                         ${this.renderSpec('Vagas', unit.vagas || '?', 'fa-car')}
                         ${this.renderSpec('V. Venal Solo', unit.valor_venal ? 'R$ ' + (unit.valor_venal/1000).toFixed(0) + 'k' : '—', 'fa-landmark')}
                         ${this.renderSpec('V. Edificado', valorEdificado ? valorEdificado : '—', 'fa-building')}
+                        ${this.renderSpec('Fração Ideal', unit.fracao_ideal || '—', 'fa-percent')}
                         ${this.renderSpec('Status', unit.status_venda || 'Padrão', 'fa-tags')}
                     </div>
 
                     <!-- Documentação (Matrícula / RIP) -->
-                    ${(unit.matricula || unit.rip) ? `
+                    ${(unit.matricula || unit.rip) && showsFull ? `
                     <div class="unit-docs-row">
                         ${unit.matricula ? `
                         <div class="unit-doc-badge">
@@ -182,6 +199,19 @@ window.UnitTooltipUI = {
                             </div>
                         </div>` : ''}
                     </div>` : ''}
+                    ${(unit.matricula || unit.rip) && !showsFull ? `
+                    <div class="unit-docs-row">
+                        <div class="unit-doc-badge locked">
+                            <i class="fas fa-lock"></i>
+                            <div>
+                                <div class="mini-card-label">Documentação disponível</div>
+                                <div class="cnpj-val">Desbloqueie para ver Matrícula/RIP</div>
+                            </div>
+                        </div>
+                    </div>` : ''}
+
+                    ${unitImages.length > 0 ? this.renderUnitGallery(unitImages, unit.complemento || unit.inscricao) : ''}
+                    ${unitFiles.length > 0 && showsFull ? this.renderUnitFiles(unitFiles) : ''}
 
                     <!-- Características (tags do banco) -->
                     ${caracteristicas.length > 0 ? `
@@ -245,6 +275,35 @@ window.UnitTooltipUI = {
                 <i class="fas ${icon}"></i>
                 <div class="spec-val">${value}</div>
                 <div class="spec-label">${label}</div>
+            </div>`;
+    },
+
+    renderUnitGallery: function(images, title) {
+        const imagesJson = JSON.stringify(images).replace(/"/g, '&quot;');
+        return `
+            <div class="unit-media-section">
+                <div class="mini-card-label">Fotos da Unidade</div>
+                <div class="unit-media-strip">
+                    ${images.slice(0, 8).map((url, index) => `
+                        <button type="button" class="unit-media-thumb" onclick="window.showMediaGallery(${imagesJson}, '${String(title).replace(/'/g, "\\'")}')">
+                            <img src="${url}" alt="Foto ${index + 1} da unidade" loading="lazy">
+                        </button>
+                    `).join('')}
+                </div>
+            </div>`;
+    },
+
+    renderUnitFiles: function(files) {
+        return `
+            <div class="unit-file-section">
+                <div class="mini-card-label">Arquivos da Unidade</div>
+                <div class="unit-file-list">
+                    ${files.slice(0, 6).map((url, index) => `
+                        <a class="unit-file-chip" href="${url}" target="_blank" rel="noopener">
+                            <i class="fas fa-file-alt"></i> Arquivo ${index + 1}
+                        </a>
+                    `).join('')}
+                </div>
             </div>`;
     },
 

@@ -13,15 +13,17 @@
     position: relative;
     overflow-x: hidden;
     font-family: 'Inter', sans-serif;
-    background-image: 
-        radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+    background-image:
+        linear-gradient(135deg, rgba(2, 6, 23, 0.94), rgba(15, 23, 42, 0.88)),
+        url('../assets/l1.png');
+    background-position: center;
+    background-size: cover;
 }
 
 .hub-container {
     width: 100%;
     max-width: 1200px;
-    padding: 60px 24px;
+    padding: 44px 24px 34px;
     text-align: center;
     z-index: 5;
     animation: fadeIn 1s ease-out;
@@ -33,22 +35,38 @@
 }
 
 .hub-header {
-    margin-bottom: 80px;
+    margin-bottom: 52px;
     animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0s backwards;
 }
 
 .hub-logo {
-    height: 80px;
-    margin-bottom: 40px;
-    filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.2));
+    height: 74px;
+    margin-bottom: 26px;
+    filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.38));
+}
+
+.hub-kicker {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0 14px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(16, 185, 129, 0.26);
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.08);
+    color: #86efac;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
 }
 
 .hub-header h1 {
     font-family: 'Outfit', sans-serif;
     font-size: 56px;
     font-weight: 900;
-    margin: 0 0 20px;
-    letter-spacing: -2px;
+    margin: 0 0 18px;
+    letter-spacing: 0;
     color: #f8fafc;
 }
 
@@ -71,7 +89,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: 40px;
-    margin-bottom: 80px;
+    margin-bottom: 54px;
     animation: fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s backwards;
 }
 
@@ -83,7 +101,7 @@
         font-size: 40px; 
     }
     .portal-card {
-        padding: 60px 32px;
+        padding: 34px 22px;
     }
     .card-icon {
         width: 60px;
@@ -106,8 +124,8 @@
     -webkit-backdrop-filter: blur(20px);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 40px;
-    padding: 80px 48px;
+    border-radius: 24px;
+    padding: 54px 42px;
     text-decoration: none;
     color: white;
     text-align: left;
@@ -115,12 +133,13 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    min-height: 410px;
 }
 
 .portal-card:hover {
     transform: translateY(-12px) scale(1.02);
     border-color: rgba(59, 130, 246, 0.3);
-    box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 40px 80px -20px rgba(59, 130, 246, 0.4);
     background: rgba(15, 23, 42, 0.8);
 }
 
@@ -130,7 +149,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent);
+    background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.25), rgba(30, 41, 59, 0.85));
     opacity: 0;
     transition: opacity 0.5s;
 }
@@ -149,6 +168,7 @@
     height: 80px;
     background: rgba(59, 130, 246, 0.1);
     color: #3b82f6;
+    text-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
     border-radius: 24px;
     display: flex;
     align-items: center;
@@ -170,15 +190,36 @@
     font-size: 32px;
     font-weight: 800;
     margin: 0 0 20px;
-    letter-spacing: -1px;
+    letter-spacing: 0;
 }
 
 .portal-card p {
     color: #94a3b8;
     line-height: 1.7;
-    margin-bottom: 48px;
+    margin-bottom: 24px;
     font-size: 17px;
     flex-grow: 1;
+}
+
+.card-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 34px;
+}
+
+.card-metrics span {
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 11px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
 }
 
 .card-btn {
@@ -187,6 +228,7 @@
     gap: 12px;
     font-weight: 800;
     color: #3b82f6;
+    text-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
     font-size: 16px;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -253,6 +295,7 @@
 
 .footer-links a:hover {
     color: #3b82f6;
+    text-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
 /* Animations */

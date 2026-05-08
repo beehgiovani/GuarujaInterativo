@@ -87,6 +87,9 @@ const Loading = window.Loading = {
         if (!loadingOverlay) return;
         
         loadingOverlay.style.display = 'flex';
+        loadingOverlay.style.opacity = '1';
+        loadingOverlay.style.visibility = 'visible';
+        loadingOverlay.style.pointerEvents = 'auto';
         loadingOverlay.classList.remove('hidden');
         
         const textEl = loadingOverlay.querySelector('.loader-text') || loadingOverlay.querySelector('.loading-text');
@@ -101,6 +104,9 @@ const Loading = window.Loading = {
         if (!loadingOverlay) return;
         
         loadingOverlay.classList.add('hidden');
+        loadingOverlay.style.opacity = '0';
+        loadingOverlay.style.visibility = 'hidden';
+        loadingOverlay.style.pointerEvents = 'none';
         setTimeout(() => { loadingOverlay.style.display = 'none'; }, 300); // Garante que a div suma do DOM e não bloqueie cliques
     },
 
@@ -457,8 +463,9 @@ window.formatPhone = formatPhone;
 window.fetchLotDetails = async function (inscricao, force = false) {
     if (!window.allLotes) return null;
     const localLote = window.allLotes.find(l => l.inscricao === inscricao);
+    const detailsSchemaVersion = 'unidades-v3.1';
 
-    if (localLote && localLote._detailsLoaded && !force) {
+    if (localLote && localLote._detailsLoaded && localLote._detailsSchemaVersion === detailsSchemaVersion && !force) {
         console.log(`[Utils] Lote ${inscricao} já possui detalhes carregados.`);
         return localLote;
     }
@@ -477,10 +484,15 @@ window.fetchLotDetails = async function (inscricao, force = false) {
         if (localLote) {
             Object.assign(localLote, data);
             localLote._detailsLoaded = true;
+            localLote._detailsSchemaVersion = detailsSchemaVersion;
+        } else {
+            data._detailsLoaded = true;
+            data._detailsSchemaVersion = detailsSchemaVersion;
+            if (window.allLotes) window.allLotes.push(data);
         }
 
         window.Loading.hide();
-        return localLote;
+        return localLote || data;
     } catch (e) {
         console.error("Erro ao baixar detalhes:", e);
         window.Loading.hide();
@@ -667,6 +679,32 @@ window.extractDDD = function(phone) {
 window.normalizeEmail = function(email) {
     if (!email) return "";
     return email.trim().toLowerCase();
+};
+
+/**
+ * Inteligência de Dados: Separa Matrícula e RIP concatenados
+ * Útil para limpar dados vindos de scrapers que trazem ambos no mesmo campo.
+ * Padrão: "1234 (matricula) 5678 (RIP MARINHA)"
+ */
+window.cleanUnitData = function(u) {
+    if (!u) return;
+    
+    // Caso a matrícula contenha o marcador (matricula)
+    if (u.matricula && u.matricula.toLowerCase().includes('(matricula)')) {
+        const text = u.matricula;
+        // Pega tudo antes do (matricula)
+        const matMatch = text.match(/^(.*?)\s*\(matricula\)/i);
+        // Pega tudo entre (matricula) e (RIP MARINHA) ou fim da linha
+        const ripMatch = text.match(/\(matricula\)\s*(.*?)(?:\(RIP MARINHA\)|$)/i);
+        
+        if (matMatch) u.matricula = matMatch[1].trim();
+        if (ripMatch && ripMatch[1].trim()) u.rip = ripMatch[1].trim();
+    }
+
+    // Limpeza extra no RIP se houver resíduos do label
+    if (u.rip && u.rip.toLowerCase().includes('(rip marinha)')) {
+        u.rip = u.rip.replace(/\(RIP MARINHA\)/i, '').trim();
+    }
 };
 
 console.log("✅ Utils module loaded (with Data Intelligence)");

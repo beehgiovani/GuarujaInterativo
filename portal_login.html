@@ -6,8 +6,8 @@
     <title>Acesso do Proprietário | Guarujá Geo Lab</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/layout.css?v=2.0">
-    <link rel="stylesheet" href="css/premium_glassmorphism.css?v=1.0">
-    <link rel="stylesheet" href="css/portal_login_styles.css?v=2.1">
+    <link rel="stylesheet" href="css/premium_glassmorphism.css?v=1.1">
+    <link rel="stylesheet" href="css/portal_login_styles.css?v=2.2">
     <link rel="icon" type="image/png" href="assets/favicon.png">
     <!-- hCaptcha (Bot Protection) -->
     <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
@@ -22,6 +22,20 @@
                 <img src="assets/logo_prop.png" alt="Logo" class="splash-logo">
                 <h1>Venda seu <br><span>Imóvel</span> com Inteligência</h1>
                 <p>O maior hub imobiliário do litoral. Conecte sua propriedade a centenas de corretores e venda pelo valor real de mercado.</p>
+                <div class="market-signal" aria-label="Indicadores da plataforma">
+                    <div>
+                        <strong>24h</strong>
+                        <span>curadoria ativa</span>
+                    </div>
+                    <div>
+                        <strong>GIS</strong>
+                        <span>dados territoriais</span>
+                    </div>
+                    <div>
+                        <strong>LGPD</strong>
+                        <span>acesso protegido</span>
+                    </div>
+                </div>
                 
                 <ul class="benefit-list">
                     <li><i class="fas fa-check-circle"></i> Acompanhe o valor venal do seu imóvel</li>
@@ -59,7 +73,7 @@
                         </div>
                     </div>
 
-                    <div id="login-error" class="error-msg" style="display: none;"></div>
+                    <div id="login-error" class="error-msg is-hidden"></div>
 
                     <!-- hCaptcha widget -->
                     <div id="hcaptcha-container">

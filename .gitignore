@@ -50,6 +50,7 @@ package-lock.json
 # Builds e Temporários
 dist/
 build/
+www/
 tmp/
 out/
 bin/

@@ -1,11 +1,19 @@
-const CACHE_NAME = 'guarugeo-cache-v3.5';
+const CACHE_NAME = 'guarugeo-cache-v4.7';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
     './mapa.html',
+    './portal.html',
     './portal_login.html',
+    './privacidade.html',
+    './termos_uso.html',
+    './manifest.json',
+
+    // Essential CSS
     './css/main_hub_styles.css',
     './css/portal_login_styles.css',
+    './css/portal_styles.css',
+    './css/portal_mobile_styles.css',
     './css/layout.css',
     './css/sidebar_styles.css',
     './css/map_styles.css',
@@ -13,6 +21,7 @@ const ASSETS_TO_CACHE = [
     './css/neighborhood_styles.css',
     './css/editor_styles.css',
     './css/premium_styles.css',
+    './css/premium_glassmorphism.css',
     './css/analytics_styles.css',
     './css/carousel_styles.css',
     './css/modal_styles.css',
@@ -23,12 +32,19 @@ const ASSETS_TO_CACHE = [
     './css/image_viewer.css',
     './css/introjs.min.css',
     './css/onboarding_styles.css',
-    './css/anuncios_styles.css',
     './css/hub_styles.css',
+    './css/anuncios_styles.css',
     './css/tooltip_modular.css',
-    './assets/logo_v2.png',
+    './css/tooltip_premium.css',
 
-    // Core JS Logic
+    // Core JS Logic & Modules
+    './js/config.js',
+    './js/azure_config.js',
+    './js/supabase_client.js',
+    './js/auth_handler.js',
+    './js/portal_auth_handler.js',
+    './js/portal_handler.js',
+    './js/pwa_handler.js',
     './js/hub_handler.js',
     './js/app.js',
     './js/utils.js',
@@ -43,10 +59,7 @@ const ASSETS_TO_CACHE = [
     './js/monetization_handler.js',
     './js/admin_handler.js',
     './js/enrichment_handler.js',
-    './js/anuncios_handler.js',
     './js/proprietario_tooltip.js',
-
-    // Modular Tooltip System (v1.20) — atualizado em 2026-05-08
     './js/ui_manager.js',
     './js/lot_tooltip_handler.js',
     './js/lot_tooltip_ui.js',
@@ -54,21 +67,67 @@ const ASSETS_TO_CACHE = [
     './js/unit_tooltip_handler.js',
     './js/tooltip_unit_list.js',
     './js/tooltip_components.js',
+    './js/rbush.min.js',
+    './js/layout_adapter.js',
+    './js/landing_carousel.js',
+    './js/analytics_tracker.js',
+    './js/analytics_dashboard.js',
+    './js/notifications_handler.js',
+    './js/media_handler.js',
+    './js/image_viewer_handler.js',
+    './js/infosimples_handler.js',
+    './js/gemini_chat_handler.js',
+    './js/ai_history_handler.js',
+    './js/zoning_handler.js',
+    './js/relationship_handler.js',
+    './js/graph_handler.js',
+    './js/predictive_handler.js',
+    './js/intro.min.js',
+    './js/onboarding_handler.js',
+    './js/location_handler.js',
+    './js/analytics_handler.js',
+    './js/contract_templates.js',
+    './js/leilao_staging_handler.js',
+    './js/renovation_radar.js',
+    './js/push_handler.js',
+    './js/google_earth_handler.js',
+    './js/advanced_maps_handler.js',
+    './js/camera_handler.js',
+    './js/tracking_handler.js',
+    './js/streetview_handler.js',
+    './js/regional_handler.js',
+    './js/portfolio_handler.js',
+    './js/weather_handler.js',
+    './js/admin_notification_manager.js',
+    './js/support_user_handler.js',
+    './js/admin_moderation_handler.js',
+    './js/opportunity_distribution_handler.js',
+    './js/speech_command_handler.js',
 
-    // External Libs
+    // Assets
+    './assets/logo_v2.png',
+    './assets/logo_prop.png',
+    './assets/favicon.png',
+    './assets/city_animation.json',
+
+    // External Libs (Essential)
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
     'https://unpkg.com/@turf/turf/turf.min.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js'
+    'https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js',
+    'https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js',
+    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+    'https://cdn.jsdelivr.net/npm/chart.js@4',
+    'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap'
 ];
 
 self.addEventListener('install', (event) => {
-    // We don't skipWaiting() automatically anymore to allow user to save work
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             console.log('[Service Worker] Caching app shell');
             return cache.addAll(ASSETS_TO_CACHE);
         })
     );
+    self.skipWaiting();
 });
 
 
@@ -92,15 +151,20 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
-    if (event.request.url.includes('supabase.co') || event.request.url.includes('googleapis.com')) return;
+    
+    // Ignorar requisições para Supabase (API), Google Maps API e hCaptcha (sempre rede)
+    if (event.request.url.includes('supabase.co') || 
+        event.request.url.includes('googleapis.com') || 
+        event.request.url.includes('hcaptcha.com') ||
+        event.request.url.includes('google.com/maps')) return;
     
     // Ignorar rotas do portal para evitar cache viciado do index.html (Mapa)
-    if (event.request.url.includes('/portal')) {
+    if (event.request.url.includes('/portal') && !event.request.url.includes('.html')) {
         console.log('[Service Worker] Bypassing cache for portal route');
         return;
     }
 
-    // Special logic for the big JSON - Cache First
+    // Special logic for the big JSON - Cache First (Performance crítica)
     if (event.request.url.includes('lotes_merged.json')) {
         event.respondWith(
             caches.match(event.request).then((cachedResponse) => {
@@ -136,10 +200,9 @@ self.addEventListener('fetch', (event) => {
     );
 });
 
-// Listener for manual update triggering from index.html
+// Listener for manual update triggering from UI
 self.addEventListener('message', (event) => {
     if (event.data === 'SKIP_WAITING') {
         self.skipWaiting();
     }
 });
-

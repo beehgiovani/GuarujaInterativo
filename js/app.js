@@ -23,7 +23,7 @@ window.editedLotes = {};
  */
 async function init() {
     if (window.map) return; // Se o mapa já existir, não faz nada (evita duplicar)
-    
+
     console.log("🚀 Iniciando o motor do Guarujá GeoMap...");
     Loading.show('Carregando Mapa...', 'Iniciando módulos');
 
@@ -62,10 +62,10 @@ async function init() {
     // Liga módulos extras se eles existirem
     if (window.RenovationRadar) window.RenovationRadar.init();
     if (window.PushHandler) window.PushHandler.init();
-    
+
     // Tira o loading da tela
     Loading.hide();
-    
+
     // Se eu já estiver logado, esconde a tela de login na hora
     const loginOverlay = document.getElementById('loginOverlay');
     if (loginOverlay) loginOverlay.style.display = 'none';
@@ -170,47 +170,15 @@ function setupAppListeners() {
     if (backdrop) {
         backdrop.onclick = () => {
             if (window.closeMobileSidebar) window.closeMobileSidebar();
+            backdrop.classList.remove('active');
+            document.body.classList.remove('sidebar-mobile-active');
+            document.body.style.overflow = '';
         };
     }
 }
 
-/**
- * Busca detalhes de um lote específico (Inscrição)
- */
-window.fetchLotDetails = async function (inscricao) {
-    try {
-        const { data, error } = await window.supabaseApp
-            .from('lotes')
-            .select('*, unidades(*)')
-            .eq('inscricao', inscricao)
-            .single();
-
-        if (error) throw error;
-
-        if (data) {
-            // Normaliza os dados pra bater com o que o mapa espera
-            data.metadata = {
-                zona: data.zona,
-                setor: data.setor,
-                quadra: data.quadra,
-                lote: data.lote_geo,
-                bairro: data.bairro,
-                endereco: data.endereco
-            };
-            data.bounds_utm = { minx: data.minx, miny: data.miny, maxx: data.maxx, maxy: data.maxy };
-
-            if (!data._lat && data.minx) {
-                const ll = window.utmToLatLon((data.minx + data.maxx) / 2, (data.miny + data.maxy) / 2);
-                data._lat = ll.lat;
-                data._lng = ll.lng;
-            }
-        }
-        return data;
-    } catch (e) {
-        console.error("Erro ao buscar detalhes do lote:", e);
-        return null;
-    }
-};
+// Helper: Fetch Full Details on Demand - Agora centralizado no utils.js
+// window.fetchLotDetails moved to utils.js for consistency.
 
 /**
  * Notificações Offline (PWA)
@@ -219,7 +187,7 @@ function setupPWAOfflineListeners() {
     const updateStatus = () => {
         const isOnline = navigator.onLine;
         let banner = document.getElementById('pwa-offline-banner');
-        
+
         if (!isOnline) {
             if (!banner) {
                 banner = document.createElement('div');
@@ -239,24 +207,22 @@ function setupPWAOfflineListeners() {
 }
 
 // 🔥 GUARDIÃO ASSÍNCRONO DE AUTENTICAÇÃO E SESSÃO (SENTINELA)
-// Fica monitorando falhas globais. Se a sessão corromper, houver dupla instância, 
+// Fica monitorando falhas globais. Se a sessão corromper, houver dupla instância,
 // ou o token JWT falhar, ele intercepta na mesma hora e levanta o muro do Login.
 window.addEventListener('unhandledrejection', async (event) => {
     const errorMsg = event.reason ? (event.reason.message || event.reason.toString()) : '';
-    
-    // Palavras-chave que indicam que a sessão ou permissão de rede (login) foi pro espaço
-    const isAuthError = 
-        errorMsg.includes('AuthApiError') || 
-        errorMsg.includes('Refresh Token') || 
+
+    // Palavras-chave que indicam quebra real de sessão. Falhas de rede/CDN não podem bloquear a UI.
+    const isAuthError =
+        errorMsg.includes('AuthApiError') ||
+        errorMsg.includes('Refresh Token') ||
         errorMsg.includes('JWT') ||
-        errorMsg.includes('401') ||
-        errorMsg.includes('400') ||
-        errorMsg.includes('ERR_NAME_NOT_RESOLVED') || // Intercepta falhas criticas de rede em scripts vitais
+        errorMsg.includes('Invalid Refresh Token') ||
         errorMsg.includes('not authenticated');
 
     if (isAuthError) {
         console.error("🛡️ Sentinela detectou quebra de segurança/rede:", errorMsg);
-        
+
         // Derruba a tela preta de loading que esconde a UI
         const splashScreen = document.getElementById('global-loading-overlay');
         if (splashScreen) splashScreen.style.display = 'none';
@@ -266,7 +232,7 @@ window.addEventListener('unhandledrejection', async (event) => {
         if (loginOverlay) {
             loginOverlay.style.display = 'flex';
         }
-        
+
         // Aciona o logout para limpar tokens corrompidos silenciosamente
         if (window.Auth && typeof window.Auth.logout === 'function') {
             await window.Auth.logout();
@@ -274,7 +240,10 @@ window.addEventListener('unhandledrejection', async (event) => {
             localStorage.removeItem('guaruja_auth');
             window.location.reload();
         }
+        return;
     }
+
+    console.warn("🛡️ Sentinela ignorou falha não-auth:", errorMsg);
 });
 
 // 🔥 GATILHO OFICIAL DE INICIALIZAÇÃO
@@ -283,7 +252,7 @@ window.addEventListener('unhandledrejection', async (event) => {
 document.addEventListener('DOMContentLoaded', () => {
     if (window.Auth && typeof window.Auth.init === 'function') {
         console.log("🔒 Booting Authentication Engine...");
-        
+
         // Se o usuário já constar como não autenticado localmente, derrubamos o loading
         // para garantir que a interface de login apareça limpa
         if (!localStorage.getItem('guaruja_auth')) {

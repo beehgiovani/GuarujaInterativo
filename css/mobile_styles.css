@@ -306,13 +306,13 @@
         overflow-y: auto;
         padding-bottom: 80px;
     }
-    
+
     @supports (scrollbar-width: thin) {
         .tab-content {
             scrollbar-width: thin;
         }
     }
-    
+
     .tab-content::-webkit-scrollbar {
         width: 4px;
     }
@@ -466,13 +466,13 @@
         overflow-x: auto;
         white-space: nowrap;
     }
-    
+
     @supports (scrollbar-width: thin) {
         .lot-tooltip-tabs {
             scrollbar-width: thin;
         }
     }
-    
+
     .lot-tooltip-tabs::-webkit-scrollbar {
         height: 4px;
     }
@@ -1150,7 +1150,7 @@
     .lot-context-chips {
         flex-wrap: nowrap !important;
         overflow-x: auto !important;
-        padding: 8px 16px !important;
+        padding: 10px 20px 10px !important;
         gap: 8px !important;
         scroll-snap-type: x proximity;
     }
@@ -1169,8 +1169,8 @@
     .ctx-chip {
         white-space: nowrap !important;
         flex-shrink: 0;
-        font-size: 10px !important;
-        padding: 6px 12px !important;
+        font-size: 12px !important;
+        padding: 6px 14px !important;
         scroll-snap-align: start;
         border-radius: 10px !important;
     }

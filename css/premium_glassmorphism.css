@@ -1,4 +1,4 @@
-/* 
+/*
  * PREMIUM_GLASSMORPHISM.CSS
  * Implementação oficial do Glassmorphism 2026
  * Conforme MANIFESTOS_OFICIAIS.md - Protocolo V6.1
@@ -10,17 +10,17 @@
     --glass-secondary: rgba(15, 23, 42, 0.7);
     --glass-accent: rgba(59, 130, 246, 0.15);
     --glass-border: rgba(255, 255, 255, 0.1);
-    
+
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, #3b82f6, #2563eb);
     --gradient-accent: linear-gradient(to right, #3b82f6, #60a5fa);
-    
+
     /* Shadows (Soft Premium) */
     --shadow-soft: 0 8px 16px rgba(0, 0, 0, 0.1);
     --shadow-medium: 0 15px 30px rgba(0, 0, 0, 0.2);
     --shadow-heavy: 0 25px 50px rgba(0, 0, 0, 0.3);
     --shadow-premium: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    
+
     /* Borders */
     --border-glass: 1px solid rgba(255, 255, 255, 0.1);
     --border-radius-sm: 12px;
@@ -28,7 +28,7 @@
     --border-radius-lg: 24px;
     --border-radius-xl: 32px;
     --border-radius-2xl: 40px;
-    
+
     /* Backdrop Filter (Glassmorphism standard) */
     --backdrop-blur-light: 8px;
     --backdrop-blur-medium: 12px;
@@ -37,6 +37,7 @@
 
 /* ========================================
    GLASSMORPHISM UTILITIES
+   Atualizado para Protocolo V6.1
    ======================================== */
 
 .glass-container {
@@ -45,7 +46,7 @@
     backdrop-filter: blur(var(--backdrop-blur-heavy));
     border: var(--border-glass);
     border-radius: var(--border-radius-xl);
-    box-shadow: var(--shadow-premium);
+    box-shadow: var(--shadow-premium), 0 0 20px rgba(59, 130, 246, 0.3);
 }
 
 .glass-card {
@@ -347,7 +348,7 @@
         --border-radius-2xl: 24px;
         --border-radius-xl: 20px;
     }
-    
+
     .glass-button {
         padding: 14px 24px;
         font-size: 14px;

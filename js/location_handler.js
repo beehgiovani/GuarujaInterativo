@@ -10,7 +10,6 @@ const LocationHandler = {
 
     init() {
         if (this.btn) {
-            console.warn("📍 Location Handler already initialized.");
             return;
         }
         this.createControl();

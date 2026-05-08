@@ -9,13 +9,22 @@ window.Monetization = {
     pixConfig: null,
     plansConfig: null, // Dynamic configuration from app_settings
 
+    normalizeRole: function(role = this.userRole) {
+        const normalized = String(role || 'user').toLowerCase();
+        return normalized === 'master' ? 'admin' : normalized;
+    },
+
+    isAdminRole: function(role = this.userRole) {
+        return this.normalizeRole(role) === 'admin';
+    },
+
     // Early declaration to avoid racing
     isUnlockedPerson: function(cpf_cnpj) {
         if (!cpf_cnpj) return false;
         const clean = String(cpf_cnpj).replace(/\D/g, '');
         
-        const role = String(this.userRole || 'user').toLowerCase();
-        const isMaster = role === 'admin' || role === 'master';
+        const role = this.normalizeRole();
+        const isMaster = this.isAdminRole(role);
         const isElite = this.isEliteOrAbove();
         
         // MASTER: Tudo liberado visualmente
@@ -33,8 +42,8 @@ window.Monetization = {
     isUnlockedEnrichment: function(cpf_cnpj) {
         if (!cpf_cnpj) return false;
         const clean = String(cpf_cnpj).replace(/\D/g, '');
-        const role = String(this.userRole || 'user').toLowerCase();
-        const isMaster = role === 'admin' || role === 'master';
+        const role = this.normalizeRole();
+        const isMaster = this.isAdminRole(role);
 
         // MASTER: Sempre tem acesso a tudo
         if (isMaster) return true;
@@ -52,12 +61,12 @@ window.Monetization = {
         this.updateBalanceUI();
         
         // Dispatch event for other handlers to know tiers are ready
-        window.dispatchEvent(new CustomEvent('monetizationReady', { detail: { role: this.userRole } }));
+        window.dispatchEvent(new CustomEvent('monetizationReady', { detail: { role: this.normalizeRole() } }));
     },
 
     canAccess: function(feature) {
-        const role = String(this.userRole || 'user').toLowerCase();
-        const isMaster = role === 'admin' || role === 'master';
+        const role = this.normalizeRole();
+        const isMaster = this.isAdminRole(role);
         const isVip    = role === 'vip'   || isMaster;
         const isElite  = role === 'elite' || isVip;
         const isPro    = role === 'pro'   || isElite;
@@ -136,7 +145,7 @@ window.Monetization = {
             this.startSubscriptionTimer();
 
             // Verifica se o perfil já foi marcado como completo para não incomodar o usuário
-            if (!data.profile_completed && this.userRole !== 'master') {
+            if (!data.profile_completed && !this.isAdminRole()) {
                 const missingFields = [];
                 // Alguns usuários antigos/login social têm full_name. Novos têm broker_name. Checamos ambos.
                 if ((!data.full_name || data.full_name.trim() === '') && (!data.broker_name || data.broker_name.trim() === '')) missingFields.push('name');
@@ -149,7 +158,7 @@ window.Monetization = {
                 }
             }
 
-            const isMaster = this.userRole === 'admin' || this.userRole === 'master';
+            const isMaster = this.isAdminRole();
             const isPro = this.canAccess('radar_mercado');
 
             // Mostrar botão Admin para masters (agora apontando para o contêiner do badge)
@@ -619,10 +628,10 @@ window.Monetization = {
 
     // Limites mensais por tier (calculados para ROI > 2x com custo de R$ 2.00/ficha)
     getTierLimits: function() {
-        const defaultLimits = { user: 0, start: 15, pro: 40, elite: 100, vip: 120, master: 10000, admin: Infinity };
-        const defaultLabels = { user: 'Gratuito', start: 'Start', pro: 'Pro', elite: 'Elite', vip: 'Anual VIP', master: 'Master', admin: 'Master' };
+        const defaultLimits = { user: 0, start: 15, pro: 40, elite: 100, vip: 120, admin: Infinity };
+        const defaultLabels = { user: 'Gratuito', start: 'Start', pro: 'Pro', elite: 'Elite', vip: 'Anual VIP', admin: 'Admin' };
         
-        const role = this.userRole || 'user';
+        const role = this.normalizeRole();
         
         let limit = defaultLimits[role] ?? 0;
         let label = defaultLabels[role] ?? 'Gratuito';
@@ -638,7 +647,6 @@ window.Monetization = {
             pro:    '#2563eb',
             elite:  '#7c3aed',
             vip:    '#1e293b',
-            master: '#b45309',
             admin:  '#b45309'
         };
         
@@ -740,7 +748,9 @@ window.Monetization = {
 
             console.log(`🔑 Carteira sincronizada: ${this.unlockedLots.size} lotes.`);
             
-            if (window.renderHierarchy) window.renderHierarchy();
+            if (window.renderHierarchy && window.map && document.getElementById('map')) {
+                window.renderHierarchy();
+            }
         } catch (e) {
             console.error("Error loading unlocks:", e);
         }
@@ -749,8 +759,7 @@ window.Monetization = {
     isUnlocked: function(id) {
         if (!id) return true;
         
-        const role = String(this.userRole || '').toLowerCase();
-        if (role === 'master' || role === 'admin') return true;
+        if (this.isAdminRole()) return true;
 
         const clean = (val) => String(val).replace(/\D/g, '');
         const cleanId = clean(id);
@@ -764,8 +773,8 @@ window.Monetization = {
     },
 
     isEliteOrAbove: function() {
-        const role = String(this.userRole || 'user').toLowerCase();
-        return ['admin', 'master', 'elite', 'vip'].includes(role); // VIP ANUAL = Elite ou acima
+        const role = this.normalizeRole();
+        return ['admin', 'elite', 'vip'].includes(role); // VIP ANUAL = Elite ou acima
     },
 
     promptUnlockLote: function(loteInscricao, unitId, price = 1) {
@@ -985,7 +994,7 @@ window.Monetization = {
         }
 
         // Roles privilegiadas não gastam créditos
-        if (this.userRole === 'master' || this.userRole === 'admin') {
+        if (this.isAdminRole()) {
             return true;
         }
         
@@ -999,7 +1008,7 @@ window.Monetization = {
     consumeCredits: async function(amount, serviceName) {
         console.warn("💳 [Monetization] consumeCredits CHAMADA!", { amount, serviceName });
         // Roles privilegiadas não gastam créditos
-        if (this.userRole === 'master' || this.userRole === 'admin') {
+        if (this.isAdminRole()) {
             console.log("👑 [Monetization] Role privilegiada - Ignorando débito.");
             return true;
         }
@@ -1143,7 +1152,8 @@ window.Monetization = {
     },
 
     showSubscriptionPlans: function() {
-        const currentRole = this.userRole || 'user';
+        const currentRole = this.normalizeRole();
+        const currentPlanLabel = this.getTierLimits().label;
         const credits = this.userProfile?.credits || 0;
         const cfg = this.plansConfig || {};
 
@@ -1180,7 +1190,7 @@ window.Monetization = {
                 <div class="custom-modal-body" style="padding:24px 30px 30px;background:#f8fafc;">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
                         <div style="font-size:13px;color:#475569;">
-                            Seu plano: <strong style="color:#1e293b;">${currentRole.charAt(0).toUpperCase()+currentRole.slice(1)}</strong>
+                            Seu plano: <strong style="color:#1e293b;">${currentPlanLabel}</strong>
                         </div>
                         <div style="font-size:13px;color:#475569;">
                             Créditos disponíveis: <strong style="color:#f59e0b;">${credits} 🪙</strong>
@@ -1220,7 +1230,7 @@ window.Monetization = {
                         <!-- PRO -->
                         <div style="background:white;border:${isCurrentPlan('pro')?'2px solid #10b981':'2px solid #2563eb'};border-radius:16px;padding:20px;display:flex;flex-direction:column;position:relative;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
                             ${currentBadge('pro')}
-                            ${!isCurrentPlan('pro')&&!isCurrentPlan('elite')&&!isCurrentPlan('vip')&&!isCurrentPlan('master')&&!isCurrentPlan('admin')&&!isCurrentPlan('start')
+                            ${!isCurrentPlan('pro')&&!isCurrentPlan('elite')&&!isCurrentPlan('vip')&&!isCurrentPlan('admin')&&!isCurrentPlan('start')
                                 ? `<div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#2563eb;color:white;padding:4px 12px;border-radius:20px;font-size:10px;font-weight:800;">MAIS VENDIDO</div>` : ''}
                             <div style="font-size:11px;font-weight:800;color:#2563eb;text-transform:uppercase;">${planName('pro','PRO')}</div>
                             ${priceHTML('pro','mês')}
@@ -1371,7 +1381,30 @@ window.Monetization = {
         }
     },
 
+    loadStripeSdk: function() {
+        if (window.Stripe) return Promise.resolve(window.Stripe);
+        if (this._stripeSdkPromise) return this._stripeSdkPromise;
+
+        this._stripeSdkPromise = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://js.stripe.com/v3/';
+            script.async = true;
+            script.onload = () => resolve(window.Stripe);
+            script.onerror = () => reject(new Error('SDK do Stripe indisponível.'));
+            document.head.appendChild(script);
+        });
+
+        return this._stripeSdkPromise;
+    },
+
     initStripeCheckout: async function(priceId) {
+        try {
+            await this.loadStripeSdk();
+        } catch (e) {
+            window.Toast.error("Erro: SDK do Stripe não carregado.");
+            return;
+        }
+
         if (!window.Stripe) {
             window.Toast.error("Erro: SDK do Stripe não carregado.");
             return;
@@ -1881,7 +1914,7 @@ window.Monetization = {
         document.body.appendChild(modal);
 
         modal.querySelector('#btnConfirmUnlockPerson').onclick = async () => {
-            if ((this.userProfile?.credits || 0) < price && this.userRole !== 'master' && this.userRole !== 'admin') {
+            if ((this.userProfile?.credits || 0) < price && !this.isAdminRole()) {
                 window.Toast.warning("Saldo insuficiente. Adquira mais no Painel Financeiro.");
                 return;
             }
@@ -1975,7 +2008,7 @@ window.Monetization = {
 
             if (diff <= 0) {
                 // EXPIROU!
-                if (this.userRole !== 'user' && this.userRole !== 'master' && this.userRole !== 'admin') {
+                if (this.normalizeRole() !== 'user' && !this.isAdminRole()) {
                     console.warn("⚠️ Assinatura expirada! Executando downgrade...");
                     this.handleSubscriptionExpiration();
                 }

@@ -9,6 +9,10 @@ window.CONFIG = {
     SUPABASE_URL: 'https://seu-projeto.supabase.co',
     SUPABASE_KEY: 'SUA_CHAVE_AQUI',
     GEMINI_API_KEY: '',
+    // Azure AI (não use chave secreta no frontend público)
+    AZURE_OPENAI_ENDPOINT: '',
+    AZURE_OPENAI_DEPLOYMENT: '',
+    AZURE_OPENAI_API_VERSION: '2024-02-15-preview',
     // OpenWeather (Opcional se usar via Edge Function)
     OPENWEATHER_KEY: '',
 

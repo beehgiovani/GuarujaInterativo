@@ -76,7 +76,7 @@ window.TooltipUnitList = {
                             </button>
                         </div>
                         <div class="unit-group-grid">
-                            ${groups[groupName].map(u => this.renderItem(u, 'residential')).join('')}
+                            ${groups[groupName].map(u => this.renderItem(u, lote, 'residential')).join('')}
                         </div>
                     </div>`;
             });
@@ -89,7 +89,7 @@ window.TooltipUnitList = {
                 <div>
                     <div class="unit-section-header commercial"><i class="fas fa-store"></i> Áreas Comerciais (${commercial.length})</div>
                     <div class="unit-group-grid">
-                        ${commercial.map(u => this.renderItem(u, 'comercial')).join('')}
+                        ${commercial.map(u => this.renderItem(u, lote, 'comercial')).join('')}
                     </div>
                 </div>`;
         }
@@ -100,7 +100,7 @@ window.TooltipUnitList = {
                 <div>
                     <div class="unit-section-header garage"><i class="fas fa-car"></i> Vagas & Garagens (${garage.length})</div>
                     <div class="unit-group-grid">
-                        ${garage.map(u => this.renderItem(u, 'garagem')).join('')}
+                        ${garage.map(u => this.renderItem(u, lote, 'garagem')).join('')}
                     </div>
                 </div>`;
         }
@@ -110,7 +110,8 @@ window.TooltipUnitList = {
         this.setupHandlers(container, lote);
     },
 
-    renderItem: function(u, mode = 'residential') {
+    renderItem: function(u, lote, mode = 'residential') {
+        if (window.cleanUnitData) window.cleanUnitData(u);
         const unitNum = u.inscricao.slice(-3);
         
         // Prioridade Bruno Giovani: Mostrar apenas os 3 dígitos da unidade (001, 002) conforme regras GIS.
@@ -140,11 +141,16 @@ window.TooltipUnitList = {
 
         // Referências documentais (matrícula, RIP)
         let refBadges = '';
-        if (u.matricula) {
-            refBadges += `<span class="unit-ref-badge"><i class="fas fa-file-contract"></i>${u.matricula}</span>`;
-        }
-        if (u.rip) {
-            refBadges += `<span class="unit-ref-badge rip"><i class="fas fa-anchor"></i>${u.rip}</span>`;
+        const canShowDocs = window.Monetization?.isUnlocked?.(u.inscricao, lote.inscricao);
+        if (canShowDocs) {
+            if (u.matricula) {
+                refBadges += `<span class="unit-ref-badge"><i class="fas fa-file-contract"></i>${u.matricula}</span>`;
+            }
+            if (u.rip) {
+                refBadges += `<span class="unit-ref-badge rip"><i class="fas fa-anchor"></i>${u.rip}</span>`;
+            }
+        } else if (u.matricula || u.rip) {
+            refBadges += `<span class="unit-ref-badge locked"><i class="fas fa-lock"></i>Docs disponíveis</span>`;
         }
 
         return `

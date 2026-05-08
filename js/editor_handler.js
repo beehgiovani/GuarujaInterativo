@@ -44,7 +44,7 @@ window.editFromTooltip = function (inscricao) {
     if (!tooltipBody) return;
 
     tooltipBody.innerHTML = `
-        <div style="padding: 10px;">
+        <div class="unit-edit-shell">
             <div style="margin-bottom: 12px;">
                 <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Nome do Edifício</label>
                 <input type="text" id="edit-building-name" value="${existingEdits.building_name || lote.building_name || ''}" 
@@ -443,6 +443,11 @@ window.editUnitFromTooltip = function (unitInscricao) {
 
     console.log('✅ Target unit found:', targetUnit);
 
+    // Inteligência de Dados: Se os dados vierem "sujos" do banco (Matrícula e RIP juntos), separamos agora.
+    if (window.cleanUnitData) {
+        window.cleanUnitData(targetUnit);
+    }
+
     const existingEdits = window.editedLotes[unitInscricao] || {};
     const tooltipBody = window.currentTooltip.querySelector('.unit-tooltip-body');
 
@@ -453,182 +458,205 @@ window.editUnitFromTooltip = function (unitInscricao) {
 
     console.log('✅ Tooltip body found, rendering editor form');
 
+    const parentLote = window.currentLoteForUnit || {};
+    const parentLabel = parentLote.building_name || parentLote.nome_edificio || parentLote.nome || 'Lote pai sem nome cadastrado';
+    const parentInscricao = parentLote.inscricao || targetUnit.lote_inscricao || targetUnit.inscricao_lote || '';
+
     tooltipBody.innerHTML = `
-        <div style="padding: 10px;">
-            <div style="margin-bottom: 12px; display: flex; gap: 8px;">
-                 <div style="flex: 1;">
-                    <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Complemento (Torre/Bloco)</label>
+        <div class="unit-edit-shell">
+            <div class="unit-edit-parent-context">
+                <div>
+                    <span>Lote pai</span>
+                    <strong>${parentLabel}</strong>
+                </div>
+                <small>${parentInscricao ? `Inscrição ${parentInscricao}` : 'Referência territorial ativa'}</small>
+            </div>
+
+            <div class="unit-edit-row">
+                 <div class="unit-edit-col">
+                    <label class="unit-edit-label">Complemento (Torre/Bloco)</label>
                     <input type="text" id="edit-unit-complemento" value="${existingEdits.complemento || targetUnit.complemento || ''}" 
-                         style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;" placeholder="Ex: Torre A">
+                         class="unit-edit-input" placeholder="Ex: Torre A">
                  </div>
-                 <div style="flex: 1;">
-                    <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Inscrição Unid.</label>
+                 <div class="unit-edit-col">
+                    <label class="unit-edit-label">Inscrição Unid.</label>
                     <input type="text" value="${unitInscricao}" readonly
-                         style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: #f8fafc; color: #94a3b8;" title="Inscrição não pode ser alterada">
+                         class="unit-edit-input" title="Inscrição não pode ser alterada">
                  </div>
             </div>
-            <div style="margin-bottom: 12px; display: flex; gap: 8px;">
-                <div style="flex: 1;">
-                   <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Matrícula (RI)</label>
+            <div class="unit-edit-row">
+                <div class="unit-edit-col">
+                   <label class="unit-edit-label">Matrícula (RI)</label>
                    <input type="text" id="edit-unit-matricula" value="${existingEdits.matricula || targetUnit.matricula || ''}" 
-                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;" placeholder="Número da Matrícula">
+                        class="unit-edit-input" placeholder="Número da Matrícula">
                 </div>
-                <div style="flex: 1;">
-                   <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">RIP (Marinha)</label>
+                <div class="unit-edit-col">
+                   <label class="unit-edit-label">RIP (Marinha)</label>
                    <input type="text" id="edit-unit-rip" value="${existingEdits.rip || targetUnit.rip || ''}" 
-                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;" placeholder="Inscrição RIP">
+                        class="unit-edit-input" placeholder="Inscrição RIP">
                 </div>
             </div>
-            <div style="margin-bottom: 12px; display: flex; gap: 8px;">
-                 <div style="flex: 1;">
-                     <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Tipo de Unidade</label>
-                     <select id="edit-unit-tipo" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;">
+            <div class="unit-edit-row">
+                 <div class="unit-edit-col">
+                     <label class="unit-edit-label">Tipo de Unidade</label>
+                     <select id="edit-unit-tipo" class="unit-edit-select">
                          ${['Apartamento', 'Casa', 'Garagem', 'Loja', 'Terreno'].map(t => `<option value="${t}" ${(existingEdits.tipo || targetUnit.tipo) === t ? 'selected' : ''}>${t}</option>`).join('')}
                      </select>
                  </div>
-                 <div style="flex: 1;">
-                     <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Matrícula Qualif.</label>
-                     <select id="edit-unit-matricula-qualificacao" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;">
+                 <div class="unit-edit-col">
+                     <label class="unit-edit-label">Matrícula Qualif.</label>
+                     <select id="edit-unit-matricula-qualificacao" class="unit-edit-select">
                          <option value="">Nenhum</option>
                          ${['Apartamento', 'Vaga de Garagem'].map(t => `<option value="${t}" ${(existingEdits.matricula_qualificacao || targetUnit.matricula_qualificacao) === t ? 'selected' : ''}>${t}</option>`).join('')}
                      </select>
                  </div>
              </div>
+
+             <div class="unit-edit-doc-grid">
+                <div>
+                    <label>Fração Ideal</label>
+                    <input type="text" id="edit-unit-fracao-ideal" value="${existingEdits.fracao_ideal || targetUnit.fracao_ideal || ''}" placeholder="Ex: 0,012345">
+                </div>
+                <div>
+                    <label>Valor Venal Edificado</label>
+                    <input type="text" id="edit-unit-valor-venal-edificado-ref" value="${existingEdits.valor_venal_edificado || targetUnit.valor_venal_edificado || ''}" readonly>
+                </div>
+             </div>
              
-             <div style="margin-bottom: 12px; display: flex; gap: 8px;">
-                 <div style="flex: 1;">
-                    <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">RIP CPF (Vínculo Secundário)</label>
+             <div class="unit-edit-row">
+                 <div class="unit-edit-col">
+                    <label class="unit-edit-label">RIP CPF (Vínculo Secundário)</label>
                     <input type="text" id="edit-unit-rip-cpf" value="${existingEdits.rip_cpf || targetUnit.rip_cpf || ''}" 
-                         style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;" placeholder="CPF alternativo p/ RIP">
+                         class="unit-edit-input" placeholder="CPF alternativo p/ RIP">
                  </div>
-                 <div style="flex: 1;">
-                     <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">RIP Qualificacao</label>
-                     <select id="edit-unit-rip-qualificacao" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;">
+                 <div class="unit-edit-col">
+                     <label class="unit-edit-label">RIP Qualificação</label>
+                     <select id="edit-unit-rip-qualificacao" class="unit-edit-select">
                          <option value="">Nenhum</option>
                          ${['Apartamento', 'Vaga'].map(t => `<option value="${t}" ${(existingEdits.rip_qualificacao || targetUnit.rip_qualificacao) === t ? 'selected' : ''}>${t}</option>`).join('')}
                      </select>
                  </div>
              </div>
             
-            <div style="margin-bottom: 12px;">
-                <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Status da Venda</label>
-                <select id="edit-unit-status" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;">
+            <div class="unit-edit-section">
+                <label class="unit-edit-label">Status da Venda</label>
+                <select id="edit-unit-status" class="unit-edit-select">
                     ${['Disponível', 'Vendido', 'Reservado', 'Captar'].map(s => `<option value="${s}" ${(existingEdits.status_venda || targetUnit.status_venda) === s ? 'selected' : ''}>${s}</option>`).join('')}
                 </select>
             </div>
 
-            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <div class="unit-edit-row">
                 ${['quartos', 'suites', 'vagas', 'banheiros'].map(f => `
-                    <div style="flex: 1;">
-                        <label style="display: block; font-weight: 600; font-size: 11px; color: #666; text-transform: capitalize;">${f}</label>
-                        <input type="number" id="edit-unit-${f}" value="${existingEdits[f] || targetUnit[f] || ''}" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                    <div class="unit-edit-col">
+                        <label class="unit-edit-label compact">${f}</label>
+                        <input type="number" id="edit-unit-${f}" value="${existingEdits[f] || targetUnit[f] || ''}" class="unit-edit-input compact">
                     </div>
                 `).join('')}
             </div>
 
-            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                <div style="flex: 1;">
-                    <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Área Útil (m²)</label>
-                    <input type="text" id="edit-unit-area-util" value="${existingEdits.area_util || targetUnit.area_util || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+            <div class="unit-edit-row">
+                <div class="unit-edit-col">
+                    <label class="unit-edit-label">Área Útil (m²)</label>
+                    <input type="text" id="edit-unit-area-util" value="${existingEdits.area_util || targetUnit.area_util || ''}" class="unit-edit-input">
                 </div>
-                <div style="flex: 1;">
-                    <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Área Total (m²)</label>
-                    <input type="text" id="edit-unit-area-total" value="${existingEdits.area_total || targetUnit.area_total || ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                <div class="unit-edit-col">
+                    <label class="unit-edit-label">Área Total (m²)</label>
+                    <input type="text" id="edit-unit-area-total" value="${existingEdits.area_total || targetUnit.area_total || ''}" class="unit-edit-input">
                 </div>
             </div>
 
-            <div style="margin-bottom: 12px; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
-                <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Valores (R$)</div>
+            <div class="unit-edit-values-box">
+                <div class="unit-edit-values-title">Valores (R$)</div>
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                <div class="unit-edit-grid-2">
                     <div>
-                        <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 2px;">Valor Venal Solo</label>
-                        <input type="number" step="0.01" id="edit-unit-valor-venal" value="${existingEdits.valor_venal || targetUnit.valor_venal || ''}" placeholder="Solo" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px;">
+                        <label class="unit-edit-label compact">Valor Venal Solo</label>
+                        <input type="number" step="0.01" id="edit-unit-valor-venal" value="${existingEdits.valor_venal || targetUnit.valor_venal || ''}" placeholder="Solo" class="unit-edit-input compact">
                     </div>
                     <div>
-                        <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 2px;">Valor Edificado</label>
-                        <input type="number" step="0.01" id="edit-unit-valor-venal-edificado" value="${existingEdits.valor_venal_edificado || targetUnit.valor_venal_edificado || ''}" placeholder="Construção" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px;">
+                        <label class="unit-edit-label compact">Valor Edificado</label>
+                        <input type="number" step="0.01" id="edit-unit-valor-venal-edificado" value="${existingEdits.valor_venal_edificado || targetUnit.valor_venal_edificado || ''}" placeholder="Construção" class="unit-edit-input compact">
                     </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div class="unit-edit-grid-2">
                     <div>
-                        <label style="display: block; font-size: 11px; color: #059669; font-weight: 700; margin-bottom: 2px;">Valor de Mercado (Est.)</label>
-                        <input type="number" step="0.01" id="edit-unit-valor-real" value="${existingEdits.valor_real || targetUnit.valor_real || ''}" placeholder="Mercado" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; background: #f0fdf4;">
+                        <label class="unit-edit-label compact unit-edit-market-label">Valor de Mercado (Est.)</label>
+                        <input type="number" step="0.01" id="edit-unit-valor-real" value="${existingEdits.valor_real || targetUnit.valor_real || ''}" placeholder="Mercado" class="unit-edit-input compact unit-edit-market-input">
                     </div>
                     <div>
-                        <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 2px;">Valor Pedido (Venda)</label>
-                        <input type="number" step="0.01" id="edit-unit-valor-vendavel" value="${existingEdits.valor_vendavel || targetUnit.valor_vendavel || ''}" placeholder="Pedida" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px;">
+                        <label class="unit-edit-label compact">Valor Pedido (Venda)</label>
+                        <input type="number" step="0.01" id="edit-unit-valor-vendavel" value="${existingEdits.valor_vendavel || targetUnit.valor_vendavel || ''}" placeholder="Pedida" class="unit-edit-input compact">
                     </div>
                 </div>
             </div>
 
             <!-- Unit Gallery -->
-            <div style="margin-bottom: 12px;">
-                <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Imagens da Unidade</label>
-                <div style="display: flex; gap: 10px; margin-bottom: 8px; align-items: center;">
-                    <label for="unit-upload-input" class="lot-tooltip-btn primary" style="padding: 4px 8px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin:0; width: auto;">
+            <div class="unit-edit-section">
+                <label class="unit-edit-label">Imagens da Unidade</label>
+                <div class="unit-edit-upload-row">
+                    <label for="unit-upload-input" class="lot-tooltip-btn primary unit-edit-upload-btn">
                         <i class="fas fa-camera"></i> Upload Foto
                     </label>
-                    <input type="file" id="unit-upload-input" accept="image/*" style="display: none;" 
+                    <input type="file" id="unit-upload-input" accept="image/*" class="unit-edit-hidden-file" 
                         onchange="handleUnitGalleryUpload(this.files[0], '${unitInscricao}')">
-                    <span id="unit-upload-status" style="font-size: 10px; color: #666;"></span>
+                    <span id="unit-upload-status" class="unit-edit-status"></span>
                 </div>
-                <div id="unit-gallery-preview" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px;"></div>
+                <div id="unit-gallery-preview" class="unit-gallery-preview"></div>
                 <input type="hidden" id="edit-unit-gallery-json" value='${JSON.stringify(existingEdits.imagens || targetUnit.imagens || [])}'>
             </div>
 
-            <div style="margin-bottom: 12px; border-top: 1px solid #eee; padding-top: 10px;">
-                <div style="font-weight: 600; font-size: 12px; color: #333; margin-bottom: 8px;">Dados do Proprietário</div>
+            <div class="unit-edit-owner-section">
+                <div class="unit-edit-section-title">Dados do Proprietário</div>
                 
                 ${(function() {
                     const isUnlocked = window.Monetization && (window.Monetization.isEliteOrAbove() || window.Monetization.isUnlocked(unitInscricao, window.currentLoteForUnit?.inscricao) || window.Monetization.isUnlockedPerson(targetUnit.cpf_cnpj));
                     const canEdit = window.Monetization && (window.Monetization.isEliteOrAbove() || window.Monetization.isUnlocked(unitInscricao, window.currentLoteForUnit?.inscricao));
                     
                     return `
-                        <div style="margin-bottom: 8px;">
-                            <label style="display: block; font-size: 11px; color: #666; margin-bottom: 2px;">Nome</label>
+                        <div class="unit-edit-section">
+                            <label class="unit-edit-label compact">Nome</label>
                             <input type="text" id="edit-unit-owner" placeholder="Nome" 
                                 value="${isUnlocked ? (targetUnit.nome_proprietario || '') : window.maskName(targetUnit.nome_proprietario)}" 
                                 ${canEdit ? '' : 'readonly'}
-                                style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; ${canEdit ? '' : 'background: #f8fafc; cursor: not-allowed;'}">
+                                class="unit-edit-input compact ${canEdit ? '' : 'is-readonly'}">
                         </div>
                         
-                        <div style="margin-bottom: 8px;">
-                            <label style="display: block; font-size: 11px; color: #666; margin-bottom: 2px;">CPF/CNPJ</label>
-                            <div style="position: relative;">
+                        <div class="unit-edit-section">
+                            <label class="unit-edit-label compact">CPF/CNPJ</label>
+                            <div class="unit-edit-secret-wrap">
                                 <input type="password" id="edit-unit-owner-cpf" placeholder="CPF/CNPJ (Somente números)" 
                                     value="${isUnlocked ? (targetUnit.cpf_cnpj || '') : '************'}" 
                                     ${canEdit ? '' : 'readonly'}
-                                    style="width: 100%; padding: 6px; padding-right: 30px; border: 1px solid #ddd; border-radius: 4px; ${canEdit ? '' : 'background: #f8fafc; cursor: not-allowed;'}" 
+                                    class="unit-edit-input compact ${canEdit ? '' : 'is-readonly'}" 
                                     autocomplete="off" data-lpignore="true">
                                 <button onclick="${isUnlocked ? "window.toggleInputType('edit-unit-owner-cpf', this)" : "window.Monetization.showSubscriptionPlans()"}" 
-                                    style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b;">
+                                    class="unit-edit-reveal-btn" type="button">
                                     <i class="fas ${isUnlocked ? 'fa-eye' : 'fa-lock'}"></i>
                                 </button>
                             </div>
                         </div>
 
-                        <div style="margin-bottom: 8px;">
-                            <label style="display: block; font-size: 11px; color: #666; margin-bottom: 2px;">Contato</label>
+                        <div class="unit-edit-section">
+                            <label class="unit-edit-label compact">Contato</label>
                             <input type="text" id="edit-unit-contact" placeholder="Contato" 
                                 value="${isUnlocked ? (targetUnit.contato_proprietario || '') : window.maskName(targetUnit.contato_proprietario)}" 
                                 ${canEdit ? '' : 'readonly'}
-                                style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; ${canEdit ? '' : 'background: #f8fafc; cursor: not-allowed;'}">
+                                class="unit-edit-input compact ${canEdit ? '' : 'is-readonly'}">
                         </div>
                     `;
                 })()}
                 
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="edit-unit-cod-ref" placeholder="Cód Ref." value="${existingEdits.cod_ref || targetUnit.cod_ref || ''}" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
-                    <input type="text" id="edit-unit-link" placeholder="Link Anúncio" value="${existingEdits.link_url || targetUnit.link_url || ''}" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                <div class="unit-edit-row">
+                    <input type="text" id="edit-unit-cod-ref" placeholder="Cód Ref." value="${existingEdits.cod_ref || targetUnit.cod_ref || ''}" class="unit-edit-input compact">
+                    <input type="text" id="edit-unit-link" placeholder="Link Anúncio" value="${existingEdits.link_url || targetUnit.link_url || ''}" class="unit-edit-input compact">
                 </div>
             </div>
 
-            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; padding-top: 15px; border-top: 1px solid #f1f5f9;">
-                <button class="lot-tooltip-btn secondary" onclick="cancelUnitEdit('${unitInscricao}')" style="padding: 10px 20px; font-weight: 600; border-radius: 8px; border: 1px solid #cbd5e1; background: white; color: #475569; cursor: pointer; transition: all 0.2s;">
+            <div class="unit-edit-actions">
+                <button class="lot-tooltip-btn secondary" onclick="cancelUnitEdit('${unitInscricao}')">
                     Cancelar
                 </button>
-                <button class="lot-tooltip-btn primary" onclick="saveUnitEdit('${unitInscricao}')" style="padding: 10px 20px; font-weight: 600; border-radius: 8px; border: none; background: #0f172a; color: white; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.1);">
+                <button class="lot-tooltip-btn primary" onclick="saveUnitEdit('${unitInscricao}')">
                     Salvar Alterações
                 </button>
             </div>
@@ -641,6 +669,22 @@ window.editUnitFromTooltip = function (unitInscricao) {
 
     setTimeout(() => {
         window.renderUnitGalleryPreview(existingEdits.imagens || targetUnit.imagens || []);
+        
+        // Ativa inteligência de campo na matrícula (auto-split)
+        const matInput = document.getElementById('edit-unit-matricula');
+        const ripInput = document.getElementById('edit-unit-rip');
+        if (matInput && ripInput) {
+            matInput.addEventListener('input', () => {
+                const val = matInput.value;
+                if (val.includes('(matricula)')) {
+                    const tempUnit = { matricula: val, rip: '' };
+                    window.cleanUnitData(tempUnit);
+                    matInput.value = tempUnit.matricula;
+                    ripInput.value = tempUnit.rip;
+                    if (window.Toast) window.Toast.info('Matrícula e RIP separados automaticamente!', 'Inteligência');
+                }
+            });
+        }
     }, 0);
 };
 
@@ -652,10 +696,10 @@ window.renderUnitGalleryPreview = function (gallery) {
     container.innerHTML = '';
     gallery.forEach((url, index) => {
         const div = document.createElement('div');
-        div.style.cssText = 'position: relative; flex-shrink: 0;';
+        div.className = 'unit-gallery-preview-item';
         div.innerHTML = `
-            <img src="${url}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
-            <button onclick="removeUnitGalleryImage(${index})" style="position: absolute; top: -5px; right: -5px; background: red; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</button>
+            <img src="${url}" alt="Foto da unidade ${index + 1}">
+            <button onclick="removeUnitGalleryImage(${index})" class="unit-gallery-remove" type="button" aria-label="Remover foto">×</button>
         `;
         container.appendChild(div);
     });
@@ -758,6 +802,7 @@ window.saveUnitEdit = async function (unitInscricao) {
             // Novos Campos
             matricula: getText('edit-unit-matricula'),
             matricula_qualificacao: getText('edit-unit-matricula-qualificacao'), 
+            fracao_ideal: getNumber('edit-unit-fracao-ideal'),
             rip: getText('edit-unit-rip'),
             rip_cpf: getText('edit-unit-rip-cpf')?.replace(/\D/g, ''), 
             rip_qualificacao: getText('edit-unit-rip-qualificacao'), 

@@ -33,6 +33,11 @@
             justify-content: center;
             transition: opacity 0.8s ease, visibility 0.8s;
         }
+        #global-loading-overlay.hidden {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
         .loader-city {
             width: 180px;
             height: 180px;
@@ -77,11 +82,13 @@
 
     <!-- Custom Module CSS (Restored & Modular) -->
     <link rel="stylesheet" href="css/layout.css?v=2.0">
+    <link rel="stylesheet" href="css/premium_glassmorphism.css?v=1.0">
+    <link rel="stylesheet" href="css/tooltip_premium.css?v=1.1">
     <link rel="stylesheet" href="css/sidebar_styles.css">
-    <link rel="stylesheet" href="css/map_styles.css">
-    <link rel="stylesheet" href="css/overlays_styles.css">
+    <link rel="stylesheet" href="css/map_styles.css?v=2.1">
+    <link rel="stylesheet" href="css/overlays_styles.css?v=2.1">
     <link rel="stylesheet" href="css/neighborhood_styles.css">
-    <link rel="stylesheet" href="css/editor_styles.css">
+    <link rel="stylesheet" href="css/editor_styles.css?v=1.1">
     <link rel="stylesheet" href="css/premium_styles.css">
     <link rel="stylesheet" href="css/analytics_styles.css">
     <link rel="stylesheet" href="css/carousel_styles.css">
@@ -94,6 +101,8 @@
     <link rel="stylesheet" href="css/image_viewer.css">
     <!-- Site Intelligence & Security -->
     <script src="js/config.js"></script>
+    <script src="js/azure_config.js"></script>
+    <script src="js/speech_command_handler.js"></script>
     <script src="js/layout_adapter.js"></script>
 
     <!-- Intro.js (User Onboarding) -->
@@ -391,7 +400,7 @@
                         <input type="email" id="loginUser" placeholder="E-mail" required style="margin-bottom: 16px; width: 100%;">
                         
                         <div id="loginPassField" style="margin-bottom: 16px; width: 100%; position: relative;">
-                            <input type="password" id="loginPass" placeholder="Senha" required style="width: 100%; padding-right: 40px;">
+                            <input type="password" id="loginPass" placeholder="Senha" autocomplete="current-password" required style="width: 100%; padding-right: 40px;">
                             <i class="fas fa-eye" id="togglePasswordIcon" onclick="window.Auth.togglePasswordVisibility('loginPass', this)" style="position: absolute; right: 15px; top: 13px; cursor: pointer; color: #64748b; font-size: 16px;"></i>
                         </div>
 
@@ -473,7 +482,7 @@
                         <!-- Footer Compacto no Login -->
                         <div class="compliance-footer">
                             <a href="termos_uso.html">Termos</a> | <a href="privacidade.html">Privacidade</a>
-                            <div style="margin-top:5px; opacity: 0.6;">(13) 99205-8836<br>brunoadmin@guarujainterativo.com.br</div>
+                            <div class="compliance-contact">(13) 99205-8836<br>brunoadmin@guarujainterativo.com.br</div>
                         </div>
                     </div>
             </div>
@@ -486,13 +495,13 @@
     <div id="toast-container"></div>
 
     <!-- Loading Overlay -->
-    <div id="loading-overlay" class="hidden" style="z-index: 20000;">
+    <div id="loading-overlay" class="hidden">
         <div class="loading-content">
             <div class="spinner"></div>
             <div class="loading-text">Carregando Dados...</div>
             <div class="loading-subtext">Processando lotes e geometrias</div>
             <div class="progress-bar-container">
-                <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                <div class="progress-bar" id="progress-bar"></div>
             </div>
         </div>
     </div>
@@ -1090,7 +1099,7 @@
 
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/utils.js?v=1.18"></script>
+    <script src="js/utils.js?v=1.20"></script>
     <script src="js/supabase_client.js"></script>
     <script src="js/auth_handler.js?v=1.18"></script>
  
@@ -1098,12 +1107,9 @@
     <script type="module" src="https://unpkg.com/@googlemaps/extended-component-library@0.6"></script>
     <script src="js/google_maps_loader.js?v=1.18"></script>
 
-    <!-- Stripe JS SDK -->
-    <script src="https://js.stripe.com/v3/"></script>
-    
     <!-- App Logic -->
     <link rel="stylesheet" href="css/anuncios_styles.css?v=1.17">
-    <link rel="stylesheet" href="css/tooltip_modular.css?v=1.20">
+    <link rel="stylesheet" href="css/tooltip_modular.css?v=1.21">
     <script src="js/ui_manager.js?v=1.20"></script>
     <script src="js/pwa_handler.js?v=1.0"></script>
     <script src="js/map_controls.js?v=1.0"></script>
@@ -1112,28 +1118,28 @@
     <script src="js/sync_handler.js?v=1.0"></script>
     <script src="js/unit_type_handler.js?v=1.0"></script>
     <script src="js/tooltip_components.js?v=1.0"></script>
-    <script src="js/tooltip_unit_list.js?v=1.0"></script>
+    <script src="js/tooltip_unit_list.js?v=1.1"></script>
     <script src="js/lot_tooltip_handler.js?v=1.0"></script>
     <script src="js/lot_tooltip_ui.js?v=1.20"></script>
-    <script src="js/unit_tooltip_ui.js?v=1.20"></script>
+    <script src="js/unit_tooltip_ui.js?v=1.21"></script>
     <script src="js/unit_tooltip_handler.js?v=1.20"></script>
     <script src="js/owner_handler.js?v=1.0"></script>
-    <script src="js/monetization_handler.js?v=1.17"></script>
+    <script src="js/monetization_handler.js?v=1.19"></script>
     <script src="js/search_handler.js?v=1.17"></script>
     <script src="js/tooltip_handler.js?v=1.17"></script>
     <script src="js/neighborhood_handler.js?v=1.17"></script>
     <script src="js/osm_handler.js?v=1.18"></script>
     <script src="js/map_handler.js?v=1.18"></script>
-    <script src="js/editor_handler.js?v=1.18"></script>
+    <script src="js/editor_handler.js?v=1.19"></script>
     <script src="js/enrichment_relations_ui.js?v=1.0"></script>
     <script src="js/enrichment_handler.js?v=1.18"></script>
     <script src="js/user_unit_status_handler.js?v=1.18"></script>
     <script src="js/legend_handler.js?v=1.18"></script>
     <script src="js/admin_handler.js?v=1.18"></script>
-    <script src="js/report_handler.js?v=1.18"></script>
+    <script src="js/report_handler.js?v=1.19"></script>
     <script src="js/crm_handler.js?v=1.18"></script>
     <script src="js/insights_handler.js?v=1.18"></script>
-<script src="js/app.js?v=1.18"></script>
+<script src="js/app.js?v=1.20"></script>
 
     <!-- New Modules (Analytics & Owners) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
@@ -1144,7 +1150,7 @@
     <script src="js/gemini_chat_handler.js"></script>
     <script src="js/ai_history_handler.js"></script>
     <script src="js/notifications_handler.js"></script>
-    <script src="js/media_handler.js"></script>
+    <script src="js/media_handler.js?v=1.1"></script>
     <script src="js/image_viewer_handler.js"></script>
     <script src="js/institutional_handler.js"></script>
     <script src="js/zoning_handler.js"></script>
@@ -1155,7 +1161,7 @@
     <!-- Onboarding / Tour -->
     <script src="js/intro.min.js"></script>
     <script src="js/onboarding_handler.js"></script>
-    <script src="js/location_handler.js"></script>
+    <script src="js/location_handler.js?v=1.1"></script>
 
     <!-- Analytics & Heatmap -->
     <script src="js/analytics_handler.js"></script>
@@ -1169,7 +1175,6 @@
     
     <!-- UX Improvements V1.2 (Cleanup duplicates) -->
     <script src="js/advanced_maps_handler.js"></script>
-    <script src="js/report_handler.js"></script>
     <script src="js/client_mode_handler.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
 
@@ -1185,18 +1190,6 @@
     <script src="js/support_user_handler.js"></script>
     <script src="js/hub_handler.js?v=2.0"></script>
 
-    <style>
-        /* Fix for Google Maps 'content-visibility' console warnings */
-        #map, gmp-map-3d {
-            content-visibility: visible !important;
-        }
-
-        /* Essential for Modern Drawing API */
-        gmp-drawing-manager {
-            display: none; /* Initially hidden, managed by control positioning */
-        }
-    </style>
-
     <script>
         // NUCLEAR VISIBILITY RECOVERY
         setTimeout(() => {
@@ -1205,6 +1198,14 @@
             if (loading) {
                 loading.style.display = 'none';
                 loading.classList.add('hidden');
+            }
+            const splash = document.getElementById('global-loading-overlay');
+            if (splash) {
+                splash.style.display = 'none';
+                splash.style.opacity = '0';
+                splash.style.visibility = 'hidden';
+                splash.style.pointerEvents = 'none';
+                splash.classList.add('hidden');
             }
             
             // Só libera o login se NÃO estivermos logados

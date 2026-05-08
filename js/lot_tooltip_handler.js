@@ -54,15 +54,9 @@ window.LotTooltipHandler = {
         document.body.appendChild(backdrop);
         tooltipEl.backdrop = backdrop;
 
-        // Renderiza a lista de unidades
-        const unitListContainer = tooltipEl.querySelector(`#unit-list-container-${lote.inscricao}`);
-        if (unitListContainer && window.TooltipUnitList) {
-            window.TooltipUnitList.render(lote, unitListContainer);
-        }
-
         // 4. Restaurar estado (Aba e Scroll)
         if (targetTab) {
-            this.switchTab(tooltipEl.querySelector(`[onclick*="${targetTab}"]`), targetTab);
+            this.switchTab(tooltipEl, targetTab);
         }
 
         if (targetScroll) {
@@ -71,6 +65,18 @@ window.LotTooltipHandler = {
         }
 
         this.setupEvents(tooltipEl, lote);
+
+        // Renderiza a lista de unidades
+        const unitListContainer = tooltipEl.querySelector(`#unit-list-container-${lote.inscricao}`);
+        if (unitListContainer && window.TooltipUnitList) {
+            try {
+                window.TooltipUnitList.render(lote, unitListContainer);
+            } catch (e) {
+                console.error("❌ Erro ao renderizar lista de unidades:", e);
+                unitListContainer.innerHTML = `<div class="error-state">Erro ao carregar unidades.</div>`;
+            }
+        }
+
         this.fetchAsyncData(lote);
     },
 

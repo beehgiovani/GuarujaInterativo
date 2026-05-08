@@ -15,6 +15,9 @@ window.UnitTooltipHandler = {
         if (personalData.valor_vendavel) displayUnit.valor_vendavel = parseFloat(personalData.valor_vendavel);
         if (personalData.valor_real) displayUnit.valor_real = parseFloat(personalData.valor_real);
         
+        // Inteligência de Dados: Limpa campos concatenados (Matrícula/RIP)
+        if (window.cleanUnitData) window.cleanUnitData(displayUnit);
+
         window.currentTooltipType = 'unit';
         window.currentLoteForUnit = parentLote;
         window.currentUnitForUpdate = displayUnit;
@@ -108,17 +111,19 @@ window.UnitTooltipHandler = {
         }
     },
 
-    closeUnitTooltipAndReturn: function(loteInscricao) {
+    closeUnitTooltipAndReturn: async function(loteInscricao) {
         // 1. Close unit tooltip
         window.closeLotTooltip();
         
-        // 2. Find parent lote
-        const lote = window.allLotes.find(l => l.inscricao === loteInscricao);
+        // 2. Buscar/Garantir detalhes do lote (reidratação de unidades)
+        // Usamos fetchLotDetails para garantir que window.allLotes seja atualizado e as unidades existam.
+        const lote = await window.fetchLotDetails(loteInscricao);
+        
         if (lote && window.showLotTooltip) {
             setTimeout(() => {
                 // Restore previous state (tab)
                 window.showLotTooltip(lote, 0, 0, false, window.lastLotActiveTab || 'geral');
-            }, 150);
+            }, 50);
         }
     },
 

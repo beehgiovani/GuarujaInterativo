@@ -7,13 +7,14 @@
 window.MediaHandler = (function() {
     /**
      * getSmartPhoto: Prioritizes images by quality/relevance
-     * 1. Local image_url (Database)
-     * 2. Local gallery (Database)
+     * 1. Local image_url / gallery (Database)
      * 3. Google Places Photos (Modern API)
      * 4. Street View Static Image (Automatic Heading)
      */
     async function getSmartPhoto(lote) {
         if (lote.image_url && lote.image_url.startsWith('http')) return lote.image_url;
+        const gallery = normalizeMediaArray(lote.gallery);
+        if (gallery.length > 0) return gallery[0];
         
         if (lote._googlePhotos && lote._googlePhotos.length > 0) return lote._googlePhotos[0];
 
@@ -23,6 +24,20 @@ window.MediaHandler = (function() {
 
         // Fallback to Street View Static (now async for heading calculation)
         return await getStreetViewStaticUrl(lote);
+    }
+
+    function normalizeMediaArray(value) {
+        if (!value) return [];
+        if (Array.isArray(value)) return value.filter(Boolean);
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+            } catch (e) {
+                return value.startsWith('http') ? [value] : [];
+            }
+        }
+        return [];
     }
 
     /**
