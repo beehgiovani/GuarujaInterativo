@@ -9,9 +9,11 @@
 
 .map-back-btn {
     position: absolute;
-    top: 180px; /* Bem abaixo do seletor de mapas do Google */
+    top: 180px;
+    /* Bem abaixo do seletor de mapas do Google */
     left: 14px;
-    z-index: 1000000; /* Garantir que fique acima dos controles nativos do Google */
+    z-index: 1000000;
+    /* Garantir que fique acima dos controles nativos do Google */
     padding: 10px 18px;
     background: white;
     border: 1px solid #e2e8f0;
@@ -48,8 +50,8 @@
     align-items: center;
     gap: 8px;
     background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
     padding: 10px 20px;
     border-radius: 50px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
@@ -105,7 +107,7 @@
         overflow-x: auto;
         justify-content: flex-start;
     }
-    
+
     .breadcrumb-item {
         font-size: 11px;
         padding: 4px 8px;
@@ -115,7 +117,8 @@
 /* Floating Unified Panel (Stats + Legend) - Bottom Left & Discrete */
 .stats-panel {
     position: absolute;
-    bottom: 80px; /* Alavancado para evitar botões de angulação/tilt do Google */
+    bottom: 80px;
+    /* Alavancado para evitar botões de angulação/tilt do Google */
     left: 20px;
     background: rgba(255, 255, 255, 0.95);
     -webkit-backdrop-filter: blur(10px);
@@ -335,7 +338,8 @@
 
     /* Adjust Stats Panel position */
     .stats-panel {
-        bottom: 20px; /* Ajuste para mobile */
+        bottom: 20px;
+        /* Ajuste para mobile */
         left: 10px;
         right: auto;
         width: auto;
@@ -381,22 +385,42 @@
 }
 
 @keyframes slideUp {
-    from { transform: translate(-50%, 100%); opacity: 0; }
-    to { transform: translate(-50%, 0); opacity: 1; }
+    from {
+        transform: translate(-50%, 100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
 }
 
 @keyframes bounceIn {
-    0% { transform: scale(0.3); opacity: 0; }
-    50% { transform: scale(1.05); opacity: 1; }
-    70% { transform: scale(0.9); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(0.3);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(1.05);
+        opacity: 1;
+    }
+
+    70% {
+        transform: scale(0.9);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 /* Google maps infowindow overrides (beautification) */
 .gm-style-iw.gm-style-iw-c {
     background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(15px) !important;
     -webkit-backdrop-filter: blur(15px) !important;
+    backdrop-filter: blur(15px) !important;
     border-radius: 16px !important;
     box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15) !important;
     border: 1px solid rgba(226, 232, 240, 0.8) !important;

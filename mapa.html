@@ -14,7 +14,63 @@
     <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Global Loading Overlay */
+        #global-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(12px);
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease, visibility 0.8s;
+        }
+        .loader-city {
+            width: 180px;
+            height: 180px;
+            margin-bottom: 30px;
+        }
+        .loader-text {
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+        .loader-subtext {
+            color: #94a3b8;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+        .loader-progress {
+            width: 240px;
+            height: 6px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            margin-top: 25px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        #loader-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #0ea5e9, #6366f1, #a855f7);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.6);
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
     <!-- Font Awesome & Lottie -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
@@ -34,7 +90,7 @@
     <link rel="stylesheet" href="css/crm_styles.css">
     <link rel="stylesheet" href="css/ai_chat_styles.css">
     <link rel="stylesheet" href="css/hub_styles.css?v=2.0">
-    <link rel="stylesheet" href="css/mobile_styles.css?v=2.0">
+    <link rel="stylesheet" href="css/mobile_styles.css?v=2.19">
     <link rel="stylesheet" href="css/image_viewer.css">
     <!-- Site Intelligence & Security -->
     <script src="js/config.js"></script>
@@ -107,6 +163,72 @@
 </head>
 
 <body>
+    <!-- Global Loading Overlay -->
+    <div id="global-loading-overlay">
+        <div class="loader-city" id="lottie-loader">
+            <lottie-player src="assets/city_animation.json" background="transparent" speed="1" style="width: 100%; height: 100%;" loop autoplay></lottie-player>
+        </div>
+        <div class="loader-text">Guarujá GeoMap</div>
+        <div class="loader-subtext" id="loader-status">Sincronizando infraestrutura...</div>
+        <div class="loader-progress">
+            <div id="loader-bar"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- CENTRAL STATE STORE (Single Source of Truth) ---
+        window.Store = {
+            lotes: {},
+            unidades: {},
+            activeFilters: {},
+            
+            updateLote: (id, data) => { window.Store.lotes[id] = { ...window.Store.lotes[id], ...data }; },
+            updateUnidade: (id, data) => { window.Store.unidades[id] = { ...window.Store.unidades[id], ...data }; },
+            
+            // --- MARKET INTELLIGENCE HELPERS ---
+            getNeighborhoodAvg: (bairro) => {
+                if (!bairro) return 0;
+                const lotes = Object.values(window.Store.lotes).filter(l => l.metadata?.bairro === bairro || l.bairro === bairro);
+                const values = lotes.map(l => parseFloat(l.valor_m2 ? l.valor_m2.toString().replace(',', '.') : 0)).filter(v => v > 0);
+                if (values.length === 0) return 0;
+                return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+            },
+            countByBairro: (bairro) => {
+                if (!bairro) return 0;
+                return Object.values(window.Store.lotes).filter(l => (l.metadata?.bairro === bairro || l.bairro === bairro) && l.valor_m2).length;
+            },
+            
+            setLoadingProgress: (percent) => {
+                const bar = document.getElementById('loader-bar');
+                const status = document.getElementById('loader-status');
+                if (bar) bar.style.width = percent + '%';
+                if (percent >= 100) {
+                    setTimeout(() => {
+                        const overlay = document.getElementById('global-loading-overlay');
+                        if (overlay) {
+                            overlay.style.opacity = '0';
+                            overlay.style.visibility = 'hidden';
+                        }
+                    }, 500);
+                }
+            }
+        };
+
+        // Sync helper for Global Loading
+        window.Loading = {
+            show: (title, sub) => {
+                const overlay = document.getElementById('global-loading-overlay');
+                const t = document.querySelector('.loader-text');
+                const s = document.getElementById('loader-status');
+                if (overlay) { overlay.style.opacity = '1'; overlay.style.visibility = 'visible'; }
+                if (t && title) t.innerText = title;
+                if (s && sub) s.innerText = sub;
+            },
+            hide: () => window.Store.setLoadingProgress(100),
+            setProgress: (p) => window.Store.setLoadingProgress(p)
+        };
+    </script>
+
     <div id="loginOverlay">
         <style>
             #loginOverlay {
@@ -505,27 +627,22 @@
                     </div>
                     <div class="filter-title">Tipo de Busca</div>
                     <div class="filter-grid">
-                        <div class="filter-chip master-only locked" data-search-type="all"
-                            onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Recurso exclusivo para perfil Master.')"
-                            data-tooltip="Busca completa (Master)">
-                            Todos <span class="lock-icon">🔒</span>
+                        <!-- Todos: padrão para todos os usuários. Resultados filtrados por tier no JS. -->
+                        <div class="filter-chip active" data-search-type="all"
+                            data-tooltip="Busca combinada (Ruas, Edifícios e Imóveis conforme seu plano)">
+                            Todos
                         </div>
-                        <div class="filter-chip active" data-search-type="street"
+                        <div class="filter-chip" data-search-type="street"
                             data-tooltip="Pesquisa apenas por nomes de Ruas e Logradouros">Rua</div>
                         <div class="filter-chip" data-search-type="building"
                             data-tooltip="Pesquisa por nomes de Condomínios e Edifícios">Edifício</div>
                         <div class="filter-chip master-only locked" data-search-type="owner"
-                            onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Somente Masters podem buscar por nome de Proprietário')">
+                            onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Busca por Proprietário requer plano Elite ou superior.')">
                             Proprietários <span class="lock-icon">🔒</span>
                         </div>
                         <div class="filter-chip master-only locked" data-search-type="property"
-                             onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Pesquisa por Imóveis exclusiva para perfil Master.')"
-                             data-tooltip="Pesquisa na base do Cadastro Imobiliário">Imóveis <span class="lock-icon">🔒</span></div>
-                        <!-- <div class="filter-chip master-only locked" data-search-type="opportunity"
-                            style="border-style: dashed; background: #fffbeb; color: #b45309;"
-                            data-tooltip="Radar Farol [BETA]: Inteligência de Venda Profissional">
-                            ✨ Farol Oportunidades [BETA] <span class="lock-icon">🔒</span>
-                        </div>-->
+                             onclick="window.Monetization?.showSubscriptionPlans?.() || window.Toast.info('Busca por Imóveis requer plano Elite ou superior.')"
+                             data-tooltip="Pesquisa no Cadastro Imobiliário (Elite+)">Imóveis <span class="lock-icon">🔒</span></div>
                     </div>
                 </div>
 
@@ -914,6 +1031,39 @@
         </div>
     </div>
 
+    <!-- Global Store & Initializer -->
+    <script>
+        window.Store = {
+            isLoaded: false,
+            lotes: new Map(),
+            unidades: new Map(),
+            activeInscricao: null,
+            currentUser: null,
+            
+            // Sincronização rápida sem reload
+            updateLote: function(inscricao, data) {
+                this.lotes.set(inscricao, { ...this.lotes.get(inscricao), ...data });
+                if (window.allLotes) window.allLotes[inscricao] = this.lotes.get(inscricao);
+                // Disparar evento para o mapa se necessário
+                console.log(`[Store] Lote ${inscricao} atualizado.`);
+            },
+            
+            setLoadingProgress: function(percent) {
+                const bar = document.getElementById('loader-bar');
+                if (bar) bar.style.width = percent + '%';
+                if (percent >= 100) {
+                    setTimeout(() => {
+                        const overlay = document.getElementById('global-loading-overlay');
+                        if (overlay) {
+                            overlay.style.opacity = '0';
+                            overlay.style.visibility = 'hidden';
+                        }
+                    }, 500);
+                }
+            }
+        };
+    </script>
+
     <!-- RBush (Spatial Index) - Local -->
     <script src="js/rbush.min.js"></script>
 
@@ -940,42 +1090,57 @@
 
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/utils.js?v=1.16"></script>
+    <script src="js/utils.js?v=1.18"></script>
     <script src="js/supabase_client.js"></script>
-    <script src="js/auth_handler.js"></script>
+    <script src="js/auth_handler.js?v=1.18"></script>
  
     <!-- Google Maps Engine -->
     <script type="module" src="https://unpkg.com/@googlemaps/extended-component-library@0.6"></script>
-    <script src="js/google_maps_loader.js?v=1.16"></script>
+    <script src="js/google_maps_loader.js?v=1.18"></script>
 
     <!-- Stripe JS SDK -->
     <script src="https://js.stripe.com/v3/"></script>
     
     <!-- App Logic -->
     <link rel="stylesheet" href="css/anuncios_styles.css?v=1.17">
+    <link rel="stylesheet" href="css/tooltip_modular.css?v=1.20">
+    <script src="js/ui_manager.js?v=1.20"></script>
+    <script src="js/pwa_handler.js?v=1.0"></script>
+    <script src="js/map_controls.js?v=1.0"></script>
+    <script src="js/marinha_handler.js?v=1.0"></script>
+    <script src="js/realtime_handler.js?v=1.0"></script>
+    <script src="js/sync_handler.js?v=1.0"></script>
+    <script src="js/unit_type_handler.js?v=1.0"></script>
+    <script src="js/tooltip_components.js?v=1.0"></script>
+    <script src="js/tooltip_unit_list.js?v=1.0"></script>
+    <script src="js/lot_tooltip_handler.js?v=1.0"></script>
+    <script src="js/lot_tooltip_ui.js?v=1.20"></script>
+    <script src="js/unit_tooltip_ui.js?v=1.20"></script>
+    <script src="js/unit_tooltip_handler.js?v=1.20"></script>
+    <script src="js/owner_handler.js?v=1.0"></script>
     <script src="js/monetization_handler.js?v=1.17"></script>
     <script src="js/search_handler.js?v=1.17"></script>
     <script src="js/tooltip_handler.js?v=1.17"></script>
     <script src="js/neighborhood_handler.js?v=1.17"></script>
-    <script src="js/osm_handler.js?v=1.16"></script>
-    <script src="js/map_handler.js?v=1.16"></script>
-    <script src="js/editor_handler.js?v=1.16"></script>
+    <script src="js/osm_handler.js?v=1.18"></script>
+    <script src="js/map_handler.js?v=1.18"></script>
+    <script src="js/editor_handler.js?v=1.18"></script>
     <script src="js/enrichment_relations_ui.js?v=1.0"></script>
-    <script src="js/enrichment_handler.js?v=1.16"></script>
-    <script src="js/user_unit_status_handler.js?v=1.16"></script>
-    <script src="js/legend_handler.js?v=1.16"></script>
-    <script src="js/admin_handler.js?v=1.16"></script>
-    <script src="js/report_handler.js?v=1.16"></script>
-    <script src="js/crm_handler.js?v=1.16"></script>
-    <script src="js/insights_handler.js?v=1.16"></script>
-<script src="js/app.js?v=1.16"></script>
+    <script src="js/enrichment_handler.js?v=1.18"></script>
+    <script src="js/user_unit_status_handler.js?v=1.18"></script>
+    <script src="js/legend_handler.js?v=1.18"></script>
+    <script src="js/admin_handler.js?v=1.18"></script>
+    <script src="js/report_handler.js?v=1.18"></script>
+    <script src="js/crm_handler.js?v=1.18"></script>
+    <script src="js/insights_handler.js?v=1.18"></script>
+<script src="js/app.js?v=1.18"></script>
 
     <!-- New Modules (Analytics & Owners) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script src="js/analytics_tracker.js"></script>
     <script src="js/analytics_dashboard.js"></script>
     <script src="js/proprietario_tooltip.js?v=1.17"></script>
-    <!-- <script src="js/infosimples_handler.js"></script> -->
+    <script src="js/infosimples_handler.js?v=1.18"></script>
     <script src="js/gemini_chat_handler.js"></script>
     <script src="js/ai_history_handler.js"></script>
     <script src="js/notifications_handler.js"></script>

@@ -36,7 +36,7 @@ window.editFromTooltip = function (inscricao) {
     const lote = window.allLotes.find(l => l.inscricao === inscricao);
     if (!lote) return;
 
-    const currentTooltip = document.querySelector('.lot-tooltip');
+    const currentTooltip = document.querySelector('.lot-tooltip-container');
     if (!currentTooltip) return;
 
     const existingEdits = window.editedLotes[inscricao] || {};
@@ -74,8 +74,20 @@ window.editFromTooltip = function (inscricao) {
                 </div>
                 <div style="flex: 1;">
                     <label style="display: block; font-weight: 600; font-size: 11px; color: #666;">Ano Const.</label>
-                    <input type="number" id="edit-build-year" value="${existingEdits.build_year || lote.build_year || ''}" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                    <div style="display: flex; gap: 4px;">
+                        <input type="number" id="edit-build-year" value="${existingEdits.build_year || lote.build_year || ''}" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                        <button onclick="window.Enrichment.enrichBuildingAge('${inscricao}', document.getElementById('edit-cnpj-edificio').value)" 
+                            style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0 8px; border-radius: 4px; color: #334155; cursor: pointer; font-size: 10px;" title="Automação: Buscar Idade via CNPJ">
+                            <i class="fas fa-magic"></i>
+                        </button>
+                    </div>
                 </div>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">CNPJ do Edifício</label>
+                <input type="text" id="edit-cnpj-edificio" value="${existingEdits.cnpj_edificio || lote.cnpj_edificio || ''}" 
+                    placeholder="Somente números" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;">
             </div>
 
             <!-- Elevated Documentation Section -->
@@ -316,6 +328,7 @@ window.saveEditFromTooltip = async function (inscricao) {
             zelador_nome: document.getElementById('edit-zelador-nome')?.value || '',
             zelador_contato: document.getElementById('edit-zelador-contato')?.value || '',
             valor_condominio: document.getElementById('edit-valor-condominio')?.value || '', // New Field
+            cnpj_edificio: document.getElementById('edit-cnpj-edificio')?.value?.replace(/\D/g, '') || '', // Requirement 4
             amenities: document.getElementById('edit-amenities')?.value || '',
             // Boolean Fields
             piscina: document.getElementById('edit-lote-piscina')?.checked || false,
@@ -443,15 +456,27 @@ window.editUnitFromTooltip = function (unitInscricao) {
     tooltipBody.innerHTML = `
         <div style="padding: 10px;">
             <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+                 <div style="flex: 1;">
+                    <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Complemento (Torre/Bloco)</label>
+                    <input type="text" id="edit-unit-complemento" value="${existingEdits.complemento || targetUnit.complemento || ''}" 
+                         style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;" placeholder="Ex: Torre A">
+                 </div>
+                 <div style="flex: 1;">
+                    <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Inscrição Unid.</label>
+                    <input type="text" value="${unitInscricao}" readonly
+                         style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: #f8fafc; color: #94a3b8;" title="Inscrição não pode ser alterada">
+                 </div>
+            </div>
+            <div style="margin-bottom: 12px; display: flex; gap: 8px;">
                 <div style="flex: 1;">
-                   <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Complemento (Torre/Bloco)</label>
-                   <input type="text" id="edit-unit-complemento" value="${existingEdits.complemento || targetUnit.complemento || ''}" 
-                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;" placeholder="Ex: Torre A">
+                   <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Matrícula (RI)</label>
+                   <input type="text" id="edit-unit-matricula" value="${existingEdits.matricula || targetUnit.matricula || ''}" 
+                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;" placeholder="Número da Matrícula">
                 </div>
                 <div style="flex: 1;">
-                   <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">CPF/CNPJ</label>
-                   <input type="text" id="edit-unit-cpf" value="${existingEdits.cpf_cnpj || targetUnit.cpf_cnpj || ''}" 
-                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;" placeholder="Somente números">
+                   <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">RIP (Marinha)</label>
+                   <input type="text" id="edit-unit-rip" value="${existingEdits.rip || targetUnit.rip || ''}" 
+                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;" placeholder="Inscrição RIP">
                 </div>
             </div>
             <div style="margin-bottom: 12px; display: flex; gap: 8px;">
@@ -461,7 +486,29 @@ window.editUnitFromTooltip = function (unitInscricao) {
                          ${['Apartamento', 'Casa', 'Garagem', 'Loja', 'Terreno'].map(t => `<option value="${t}" ${(existingEdits.tipo || targetUnit.tipo) === t ? 'selected' : ''}>${t}</option>`).join('')}
                      </select>
                  </div>
-            </div>
+                 <div style="flex: 1;">
+                     <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Matrícula Qualif.</label>
+                     <select id="edit-unit-matricula-qualificacao" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;">
+                         <option value="">Nenhum</option>
+                         ${['Apartamento', 'Vaga de Garagem'].map(t => `<option value="${t}" ${(existingEdits.matricula_qualificacao || targetUnit.matricula_qualificacao) === t ? 'selected' : ''}>${t}</option>`).join('')}
+                     </select>
+                 </div>
+             </div>
+             
+             <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+                 <div style="flex: 1;">
+                    <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">RIP CPF (Vínculo Secundário)</label>
+                    <input type="text" id="edit-unit-rip-cpf" value="${existingEdits.rip_cpf || targetUnit.rip_cpf || ''}" 
+                         style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;" placeholder="CPF alternativo p/ RIP">
+                 </div>
+                 <div style="flex: 1;">
+                     <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">RIP Qualificacao</label>
+                     <select id="edit-unit-rip-qualificacao" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;">
+                         <option value="">Nenhum</option>
+                         ${['Apartamento', 'Vaga'].map(t => `<option value="${t}" ${(existingEdits.rip_qualificacao || targetUnit.rip_qualificacao) === t ? 'selected' : ''}>${t}</option>`).join('')}
+                     </select>
+                 </div>
+             </div>
             
             <div style="margin-bottom: 12px;">
                 <label style="display: block; font-weight: 600; font-size: 12px; color: #666; margin-bottom: 4px;">Status da Venda</label>
@@ -493,17 +540,23 @@ window.editUnitFromTooltip = function (unitInscricao) {
             <div style="margin-bottom: 12px; padding: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
                 <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 8px;">Valores (R$)</div>
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
                     <div>
-                        <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 2px;">Valor Venal</label>
-                        <input type="number" step="0.01" id="edit-unit-valor-venal" value="${existingEdits.valor_venal || targetUnit.valor_venal || ''}" placeholder="Fiscal" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px;">
+                        <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 2px;">Valor Venal Solo</label>
+                        <input type="number" step="0.01" id="edit-unit-valor-venal" value="${existingEdits.valor_venal || targetUnit.valor_venal || ''}" placeholder="Solo" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px;">
                     </div>
                     <div>
-                        <label style="display: block; font-size: 11px; color: #059669; font-weight: 700; margin-bottom: 2px;">Valor Real (Est.)</label>
+                        <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 2px;">Valor Edificado</label>
+                        <input type="number" step="0.01" id="edit-unit-valor-venal-edificado" value="${existingEdits.valor_venal_edificado || targetUnit.valor_venal_edificado || ''}" placeholder="Construção" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px;">
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                        <label style="display: block; font-size: 11px; color: #059669; font-weight: 700; margin-bottom: 2px;">Valor de Mercado (Est.)</label>
                         <input type="number" step="0.01" id="edit-unit-valor-real" value="${existingEdits.valor_real || targetUnit.valor_real || ''}" placeholder="Mercado" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; background: #f0fdf4;">
                     </div>
                     <div>
-                        <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 2px;">Valor Venda</label>
+                        <label style="display: block; font-size: 11px; color: #475569; margin-bottom: 2px;">Valor Pedido (Venda)</label>
                         <input type="number" step="0.01" id="edit-unit-valor-vendavel" value="${existingEdits.valor_vendavel || targetUnit.valor_vendavel || ''}" placeholder="Pedida" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px;">
                     </div>
                 </div>
@@ -543,12 +596,12 @@ window.editUnitFromTooltip = function (unitInscricao) {
                         <div style="margin-bottom: 8px;">
                             <label style="display: block; font-size: 11px; color: #666; margin-bottom: 2px;">CPF/CNPJ</label>
                             <div style="position: relative;">
-                                <input type="password" id="edit-unit-cpf" placeholder="CPF/CNPJ (Somente números)" 
+                                <input type="password" id="edit-unit-owner-cpf" placeholder="CPF/CNPJ (Somente números)" 
                                     value="${isUnlocked ? (targetUnit.cpf_cnpj || '') : '************'}" 
                                     ${canEdit ? '' : 'readonly'}
                                     style="width: 100%; padding: 6px; padding-right: 30px; border: 1px solid #ddd; border-radius: 4px; ${canEdit ? '' : 'background: #f8fafc; cursor: not-allowed;'}" 
                                     autocomplete="off" data-lpignore="true">
-                                <button onclick="${isUnlocked ? "window.toggleInputType('edit-unit-cpf', this)" : "window.Monetization.showSubscriptionPlans()"}" 
+                                <button onclick="${isUnlocked ? "window.toggleInputType('edit-unit-owner-cpf', this)" : "window.Monetization.showSubscriptionPlans()"}" 
                                     style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b;">
                                     <i class="fas ${isUnlocked ? 'fa-eye' : 'fa-lock'}"></i>
                                 </button>
@@ -698,12 +751,16 @@ window.saveUnitEdit = async function (unitInscricao) {
             area_util: getNumber('edit-unit-area-util'),
             area_total: getNumber('edit-unit-area-total'),
             valor_venal: getNumber('edit-unit-valor-venal'),
+            valor_venal_edificado: getNumber('edit-unit-valor-venal-edificado'),
             valor_real: getNumber('edit-unit-valor-real'),
             valor_vendavel: getNumber('edit-unit-valor-vendavel'),
             
             // Novos Campos
-            matricula: getText('edit-unit-matricula') || getText(`input-matricula-${unitInscricao}`),
-            rip: getText('edit-unit-rip') || getText(`input-rip-${unitInscricao}`),
+            matricula: getText('edit-unit-matricula'),
+            matricula_qualificacao: getText('edit-unit-matricula-qualificacao'), 
+            rip: getText('edit-unit-rip'),
+            rip_cpf: getText('edit-unit-rip-cpf')?.replace(/\D/g, ''), 
+            rip_qualificacao: getText('edit-unit-rip-qualificacao'), 
             cod_ref: getText('edit-unit-cod-ref'),
             link_url: getText('edit-unit-link'),
             imagens: JSON.parse(document.getElementById('edit-unit-gallery-json')?.value || '[]')
@@ -715,7 +772,7 @@ window.saveUnitEdit = async function (unitInscricao) {
             edits.nome_proprietario = nameInput.value.trim();
         }
         
-        const cpfInput = document.getElementById('edit-unit-cpf');
+        const cpfInput = document.getElementById('edit-unit-owner-cpf');
         if (cpfInput && !cpfInput.readOnly) {
             // Normalizar CPF/CNPJ removendo pontuação para evitar erros de validação/busca
             edits.cpf_cnpj = cpfInput.value.trim().replace(/\D/g, '');
@@ -780,7 +837,12 @@ window.saveUnitEdit = async function (unitInscricao) {
 
         window.Toast.success(isAdmin ? 'Edição salva globalmente!' : 'Sugestão enviada para curadoria!');
         window.Loading.hide();
-        window.closeLotTooltip();
+        
+        // Re-open unit tooltip to show updated data
+        const updatedUnit = { ...window.currentUnitForUpdate, ...edits };
+        window.currentUnitForUpdate = updatedUnit;
+        window.showUnitTooltip(updatedUnit, window.currentLoteForUnit, 0, 0);
+        
         if (window.renderHierarchy) window.renderHierarchy();
     } catch (e) {
         console.error(e);

@@ -149,8 +149,15 @@ window.Auth = {
             console.log("🔐 Sessão ativa identificada:", session.user.email);
             await this.handleAuthenticatedUser(session.user);
         } else {
-            console.log("🔓 Nenhum usuário logado.");
+            console.log("🔓 Nenhum usuário logado ou sessão expirou.");
             localStorage.removeItem('guaruja_auth');
+            
+            // 🔥 ARRANCANDO A TELA PRETA DE CARREGAMENTO À FORÇA 🔥
+            const splashScreen = document.getElementById('global-loading-overlay');
+            if (splashScreen) {
+                splashScreen.style.display = 'none';
+            }
+
             document.getElementById('loginOverlay').style.display = 'block';
             document.getElementById('loginOverlay').classList.remove('hidden');
             
@@ -344,16 +351,28 @@ window.Auth = {
             window.Toast.warning("Digite seu e-mail antes de continuar.");
             return;
         }
+
+        // Captura o token do captcha para recuperação
+        const captchaToken = window.hcaptcha ? window.hcaptcha.getResponse() : undefined;
+        if (!captchaToken) {
+            this.showAuthMessage('⚠️ Por favor, complete o desafio "Não sou robô" para recuperar a senha.', 'error');
+            return;
+        }
+
         window.Loading.show("Enviando...", "Gerando link de redefinição de senha");
         const { error } = await window.supabaseApp.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.origin + window.location.pathname
+            redirectTo: window.location.origin + window.location.pathname,
+            captchaToken: captchaToken
         });
+        
         window.Loading.hide();
         if (error) {
+            if (window.hcaptcha) window.hcaptcha.reset();
             window.Toast.error("Erro: " + error.message);
         } else {
             window.Toast.success("✅ E-mail de recuperação enviado! Verifique sua caixa de entrada.");
             this.showAuthMessage("Verifique seu e-mail para redefinir sua senha. O link expira em 1 hora.", 'success');
+            if (window.hcaptcha) window.hcaptcha.reset();
         }
     },
 
@@ -653,9 +672,17 @@ window.Auth = {
             title.innerText = "Recuperar Senha";
             btn.innerText = "Enviar Link de Recuperação";
             nameField.style.display = 'none';
+            if (phoneField) phoneField.style.display = 'none';
+            if (cpfField) cpfField.style.display = 'none';
             if (passField) passField.style.display = 'none';
             if (forgotLink) forgotLink.style.display = 'none';
             if (resendLink) resendLink.style.display = 'none';
+            
+            // Mostrar o Captcha para o reset também
+            const captchaBox = document.getElementById('hcaptcha-container');
+            if (captchaBox) captchaBox.style.display = 'block';
+            if (window.hcaptcha) window.hcaptcha.reset();
+
             toggleLink.innerHTML = '← Voltar para o <b>Login</b>';
             toggleLink.onclick = () => this.toggleAuthMode('login');
             btn.onclick = () => this.resetPassword(document.getElementById('loginUser').value);

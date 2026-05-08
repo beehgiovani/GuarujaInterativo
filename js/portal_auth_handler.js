@@ -9,7 +9,22 @@ window.PortalAuth = {
             loginForm.addEventListener('submit', (e) => this.handleLogin(e));
         }
 
-        // Verificar se já existe uma sessão ativa
+        // DETECTAR FLUXO DE RECUPERAÇÃO DE SENHA
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const flowType = hashParams.get('type');
+
+        if (flowType === 'recovery') {
+            console.log("🔑 Fluxo de Recuperação no Portal detectado.");
+            await new Promise(r => setTimeout(r, 800));
+            const { data: { session } } = await window.supabaseApp.auth.getSession();
+            if (session) {
+                this.showNewPasswordUI();
+                window.history.replaceState(null, '', window.location.pathname);
+                return;
+            }
+        }
+
+        // Verificar se já existe uma sessão ativa (fluxo normal)
         const { data: { session } } = await window.supabaseApp.auth.getSession();
         if (session) {
             console.log("Sessão ativa detectada, redirecionando para o portal...");
@@ -83,14 +98,120 @@ window.PortalAuth = {
         }
     },
 
-    forgotPassword() {
+    async forgotPassword() {
         const email = document.getElementById('email').value;
-        if (!email) {
-            alert("Por favor, digite seu e-mail antes para recuperar a senha.");
+        const errorEl = document.getElementById('login-error');
+        
+        if (!email || !email.includes('@')) {
+            errorEl.innerText = "Por favor, digite um e-mail válido para recuperar a senha.";
+            errorEl.style.display = 'block';
             return;
         }
-        alert("Enviando link de recuperação para: " + email);
-        // Implementar futuramente se necessário
+
+        // Capturar Token hCaptcha para evitar spam de recuperação
+        const captchaResponse = hcaptcha.getResponse();
+        if (!captchaResponse) {
+            errorEl.innerText = "Por favor, complete o Captcha para solicitar a recuperação.";
+            errorEl.style.display = 'block';
+            return;
+        }
+
+        errorEl.style.display = 'none';
+        const btnSubmit = document.getElementById('btn-submit');
+        const originalText = btnSubmit.innerHTML;
+        
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Enviando...';
+
+        try {
+            const { error } = await window.supabaseApp.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + '/portal_login.html',
+                captchaToken: captchaResponse
+            });
+
+            if (error) throw error;
+
+            alert("✅ E-mail de recuperação enviado! Verifique sua caixa de entrada (e a pasta de spam).");
+            hcaptcha.reset();
+            
+        } catch (err) {
+            console.error("Recovery error:", err);
+            errorEl.innerText = "Erro ao enviar: " + (err.message || "Tente novamente mais tarde.");
+            errorEl.style.display = 'block';
+            hcaptcha.reset();
+        } finally {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = originalText;
+        }
+    },
+
+    showNewPasswordUI() {
+        const form = document.getElementById('portal-login-form');
+        const header = form.parentElement.querySelector('header');
+        
+        if (header) {
+            header.querySelector('h2').innerText = "Definir Nova Senha";
+            header.querySelector('p').innerText = "Crie uma senha forte para sua segurança.";
+        }
+
+        form.innerHTML = `
+            <div class="form-group">
+                <label for="new-password">Nova Senha</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="new-password" placeholder="Mínimo 6 caracteres" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="confirm-password">Confirmar Senha</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="confirm-password" placeholder="Repita a nova senha" required>
+                </div>
+            </div>
+            <div id="login-error" class="error-msg" style="display: none;"></div>
+            <button type="button" class="btn-login-submit" id="btn-save-pass" onclick="window.PortalAuth.handleUpdatePassword()">
+                Atualizar Senha <i class="fas fa-save"></i>
+            </button>
+            <div class="form-footer">
+                <p><a href="portal_login.html" class="signup-link">Voltar ao Login</a></p>
+            </div>
+        `;
+    },
+
+    async handleUpdatePassword() {
+        const newPass = document.getElementById('new-password').value;
+        const confirmPass = document.getElementById('confirm-password').value;
+        const errorEl = document.getElementById('login-error');
+
+        if (newPass.length < 6) {
+            errorEl.innerText = "A senha deve ter pelo menos 6 caracteres.";
+            errorEl.style.display = 'block';
+            return;
+        }
+
+        if (newPass !== confirmPass) {
+            errorEl.innerText = "As senhas não coincidem.";
+            errorEl.style.display = 'block';
+            return;
+        }
+
+        const btn = document.getElementById('btn-save-pass');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Salvando...';
+
+        try {
+            const { error } = await window.supabaseApp.auth.updateUser({ password: newPass });
+            if (error) throw error;
+
+            alert("✅ Senha atualizada com sucesso!");
+            window.location.href = 'portal.html';
+        } catch (err) {
+            errorEl.innerText = err.message || "Erro ao atualizar senha.";
+            errorEl.style.display = 'block';
+            btn.disabled = false;
+            btn.innerHTML = 'Atualizar Senha <i class="fas fa-save"></i>';
+        }
     },
 
     showSignUp() {

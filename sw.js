@@ -1,4 +1,4 @@
-const CACHE_NAME = 'guarugeo-cache-v3.1';
+const CACHE_NAME = 'guarugeo-cache-v3.5';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -25,8 +25,9 @@ const ASSETS_TO_CACHE = [
     './css/onboarding_styles.css',
     './css/anuncios_styles.css',
     './css/hub_styles.css',
-    './assets/logo_v2.png', 
-    
+    './css/tooltip_modular.css',
+    './assets/logo_v2.png',
+
     // Core JS Logic
     './js/hub_handler.js',
     './js/app.js',
@@ -44,6 +45,15 @@ const ASSETS_TO_CACHE = [
     './js/enrichment_handler.js',
     './js/anuncios_handler.js',
     './js/proprietario_tooltip.js',
+
+    // Modular Tooltip System (v1.20) — atualizado em 2026-05-08
+    './js/ui_manager.js',
+    './js/lot_tooltip_handler.js',
+    './js/lot_tooltip_ui.js',
+    './js/unit_tooltip_ui.js',
+    './js/unit_tooltip_handler.js',
+    './js/tooltip_unit_list.js',
+    './js/tooltip_components.js',
 
     // External Libs
     'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',

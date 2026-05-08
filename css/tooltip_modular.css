@@ -1,0 +1,1277 @@
+/* 
+   TOOLTIP_MODULAR.CSS
+   Estilização centralizada para LotTooltip e UnitTooltip
+   Bruno Giovani Style: Premium, High-Contrast, Glassmorphism.
+*/
+
+:root {
+    --bg-brand-primary: #004a99;
+    /* Azul Oceano Profundo (Logo) */
+    --bg-brand-secondary: #008751;
+    /* Verde Mata (Natureza) */
+    --bg-slate: #1e293b;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border-light: #e2e8f0;
+    --accent-blue: #004a99;
+    --accent-gold: #ffcc00;
+    /* Destaque Areia/Sol */
+}
+
+/* Containers Principais */
+.lot-tooltip-container,
+.unit-tooltip-container {
+    width: 600px;
+    background: #ffffff;
+    border-radius: 32px;
+    overflow: hidden;
+    box-shadow: 0 40px 80px -15px rgba(0, 0, 0, 0.3);
+    font-family: 'Inter', sans-serif;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: zoomIn 0.3s ease-out;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 999999 !important;
+}
+
+@media (max-width: 768px) {
+
+    .lot-tooltip-container,
+    .unit-tooltip-container {
+        width: 100% !important;
+        height: 100% !important;
+        border-radius: 0;
+        top: 0;
+        left: 0;
+        transform: none;
+    }
+}
+
+/* Cabeçalhos */
+.tooltip-header-img {
+    position: relative;
+    height: 200px;
+    background: var(--bg-slate);
+    overflow: hidden;
+}
+
+/* A imagem nunca deve estourar a caixa heroica */
+.tooltip-header-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.tooltip-header-img img.shimmer-loading {
+    opacity: 0.6;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+.tooltip-header-img img.loaded {
+    opacity: 1;
+    animation: none;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.lot-badge-zona {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: rgba(15, 23, 42, 0.8);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    padding: 5px 12px;
+    border-radius: 8px;
+    color: white;
+    font-size: 11px;
+    font-weight: 800;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.lot-tooltip-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: white;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header-overlay-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 20px;
+    background: linear-gradient(transparent, rgba(15, 23, 42, 0.9));
+    color: white;
+}
+
+.header-overlay-info h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+}
+
+.header-overlay-info p {
+    margin: 5px 0 0;
+    font-size: 12px;
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.header-flex-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.unit-type-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.unit-title {
+    margin: 8px 0 0;
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: -1px;
+}
+
+.unit-tooltip-close {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.unit-tooltip-close:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.lot-tooltip-close i {
+    color: #1e293b;
+}
+
+/* Subtitle de endereço no header da Unidade */
+.unit-subtitle-addr {
+    margin: 4px 0 0;
+    font-size: 11px;
+    opacity: 0.75;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Chips de contexto rápido (Lote) */
+.lot-context-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 16px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.ctx-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.ctx-chip.accent {
+    background: rgba(0, 74, 153, 0.12);
+    color: var(--accent-blue);
+}
+
+.lot-descricao-bar {
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    background: #fffbeb;
+    border-bottom: 1px solid #fde68a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Linha CNPJ do Condomínio */
+.lot-cnpj-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0 4px;
+    font-size: 12px;
+    color: #475569;
+    border-top: 1px solid var(--border-light);
+    margin-top: 4px;
+}
+
+.cnpj-label {
+    font-weight: 700;
+    color: #334155;
+}
+
+.cnpj-val {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #004a99;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Chips de contexto da Unidade */
+.unit-context-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-light);
+}
+
+.uctx-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.4px;
+}
+
+.uctx-chip.muted {
+    background: #f8fafc;
+    color: #94a3b8;
+    font-family: 'Courier New', monospace;
+    font-size: 9px;
+}
+
+/* Abas */
+.tooltip-tabs {
+    display: flex;
+    background: #fafafa;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 0 10px;
+}
+
+.unit-tab-btn,
+.lot-tab-btn {
+    flex: 1;
+    padding: 15px;
+    border: none;
+    background: none;
+    font-weight: 800;
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.lot-tab-btn.active,
+.unit-tab-btn.active {
+    color: var(--accent-blue);
+    border-bottom: 2px solid var(--accent-blue);
+    opacity: 1 !important;
+}
+
+/* Body Wrapper — scrollable area below tabs, injected by editor */
+.lot-tooltip-body {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: calc(100vh - 300px);
+    scrollbar-width: thin;
+}
+
+@media (max-width: 768px) {
+    .lot-tooltip-body {
+        max-height: calc(100vh - 220px);
+        max-height: calc(100dvh - 220px);
+    }
+}
+
+.lot-tab-content,
+.unit-tab-content {
+    display: none;
+    padding: 20px;
+    max-height: none;
+    overflow-y: visible;
+}
+
+.lot-tab-content.active,
+.unit-tab-content.active {
+    display: block;
+}
+
+/* ------------------------------------------------
+   Botões do Tooltip — Alto Contraste (Protocolo)
+   ------------------------------------------------ */
+.lot-edit-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--bg-slate);
+    color: #ffffff;
+    border: none;
+    font-weight: 800;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+    transition: all 0.2s ease;
+    letter-spacing: 0.3px;
+}
+
+.lot-edit-btn:hover {
+    background: #0f172a;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.25);
+    transform: translateY(-1px);
+}
+
+.lot-edit-btn:active {
+    transform: translateY(0);
+}
+
+.lot-edit-btn.accent {
+    background: linear-gradient(135deg, #004a99, #0369a1);
+    box-shadow: 0 4px 12px rgba(0, 74, 153, 0.25);
+}
+
+.lot-edit-btn.accent:hover {
+    background: linear-gradient(135deg, #003a7a, #0284c7);
+}
+
+.attribute-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.neighborhood-context-box {
+    background: #f1f5f9;
+    border-radius: 12px;
+    min-height: 50px;
+    margin-bottom: 20px;
+}
+
+.elevation-analysis-box {
+    background: #eff6ff;
+    border: 1px solid #dbeafe;
+    border-radius: 12px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.elevation-val {
+    font-size: 18px;
+    font-weight: 900;
+    color: #1e3a8a;
+}
+
+.elevation-label {
+    font-size: 11px;
+    color: #1e40af;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+}
+
+.icon-muted {
+    font-size: 24px;
+    color: #bfdbfe;
+}
+
+.inventory-section {
+    margin-top: 20px;
+}
+
+.section-title {
+    margin: 0 0 15px;
+    font-size: 14px;
+    color: #1e293b;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.empty-docs-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #94a3b8;
+}
+
+.empty-docs-state i {
+    font-size: 40px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+/* Cards e Atributos */
+.mini-card {
+    background: #f8fafc;
+    border: 1px solid var(--border-light);
+    padding: 12px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mini-card-label {
+    font-size: 9px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.mini-card-value {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+/* Toolbar de Ações */
+.action-toolbar {
+    padding: 15px 20px;
+    background: #ffffff;
+    display: flex;
+    gap: 10px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.btn-action-primary {
+    flex: 1;
+    background: var(--bg-slate);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-action-secondary {
+    flex: 1;
+    background: #f8fafc;
+    color: var(--text-main);
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 12px;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-unlock {
+    background: var(--accent-gold);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 15px;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 12px;
+}
+
+/* Listagem de Unidades (Grid e Grupos) */
+.unit-list-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.unit-group-container {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.unit-group-card {
+    flex: 1 1 300px;
+    min-width: 280px;
+    background: white;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.unit-group-header {
+    padding: 10px 15px;
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.unit-group-header span {
+    font-size: 12px;
+    font-weight: 800;
+    color: #475569;
+    text-transform: uppercase;
+}
+
+.unit-group-grid {
+    padding: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+}
+
+.unit-section-header {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.unit-section-header.commercial {
+    color: #0ea5e9;
+}
+
+.unit-section-header.garage {
+    color: #64748b;
+}
+
+/* Card Individual de Unidade */
+.unit-item-clickable {
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.unit-item-clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.unit-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.unit-item-id {
+    font-weight: 800;
+    color: var(--text-main);
+    font-size: 14px;
+}
+
+.unit-item-area {
+    font-size: 9px;
+    color: var(--text-muted);
+}
+
+.unit-item-type-tag {
+    font-size: 9px;
+    color: #475569;
+    background: white;
+    padding: 2px 4px;
+    border: 1px solid var(--border-light);
+    border-radius: 4px;
+}
+
+/* Tags de Proprietário e Vinculação */
+.unit-link-tag {
+    margin-top: 2px;
+    padding: 4px;
+    background: #dcfce7;
+    border-radius: 4px;
+    border: 1px solid #bbf7d0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 9px;
+    font-weight: 700;
+    color: #166534;
+}
+
+.unit-owner-tag {
+    font-size: 10px;
+    color: #334155;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: flex-end;
+}
+
+.btn-icon-muted {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 10px;
+    padding: 4px;
+    transition: color 0.2s;
+}
+
+.btn-icon-muted:hover {
+    color: var(--accent-blue);
+}
+
+/* Badges de referência documental nos cards de unidade */
+.unit-ref-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.unit-ref-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 8px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(0, 74, 153, 0.08);
+    color: #004a99;
+    border: 1px solid rgba(0, 74, 153, 0.15);
+    letter-spacing: 0.3px;
+}
+
+.unit-ref-badge i {
+    font-size: 7px;
+}
+
+.unit-ref-badge.rip {
+    background: rgba(6, 182, 212, 0.08);
+    color: #0891b2;
+    border-color: rgba(6, 182, 212, 0.15);
+}
+
+
+
+/* Breadcrumbs Styles */
+.breadcrumb-link {
+    cursor: pointer;
+    color: #60a5fa;
+    transition: color 0.2s;
+}
+
+.breadcrumb-link:hover {
+    color: #93c5fd;
+}
+
+.breadcrumb-sep {
+    font-size: 10px;
+    margin: 0 5px;
+    opacity: 0.5;
+    color: white;
+}
+
+.breadcrumb-item {
+    cursor: pointer;
+    color: #cbd5e1;
+}
+
+.breadcrumb-active {
+    font-weight: 700;
+    color: white;
+}
+
+
+
+/* Marine Area Styles */
+.marine-info-box {
+    margin-top: 20px;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.marine-header {
+    background: linear-gradient(135deg, #004a99, #0369a1);
+    color: white;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.marine-header i {
+    font-size: 16px;
+}
+
+.marine-body {
+    padding: 12px;
+    font-size: 12px;
+    color: var(--text-main);
+    line-height: 1.5;
+}
+
+.marine-body ul {
+    margin: 8px 0;
+    padding-left: 20px;
+    font-size: 11px;
+}
+
+.marine-footer {
+    font-size: 9px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 10px;
+    border-top: 1px dashed #bae6fd;
+    padding-top: 8px;
+}
+
+/* --- UNIT TOOLTIP SPECIFICS (INJECTED) --- */
+.unit-header-img {
+    height: 180px;
+}
+
+/* Unit body wrapper — mirrors lot-tooltip-body */
+.unit-tooltip-body {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    max-height: calc(100vh - 320px);
+    scrollbar-width: thin;
+}
+
+@media (max-width: 768px) {
+    .unit-tooltip-body {
+        max-height: calc(100vh - 240px);
+        max-height: calc(100dvh - 240px);
+    }
+}
+
+/* Lot edit section */
+.lot-edit-section {
+    padding: 12px 0 4px;
+}
+
+.unit-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1.2;
+    color: white;
+}
+
+.unit-tooltip-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.4);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    z-index: 10;
+}
+
+.market-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 15px;
+}
+
+.mini-card-label {
+    font-size: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 800;
+    margin-bottom: 5px;
+    letter-spacing: 0.5px;
+}
+
+.market-val-main {
+    font-size: 16px;
+    font-weight: 900;
+    color: #0f172a;
+}
+
+.liquidity-val {
+    font-size: 14px;
+    font-weight: 800;
+    color: #059669;
+}
+
+.owner-info-box {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.owner-info-box.unlocked {
+    border-left: 4px solid #3b82f6;
+}
+
+.owner-info-box.locked {
+    border-left: 4px solid #cbd5e1;
+    background: #f8fafc;
+}
+
+.owner-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.owner-label {
+    margin: 0;
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 800;
+}
+
+.owner-name {
+    font-size: 15px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 4px;
+}
+
+.owner-doc {
+    font-size: 12px;
+    color: #475569;
+    font-family: monospace;
+}
+
+.specs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.spec-item {
+    background: #f1f5f9;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.spec-item i {
+    color: #3b82f6;
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+
+.spec-val {
+    font-size: 14px;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.spec-label {
+    font-size: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-top: 2px;
+}
+
+/* ----------------------------------------------------------- */
+/* NOVOS ELEMENTOS v1.20 — Amenidades, Docs, Zelador, etc.     */
+/* ----------------------------------------------------------- */
+
+/* Market IQ: suporta até 4 cards (2 colunas, com wrap) */
+.market-iq-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* Seção de Amenidades / Infraestrutura do Lote */
+.lot-amenities-section {
+    margin-bottom: 16px;
+}
+
+.lot-amenity-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* Chip de amenidade (variante verde do ctx-chip) */
+.ctx-chip.amenity-chip {
+    background: rgba(5, 150, 105, 0.1);
+    color: #059669;
+    border: 1px solid rgba(5, 150, 105, 0.2);
+}
+
+/* Linha do Zelador */
+.lot-zelador-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0 8px;
+    font-size: 12px;
+    color: #475569;
+    border-top: 1px solid var(--border-light);
+    margin-top: 4px;
+}
+
+.lot-zelador-row i {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-top: 2px;
+}
+
+/* Badges de documentos da unidade (Matrícula / RIP) */
+.unit-docs-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-light);
+}
+
+.unit-doc-badge {
+    flex: 1;
+    min-width: 140px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.unit-doc-badge i {
+    font-size: 16px;
+    color: #64748b;
+    flex-shrink: 0;
+}
+
+/* Características como tags (array do banco) */
+.unit-caracteristicas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-light);
+}
+
+/* Timeline de Histórico */
+.history-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 0;
+}
+
+.history-item {
+    display: grid;
+    grid-template-columns: 12px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+}
+
+.history-dot {
+    width: 10px;
+    height: 10px;
+    background: #cbd5e1;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px #cbd5e1;
+}
+
+.history-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.history-date {
+    font-size: 10px;
+    color: #94a3b8;
+    font-family: 'Courier New', monospace;
+}
+
+.history-intro {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+/* Placeholder da aba Farol IA */
+.farol-container {
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ia-placeholder {
+    text-align: center;
+    padding: 30px 20px;
+    color: #94a3b8;
+}
+
+.ia-placeholder i {
+    font-size: 36px;
+    margin-bottom: 12px;
+    display: block;
+    opacity: 0.4;
+}
+
+.ia-placeholder p {
+    font-size: 13px;
+    margin: 0;
+}
+
+/* ============================================================
+   FAROL IA - RELATÓRIO PREMIUM
+   ============================================================ */
+.ia-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #3b82f6;
+}
+.ia-loading i {
+    font-size: 32px;
+    margin-bottom: 12px;
+}
+.ia-loading p {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0;
+}
+
+.farol-report {
+    animation: fadeIn 0.4s ease-out;
+}
+
+.farol-score-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 16px;
+    border: 1px solid var(--border-light);
+    margin-bottom: 20px;
+}
+
+.score-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 4px solid;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    flex-shrink: 0;
+}
+
+.score-val {
+    font-size: 20px;
+    font-weight: 900;
+    line-height: 1;
+    color: #1e293b;
+}
+
+.score-label {
+    font-size: 8px;
+    font-weight: 800;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+.score-signal {
+    flex: 1;
+}
+
+.signal-status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    color: white;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.signal-desc {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.farol-details {
+    background: white;
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.farol-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dashed #e2e8f0;
+    font-size: 13px;
+}
+.farol-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+.farol-row span {
+    color: #64748b;
+}
+.farol-row b {
+    color: #1e293b;
+    font-weight: 700;
+}
+
+.ia-insight-box {
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+.ia-insight-box i {
+    color: #3b82f6;
+    font-size: 20px;
+    margin-top: 2px;
+}
+.ia-insight-box p {
+    margin: 0;
+    font-size: 13px;
+    color: #1e3a8a;
+    line-height: 1.5;
+}
+
+/* Estado vazio genérico e de Documentos */
+.empty-state, .empty-docs-state {
+    text-align: center;
+    padding: 30px 20px;
+    color: #94a3b8;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px dashed #cbd5e1;
+    margin-top: 10px;
+}
+
+.empty-docs-state i {
+    font-size: 32px;
+    color: #cbd5e1;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.empty-docs-state p {
+    font-size: 13px;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.empty-state {
+    font-size: 12px;
+    font-style: italic;
+}

@@ -1,124 +1,148 @@
 /**
  * MEDIA_HANDLER.JS
- * Manages external media sources (Google Places, etc)
+ * Manages external media sources (Google Places, Street View Static)
+ * Bruno Giovani: Optimized for performance and smart fallbacks.
  */
 
 window.MediaHandler = (function() {
-    let placesService = null;
+    /**
+     * getSmartPhoto: Prioritizes images by quality/relevance
+     * 1. Local image_url (Database)
+     * 2. Local gallery (Database)
+     * 3. Google Places Photos (Modern API)
+     * 4. Street View Static Image (Automatic Heading)
+     */
+    async function getSmartPhoto(lote) {
+        if (lote.image_url && lote.image_url.startsWith('http')) return lote.image_url;
+        
+        if (lote._googlePhotos && lote._googlePhotos.length > 0) return lote._googlePhotos[0];
 
-    function initService() {
-        // legacy PlacesService is kept only as fallback if needed, but modern API doesn't need it.
-        return true; 
+        // If no google photos cached, try fetching
+        const googlePhotos = await fetchGooglePhotos(lote);
+        if (googlePhotos && googlePhotos.length > 0) return googlePhotos[0];
+
+        // Fallback to Street View Static (now async for heading calculation)
+        return await getStreetViewStaticUrl(lote);
     }
 
     /**
-     * Fetch photos for a lot using name and address
+     * fetchGooglePhotos: Uses Modern Places API v1
      */
     async function fetchGooglePhotos(lote) {
-        if (!initService()) return [];
+        // Avoid redundant calls
+        if (lote._googlePhotos) return lote._googlePhotos;
 
-        // Avoid redundant calls if already fetched
-        if (lote._googlePhotos) {
-            console.log(`[MediaHandler] Using cached photos for ${lote.inscricao}`);
-            return lote._googlePhotos;
-        }
-
-        const runQuery = async (q) => {
-            try {
-                if (!window.google || !window.google.maps || !window.google.maps.places || !window.google.maps.places.Place) {
-                    console.warn('[MediaHandler] Modern Places API not available');
-                    return null;
-                }
-
-                const { Place } = await google.maps.importLibrary("places");
-                const request = {
-                    textQuery: q,
-                    fields: ['photos', 'id', 'displayName', 'formattedAddress'],
-                    locationBias: { 
-                        center: { lat: parseFloat(lote._lat), lng: parseFloat(lote._lng) },
-                        radius: 500 // Search within 500m
-                    }
-                };
-                
-                const { places } = await Place.searchByText(request);
-                return (places && places.length > 0) ? places[0] : null;
-            } catch (e) {
-                console.error('[MediaHandler] Place Search Error:', e);
-                return null;
+        try {
+            if (!window.google || !window.google.maps) {
+                console.warn('[MediaHandler] Google Maps API is not loaded. Cannot fetch Places photos.');
+                return [];
             }
-        };
+            // Load library properly
+            const { Place } = await google.maps.importLibrary("places");
+            
+            const name = (lote.building_name || lote.nome_edificio || '').trim();
+            const addr = (lote.logradouro || lote.endereco || '').trim();
+            const num = (lote.numero || '').toString().trim();
+            
+            const meta = lote.metadata || {};
+            const lat = parseFloat(lote._lat || lote.latitude || meta.latitude);
+            const lng = parseFloat(lote._lng || lote.longitude || meta.longitude);
 
-        const name = (lote.building_name || lote.nome_edificio || '').trim();
-        
-        // Smarter Address Resolution (mirroring tooltip_handler.js)
-        let addr = (lote.logradouro || lote.endereco || '').trim();
-        let num = (lote.numero || '').toString().trim();
+            if (!lat || !lng) return [];
+            if (name.length < 2 && addr.length < 5) return [];
 
-        // 1. Fallback to first unit if lot address is missing/empty
-        if ((!addr || addr.length < 3) && lote.unidades && lote.unidades.length > 0) {
-            const u = lote.unidades[0];
-            if (u.logradouro) addr = u.logradouro.trim();
-            if (u.numero) num = u.numero.toString().trim();
-            console.log(`[MediaHandler] Using unit address for ${lote.inscricao}: ${addr}, ${num}`);
-        }
-
-        // Combine Address + Number
-        if (addr && num) addr = `${addr}, ${num}`;
-
-        // Guard: If we still have no name and no address, ABORT.
-        // Prevents searching "Guarujá SP" and getting a generic city photo.
-        if (name.length < 2 && addr.length < 5) {
-             console.warn(`[MediaHandler] Skipping photo fetch for ${lote.inscricao} - Insufficient data (No name/address)`);
-             lote._googlePhotos = [];
-             return [];
-        }
-        
-        // Strategy 1: Name + Address
-        let q1 = `${name} ${addr} Guarujá SP`.trim();
-        
-        // Cleanup double spaces
-        q1 = q1.replace(/\s+/g, ' ');
-
-        console.log(`[MediaHandler] Strategy 1: ${q1}`);
-        let place = await runQuery(q1);
-
-        // Strategy 2: Just Name (often better for landmarks)
-        if (!place && name.length > 3) {
-            const q2 = `${name} Guarujá SP`.trim();
-            console.log(`[MediaHandler] Strategy 2: ${q2}`);
-            place = await runQuery(q2);
-        }
-
-        // Strategy 3: Just Address (if name logic failed)
-        if (!place && addr.length > 5) {
-            const q3 = `${addr} Guarujá SP`.trim();
-            console.log(`[MediaHandler] Strategy 3: ${q3}`);
-            place = await runQuery(q3);
-        }
-
-        if (place && place.photos && place.photos.length > 0) {
-            const urls = place.photos.slice(0, 15).map(p => {
-                try {
-                    // Modern API (v1) uses getURI, legacy used getUrl
-                    if (typeof p.getURI === 'function') return p.getURI({ maxWidth: 1200, maxHeight: 800 });
-                    if (typeof p.getUrl === 'function') return p.getUrl({ maxWidth: 1200, maxHeight: 800 });
-                } catch (err) {
-                    console.warn('[MediaHandler] Error getting photo URI:', err);
+            const query = `${name} ${addr}, ${num} Guarujá SP`.replace(/\s+/g, ' ').trim();
+            const request = {
+                textQuery: query,
+                fields: ['photos', 'id', 'displayName', 'formattedAddress'],
+                locationBias: { 
+                    center: { lat: lat, lng: lng },
+                    radius: 300 
                 }
-                return null;
-            }).filter(u => u !== null);
+            };
+            
+            const { places } = await Place.searchByText(request);
+            const place = (places && places.length > 0) ? places[0] : null;
 
-            lote._googlePhotos = urls;
-            console.log(`[MediaHandler] Success! Found ${urls.length} photos for ${place.displayName?.text || 'Place'} at ${place.formattedAddress}`);
-            return urls;
+            if (place && place.photos && place.photos.length > 0) {
+                const urls = place.photos.slice(0, 10).map(p => {
+                    try {
+                        if (typeof p.getURI === 'function') return p.getURI({ maxWidth: 1200, maxHeight: 800 });
+                    } catch (e) { return null; }
+                    return null;
+                }).filter(Boolean);
+
+                lote._googlePhotos = urls;
+                return urls;
+            }
+        } catch (e) {
+            console.error('[MediaHandler] Error fetching Places photos:', e);
         }
 
-        console.warn(`[MediaHandler] No photos found for ${lote.inscricao}`);
         lote._googlePhotos = [];
         return [];
     }
 
+    /**
+     * getStreetViewStaticUrl: Generates a static URL with optimized heading
+     * points the camera from the nearest street point to the property.
+     */
+    async function getStreetViewStaticUrl(lote) {
+        const meta = lote.metadata || {};
+        const lat = parseFloat(lote._lat || lote.latitude || meta.latitude);
+        const lng = parseFloat(lote._lng || lote.longitude || meta.longitude);
+        if (!lat || !lng) return null;
+
+        const key = window.CONFIG?.GOOGLE_MAPS_KEY || '';
+        
+        // Find nearest panorama to calculate heading
+        const panoInfo = await verifyStreetView(lat, lng);
+        let heading = 180; // Default fallback
+        
+        if (panoInfo && panoInfo.latLng) {
+            // Calculate heading from panorama position to property position
+            const panoLat = panoInfo.latLng.lat();
+            const panoLng = panoInfo.latLng.lng();
+            
+            // Formula for heading between two points
+            const y = Math.sin(lng - panoLng) * Math.cos(lat);
+            const x = Math.cos(panoLat) * Math.sin(lat) -
+                      Math.sin(panoLat) * Math.cos(lat) * Math.cos(lng - panoLng);
+            heading = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+        }
+
+        const pitch = 5;
+        return `https://maps.googleapis.com/maps/api/streetview?size=1000x600&location=${lat},${lng}&fov=90&heading=${heading}&pitch=${pitch}&key=${key}`;
+    }
+
+    /**
+     * verifyStreetView: Checks if a location has SV and returns pano metadata
+     */
+    async function verifyStreetView(lat, lng) {
+        return new Promise((resolve) => {
+            try {
+                if (!window.google || !window.google.maps) {
+                    return resolve(null);
+                }
+                const service = new google.maps.StreetViewService();
+                service.getPanorama({ location: { lat, lng }, radius: 50 }, (data, status) => {
+                    if (status === "OK" && data && data.location) {
+                        resolve(data.location);
+                    } else {
+                        resolve(null);
+                    }
+                });
+            } catch (error) {
+                console.warn("[MediaHandler] StreetViewService error:", error);
+                resolve(null);
+            }
+        });
+    }
+
     return {
-        fetchGooglePhotos
+        fetchGooglePhotos,
+        getSmartPhoto,
+        getStreetViewStaticUrl,
+        verifyStreetView
     };
 })();

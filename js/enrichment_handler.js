@@ -6,6 +6,30 @@ const ENRICHMENT_API_URL = 'https://ijmgvsztgljribnogtsx.supabase.co/functions/v
 
 window.Enrichment = {
 
+    // Função auxiliar para retry com exponential backoff
+    async _fetchWithBackoff(url, options = {}, retries = 3, backoff = 1000) {
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                if (response.status === 429 && retries > 0) {
+                    const wait = backoff * (4 - retries); // 1000, 2000, 3000...
+                    console.warn(`[Backoff] Status 429 (Rate Limit). Retrying in ${wait}ms...`);
+                    await new Promise(res => setTimeout(res, wait));
+                    return this._fetchWithBackoff(url, options, retries - 1, backoff);
+                }
+                throw new Error(`API Error: ${response.status}`);
+            }
+            return response;
+        } catch (err) {
+            if (retries > 0) {
+                console.warn(`[Backoff] Fetch failed. Retries left: ${retries}. Error: ${err.message}`);
+                await new Promise(res => setTimeout(res, backoff));
+                return this._fetchWithBackoff(url, options, retries - 1, backoff);
+            }
+            throw err;
+        }
+    },
+
     // Verifica se já temos dados em cache (menos de 30 dias)
     _isCacheValid(dados_enrichment, data_enriquecimento) {
         if (!dados_enrichment || !data_enriquecimento) return false;
@@ -317,7 +341,7 @@ window.Enrichment = {
         // A Edge Function espera o parâmetro 'document' e converte internamente
         const url = `${ENRICHMENT_API_URL}/persons?document=${cpf}`;
 
-        const response = await fetch(url, {
+        const response = await this._fetchWithBackoff(url, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -344,7 +368,7 @@ window.Enrichment = {
         // A Edge Function espera o parâmetro 'document' e converte internamente
         const url = `${ENRICHMENT_API_URL}/companies?document=${cnpj}`;
 
-        const response = await fetch(url, {
+        const response = await this._fetchWithBackoff(url, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json'
@@ -619,7 +643,7 @@ window.Enrichment = {
         const url = `https://publica.cnpj.ws/cnpj/${cleanCNPJ}`;
 
         try {
-            const response = await fetch(url);
+            const response = await this._fetchWithBackoff(url, {}, 2, 2000);
 
             if (response.status === 429) {
                 throw new Error('Muitas requisições (Limite: 3/min). Aguarde um pouco.');
@@ -634,6 +658,58 @@ window.Enrichment = {
         } catch (e) {
             console.error('Erro fetching public CNPJ:', e);
             throw e;
+        }
+    },
+
+    // Requirement 4: Automated building age search via CNPJ
+    async enrichBuildingAge(loteInscricao, cnpj) {
+        if (!cnpj) {
+            window.Toast.warning('Informe o CNPJ do edifício primeiro.');
+            return;
+        }
+
+        window.Loading.show('Buscando Idade do Prédio...', 'Consultando base da Receita Federal...');
+        
+        try {
+            const data = await this.fetchPublicCNPJ(cnpj);
+            
+            // A API publica.cnpj.ws retorna data_inicio_atividade
+            const openingDateStr = data.estabelecimento.data_inicio_atividade;
+            if (!openingDateStr) {
+                throw new Error('Data de abertura não encontrada para este CNPJ.');
+            }
+
+            const openingYear = new Date(openingDateStr).getFullYear();
+            
+            // Atualizar no Banco de Dados
+            const { error } = await window.supabaseApp
+                .from('lotes')
+                .update({ 
+                    build_year: openingYear,
+                    cnpj_edificio: cnpj.replace(/\D/g, '')
+                })
+                .eq('inscricao', loteInscricao);
+
+            if (error) throw error;
+
+            // Sync local
+            const lote = window.allLotes.find(l => l.inscricao === loteInscricao);
+            if (lote) {
+                lote.build_year = openingYear;
+                lote.cnpj_edificio = cnpj.replace(/\D/g, '');
+            }
+
+            window.Toast.success(`Prédio identificado! Aberto em ${openingYear}. Dados salvos.`);
+            
+            // Se o editor estiver aberto, atualizar o campo visualmente
+            const yearInput = document.getElementById('edit-build-year');
+            if (yearInput) yearInput.value = openingYear;
+
+        } catch (e) {
+            console.error('Erro ao buscar idade via CNPJ:', e);
+            window.Toast.error('Falha na busca: ' + e.message);
+        } finally {
+            window.Loading.hide();
         }
     },
 

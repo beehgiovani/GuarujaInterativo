@@ -1,0 +1,392 @@
+/* 
+ * PREMIUM_GLASSMORPHISM.CSS
+ * Implementação oficial do Glassmorphism 2026
+ * Conforme MANIFESTOS_OFICIAIS.md - Protocolo V6.1
+ */
+
+:root {
+    /* Glassmorphism Colors */
+    --glass-primary: rgba(30, 41, 59, 0.85);
+    --glass-secondary: rgba(15, 23, 42, 0.7);
+    --glass-accent: rgba(59, 130, 246, 0.15);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, #3b82f6, #2563eb);
+    --gradient-accent: linear-gradient(to right, #3b82f6, #60a5fa);
+    
+    /* Shadows (Soft Premium) */
+    --shadow-soft: 0 8px 16px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 15px 30px rgba(0, 0, 0, 0.2);
+    --shadow-heavy: 0 25px 50px rgba(0, 0, 0, 0.3);
+    --shadow-premium: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    
+    /* Borders */
+    --border-glass: 1px solid rgba(255, 255, 255, 0.1);
+    --border-radius-sm: 12px;
+    --border-radius-md: 16px;
+    --border-radius-lg: 24px;
+    --border-radius-xl: 32px;
+    --border-radius-2xl: 40px;
+    
+    /* Backdrop Filter (Glassmorphism standard) */
+    --backdrop-blur-light: 8px;
+    --backdrop-blur-medium: 12px;
+    --backdrop-blur-heavy: 20px;
+}
+
+/* ========================================
+   GLASSMORPHISM UTILITIES
+   ======================================== */
+
+.glass-container {
+    background: var(--glass-primary);
+    -webkit-backdrop-filter: blur(var(--backdrop-blur-heavy));
+    backdrop-filter: blur(var(--backdrop-blur-heavy));
+    border: var(--border-glass);
+    border-radius: var(--border-radius-xl);
+    box-shadow: var(--shadow-premium);
+}
+
+.glass-card {
+    background: var(--glass-secondary);
+    -webkit-backdrop-filter: blur(var(--backdrop-blur-medium));
+    backdrop-filter: blur(var(--backdrop-blur-medium));
+    border: var(--border-glass);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-medium);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-heavy);
+    border-color: rgba(59, 130, 246, 0.3);
+    background: var(--glass-primary);
+}
+
+.glass-input {
+    background: rgba(15, 23, 42, 0.6);
+    border: var(--border-glass);
+    border-radius: var(--border-radius-md);
+    -webkit-backdrop-filter: blur(var(--backdrop-blur-light));
+    backdrop-filter: blur(var(--backdrop-blur-light));
+    color: #fff;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-input:focus {
+    border-color: #3b82f6;
+    background: rgba(15, 23, 42, 0.8);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+    outline: none;
+}
+
+.glass-button {
+    background: var(--gradient-primary);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-md);
+    padding: 16px 32px;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.glass-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px -5px rgba(59, 130, 246, 0.6);
+    filter: brightness(1.1);
+}
+
+.glass-button:active {
+    transform: scale(0.98);
+}
+
+/* ========================================
+   SCROLLBAR MODERNO (Cross-Browser)
+   Conforme CSS 2026 Standard
+   ======================================== */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Standard property para Firefox e Chrome 121+ */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* ========================================
+   ANIMAÇÕES PREMIUM
+   ======================================== */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-40px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(40px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 20px rgba(59, 130, 246, 0);
+    }
+}
+
+/* ========================================
+   EASING CURVES (Cubic Bezier)
+   ======================================== */
+
+.ease-entrance {
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ease-smooth {
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ease-bounce {
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ========================================
+   TEXT UTILITIES (Line-Clamp)
+   Conforme CSS 2026 Standard
+   ======================================== */
+
+.line-clamp-1 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    overflow: hidden;
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+}
+
+/* ========================================
+   TYPOGRAPHY PREMIUM
+   ======================================== */
+
+.font-outfit {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+}
+
+.font-outfit-heavy {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 900;
+    letter-spacing: -2px;
+}
+
+.font-inter {
+    font-family: 'Inter', sans-serif;
+}
+
+.text-gradient {
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ========================================
+   DEPTH LAYERS (Z-Index Management)
+   ======================================== */
+
+.depth-surface {
+    position: relative;
+    z-index: 1;
+}
+
+.depth-overlay {
+    position: relative;
+    z-index: 10;
+}
+
+.depth-modal {
+    position: relative;
+    z-index: 40;
+}
+
+.depth-tooltip {
+    position: relative;
+    z-index: 50;
+}
+
+/* ========================================
+   MICRO-INTERACTIONS
+   ======================================== */
+
+.hover-lift {
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-heavy);
+}
+
+.hover-glow {
+    transition: all 0.3s;
+}
+
+.hover-glow:hover {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+.focus-ring {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    border-radius: var(--border-radius-md);
+}
+
+/* ========================================
+   RESPONSIVE UTILITIES
+   ======================================== */
+
+@media (max-width: 768px) {
+    :root {
+        --border-radius-2xl: 24px;
+        --border-radius-xl: 20px;
+    }
+    
+    .glass-button {
+        padding: 14px 24px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --border-radius-2xl: 16px;
+        --border-radius-xl: 16px;
+        --border-radius-lg: 12px;
+    }
+}
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ========================================
+   PRINT STYLES
+   ======================================== */
+
+@media print {
+    .glass-container,
+    .glass-card,
+    .glass-button {
+        background: white;
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+}

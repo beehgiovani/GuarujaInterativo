@@ -1,8 +1,7 @@
-// Guarujá geomap - main app (app.js)
-// Entry point for the application.
-// Handles initialization, authentication, and module coordination.
+// Guarujá GeoMap - Ponto de Entrada Principal (app.js)
+// Aqui é onde tudo começa: autenticação, início dos mapas e coordenação dos módulos.
 
-// DOM Elements
+// Pegando os elementos do DOM pra usar depois
 const searchInput = document.getElementById('searchInput');
 const searchResults = document.getElementById('searchResults');
 const editorPanel = document.getElementById('editorPanel');
@@ -12,30 +11,29 @@ const totalEditedEl = document.getElementById('totalEdited');
 const loginOverlay = document.getElementById('loginOverlay');
 const loginUser = document.getElementById('loginUser');
 const loginPass = document.getElementById('loginPass');
-// btnLogin and others already defined via Auth handler or IDs
 
-// Global State
+// Estado global da aplicação (Single Source of Truth)
 window.map = null;
 window.allLotes = [];
 window.editedLotes = {};
 
-// Initialization
-
+/**
+ * Função de Inicialização principal
+ * Roda logo que o mapa ou a autenticação estão prontos.
+ */
 async function init() {
-    if (window.map) return; // Prevent double init
+    if (window.map) return; // Se o mapa já existir, não faz nada (evita duplicar)
     
-    console.log("🚀 Starting Guarujá GeoMap initialization...");
+    console.log("🚀 Iniciando o motor do Guarujá GeoMap...");
     Loading.show('Carregando Mapa...', 'Iniciando módulos');
 
-    // 1. Initialize Map
+    // 0. Liga a interface primeiro (Menu lateral, Breadcrumbs, etc)
+    if (window.UIManager) window.UIManager.init();
+
+    // 1. Carrega o mapa do Google
     window.initMap();
 
-    // 2. Initialize Module References
-    window.initMapHandlerRefs({
-        map: window.map,
-        allLotes: window.allLotes,
-        totalLotesEl: totalLotesEl
-    });
+    // 2. Referências do mapa são lidas do 'window' global agora na nova arquitetura.
 
     window.initEditorHandlerRefs({
         supabaseApp: window.supabaseApp,
@@ -45,52 +43,43 @@ async function init() {
         Toast: Toast
     });
 
-    // Initialize CRM
-    if (window.initCRM) {
-        window.initCRM();
-    }
+    // Inicia o CRM se ele estiver disponível
+    if (window.initCRM) window.initCRM();
 
-    // 3. Setup Listeners
+    // 3. Ativa os ouvintes de eventos (clicks, buscas, filtros)
     window.setupSearchAndFilters();
     setupAppListeners();
     setupPWAOfflineListeners();
 
-    // 4. Load User Private Edits (Curation Rule)
+    // 4. Inicia o gestor de PWA (Instalação no celular/desktop)
+    if (window.PWAHandler) window.PWAHandler.init();
+
+    // 5. Carrega as edições privadas que eu fiz e estão pendentes
     if (window.loadUserPendingEdits) {
         await window.loadUserPendingEdits();
     }
 
-    // 5. Load Initial Data (Already handled in sync mode inside map_handler.js via window.initMap)
-    // We just need to make sure UI is aware of completion if needed.
-    // await loadInitialData(); 
-
+    // Liga módulos extras se eles existirem
     if (window.RenovationRadar) window.RenovationRadar.init();
     if (window.PushHandler) window.PushHandler.init();
     
-    // Check for global alerts from Admin
-    // checkGlobalAlert();
-    // Start Onboarding (Moved to map_handler.js to wait for data load)
-    // if (window.Onboarding) {
-    //     setTimeout(() => window.Onboarding.checkAndStart(), 2000);
-    // }
-
+    // Tira o loading da tela
     Loading.hide();
     
-    // Safety check: hide login if authenticated
+    // Se eu já estiver logado, esconde a tela de login na hora
     const loginOverlay = document.getElementById('loginOverlay');
     if (loginOverlay) loginOverlay.style.display = 'none';
 
-    Toast.success('Bem-vindo ao Guarujá GeoMap!');
+    Toast.success('Tudo pronto! Guarujá GeoMap carregado.');
 
-    // Recomendação de dispositivo para fluidez (UX)
+    // Se o cara tiver no celular, dou um toque que no PC é melhor
     if (window.innerWidth <= 768) {
         showMobileExperienceWarning();
     }
 }
 
 /**
- * Exibe um alerta centralizado sugerindo o uso de Tablet ou Computador 
- * para uma melhor performance em dispositivos móveis.
+ * Alerta de experiência mobile
  */
 function showMobileExperienceWarning() {
     if (sessionStorage.getItem('guarugeo_mobile_warned')) return;
@@ -114,29 +103,29 @@ function showMobileExperienceWarning() {
     `;
     document.body.appendChild(overlay);
 
-    // Fade in
     setTimeout(() => {
         overlay.classList.add('active');
         sessionStorage.setItem('guarugeo_mobile_warned', 'true');
     }, 1500);
 }
 
-
+/**
+ * Carregamento inicial de dados
+ */
 async function loadInitialData() {
-    Loading.show('Carregando Dados...', 'Baixando lotes do servidor');
+    Loading.show('Carregando Dados...', 'Sincronizando com o servidor');
 
     try {
-        // Try Cache first
+        // Tenta o cache pra não precisar baixar tudo de novo
         const cache = await window.loadLotesFromCache();
         if (cache && cache.data && (Date.now() - cache.timestamp < 3600000)) {
             window.allLotes = cache.data;
-            console.log("📦 Data loaded from Cache");
+            console.log("📦 Dados vindos do cache local");
         } else {
-            console.log("🌐 Incremental loading enabled: Skipping initial mass fetch.");
+            console.log("🌐 Carregamento sob demanda ativado.");
             window.allLotes = [];
         }
 
-        // Process and Render (If cache exists)
         if (window.allLotes.length > 0) {
             window.processDataHierarchy();
             window.renderHierarchy();
@@ -144,35 +133,27 @@ async function loadInitialData() {
         }
 
     } catch (e) {
-        console.error("Data load failed:", e);
+        console.error("Falha ao carregar dados:", e);
     }
 }
 
-// Ui handlers & listeners
-
+/**
+ * Listeners globais do App
+ */
 function setupAppListeners() {
-    // Sidebar Tabs (Redirecionado para o Hub 2.0)
+    // Troca de abas no menu lateral
     window.switchSidebarTab = function (tab) {
         if (tab === 'map') {
             if (window.HubHandler) window.HubHandler.closeAllAppModals();
             return;
         }
 
-        // Tenta abrir via Hub
-        if (window.HubHandler) {
-            window.HubHandler.launchApp(tab);
-        }
-
-        if (tab === 'crm') {
-            window.loadLeads?.(); // Safety optional chain
-        }
-        
-        if (tab === 'wallet') {
-            window.Monetization?.loadWallet();
-        }
+        if (window.HubHandler) window.HubHandler.launchApp(tab);
+        if (tab === 'crm') window.loadLeads?.();
+        if (tab === 'wallet') window.Monetization?.loadWallet();
     };
 
-    // Logout
+    // Logout do usuário
     window.logout = async function () {
         if (confirm('Deseja realmente sair?')) {
             if (window.Auth && window.Auth.logout) {
@@ -184,193 +165,18 @@ function setupAppListeners() {
         }
     };
 
-    // --- MOBILE: SIDEBAR TOGGLE ---
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const sidebar = document.getElementById('sidebar');
+    // Fechar menu mobile se clicar no fundo
     const backdrop = document.getElementById('sidebarBackdrop');
-
-    // Global helper to close sidebar
-    window.closeMobileSidebar = () => {
-        document.body.classList.remove('sidebar-mobile-active');
-        if (sidebar) sidebar.classList.remove('active');
-        if (backdrop) backdrop.classList.remove('active');
-    };
-
-    window.openMobileSidebar = () => {
-        document.body.classList.add('sidebar-mobile-active');
-        if (sidebar) sidebar.classList.add('active');
-        if (backdrop) backdrop.classList.add('active');
-    };
-
-    if (sidebarToggle) {
-        sidebarToggle.onclick = () => {
-            // If active, close it. If inactive, open it.
-            if (document.body.classList.contains('sidebar-mobile-active')) {
-                window.closeMobileSidebar();
-            } else {
-                window.openMobileSidebar();
-            }
-        };
-    }
-
-    // CLICK OUTSIDE TO CLOSE (Backdrop)
     if (backdrop) {
         backdrop.onclick = () => {
-            window.closeMobileSidebar();
+            if (window.closeMobileSidebar) window.closeMobileSidebar();
         };
     }
-
-    // --- PWA INSTALLATION LOGIC ---
-    window.PWAHandler = {
-        deferredPrompt: null,
-        storageKey: 'guarugeo_pwa_prompt',
-        
-        init: function() {
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-            if (isStandalone) return;
-
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                this.deferredPrompt = e;
-                this.checkAndShow();
-            });
-
-            window.addEventListener('appinstalled', () => {
-                this.deferredPrompt = null;
-                this.hide();
-                localStorage.setItem(this.storageKey, 'installed');
-            });
-            
-            // For iOS we can check and show manual instructions if needed.
-            // But let's stick to the prompt structure.
-            const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            if (isIos && !isStandalone) {
-                this.checkAndShow();
-            }
-        },
-
-        checkAndShow: function() {
-            const choice = localStorage.getItem(this.storageKey);
-            if (choice === 'never' || choice === 'installed') return;
-            
-            if (choice === 'later') {
-                const lastTime = localStorage.getItem(this.storageKey + '_time');
-                if (lastTime && Date.now() - parseInt(lastTime) < 24 * 60 * 60 * 1000) return;
-            }
-
-            // Show after 3s delay
-            setTimeout(() => this.show(), 3000);
-        },
-
-        show: function() {
-            if (document.getElementById('pwa-custom-prompt')) return;
-
-            const promptDiv = document.createElement('div');
-            promptDiv.id = 'pwa-custom-prompt';
-            promptDiv.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: white;
-                padding: 20px;
-                border-radius: 12px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-                z-index: 99999;
-                max-width: 330px;
-                border: 1px solid #e2e8f0;
-                font-family: 'Inter', sans-serif;
-                transform: translateY(150%);
-                opacity: 0;
-                transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            `;
-            promptDiv.innerHTML = `
-                <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px;">
-                    <div style="background: #2563eb; color: white; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 20px; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);">
-                        <i class="fas fa-cloud-download-alt"></i>
-                    </div>
-                    <div>
-                        <div style="font-weight: 800; color: #1e293b; font-size: 15px; margin-bottom: 4px;">Instalar Aplicativo</div>
-                        <div style="font-size: 12.5px; color: #64748b; line-height: 1.4;">Gostaria de baixar a versão para instalação e ter acesso rápido direto do seu celular ou computador?</div>
-                    </div>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <button id="pwa-btn-install" style="background: #2563eb; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">
-                        <i class="fas fa-download" style="margin-right: 6px;"></i> Baixar Agora
-                    </button>
-                    <div style="display: flex; gap: 8px;">
-                        <button id="pwa-btn-later" style="flex: 1; background: #f8fafc; color: #475569; border: 1px solid #cbd5e1; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">Lembrar Depois</button>
-                        <button id="pwa-btn-never" style="flex: 1; background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">Nunca</button>
-                    </div>
-                </div>
-            `;
-
-            document.body.appendChild(promptDiv);
-
-            // Animate in
-            requestAnimationFrame(() => {
-                setTimeout(() => {
-                    promptDiv.style.transform = 'translateY(0)';
-                    promptDiv.style.opacity = '1';
-                }, 100);
-            });
-
-            document.getElementById('pwa-btn-install').onclick = () => this.install();
-            document.getElementById('pwa-btn-later').onclick = () => this.dismiss('later');
-            document.getElementById('pwa-btn-never').onclick = () => this.dismiss('never');
-        },
-
-        hide: function() {
-            const promptDiv = document.getElementById('pwa-custom-prompt');
-            if (promptDiv) {
-                promptDiv.style.transform = 'translateY(150%)';
-                promptDiv.style.opacity = '0';
-                setTimeout(() => promptDiv.remove(), 500);
-            }
-        },
-
-        dismiss: function(type) {
-            this.hide();
-            localStorage.setItem(this.storageKey, type);
-            if (type === 'later') {
-                localStorage.setItem(this.storageKey + '_time', Date.now().toString());
-            }
-        },
-
-        install: async function() {
-            if (!this.deferredPrompt) {
-                const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                if(isIos) {
-                    if(window.Toast) window.Toast.info("No iPhone: Toque no ícone Compartilhar e depois 'Adicionar à Tela de Início'");
-                    else alert("No iPhone: Toque no ícone Compartilhar e depois 'Adicionar à Tela de Início'");
-                } else {
-                    if(window.Toast) window.Toast.warning("A instalação automática não está disponível no momento. Tente opções no menu do navegador.");
-                    else alert("A instalação automática não está disponível no momento.");
-                }
-                this.hide();
-                return;
-            }
-            this.deferredPrompt.prompt();
-            const { outcome } = await this.deferredPrompt.userChoice;
-            console.log(`PWA install outcome: ${outcome}`);
-            this.deferredPrompt = null;
-            this.hide();
-        }
-    };
-
-    window.PWAHandler.init();
 }
 
-// Make init global so Auth can call it
-window.init = init;
-
-// Start Auth if available
-document.addEventListener('DOMContentLoaded', () => {
-    if (window.Auth) {
-        window.Auth.init();
-    }
-});
-
-// Data fetching helper
+/**
+ * Busca detalhes de um lote específico (Inscrição)
+ */
 window.fetchLotDetails = async function (inscricao) {
     try {
         const { data, error } = await window.supabaseApp
@@ -379,117 +185,116 @@ window.fetchLotDetails = async function (inscricao) {
             .eq('inscricao', inscricao)
             .single();
 
-        if (error) {
-            console.error("Error fetching lot details:", error);
-            return null;
-        }
+        if (error) throw error;
 
-        // Transform if needed (similar to loadInitialData)
-        // Ensure metadata structure if app relies on it, or just use raw data
-        // Map handler expects .metadata for some things, but search handler now checks both.
-        // Let's add basic metadata wrapper for compatibility
         if (data) {
+            // Normaliza os dados pra bater com o que o mapa espera
             data.metadata = {
                 zona: data.zona,
                 setor: data.setor,
                 quadra: data.quadra,
                 lote: data.lote_geo,
                 bairro: data.bairro,
-                endereco: data.endereco // if exists
+                endereco: data.endereco
             };
+            data.bounds_utm = { minx: data.minx, miny: data.miny, maxx: data.maxx, maxy: data.maxy };
 
-            // Vital for processDataHierarchy
-            data.bounds_utm = {
-                minx: data.minx,
-                miny: data.miny,
-                maxx: data.maxx,
-                maxy: data.maxy
-            };
-
-            // Calculate coords if missing
             if (!data._lat && data.minx) {
-                const cx = (data.minx + data.maxx) / 2;
-                const cy = (data.miny + data.maxy) / 2;
-                const ll = window.utmToLatLon(cx, cy);
+                const ll = window.utmToLatLon((data.minx + data.maxx) / 2, (data.miny + data.maxy) / 2);
                 data._lat = ll.lat;
                 data._lng = ll.lng;
             }
         }
-
         return data;
     } catch (e) {
-        console.error("Exception fetching lot details:", e);
+        console.error("Erro ao buscar detalhes do lote:", e);
         return null;
     }
 };
 
-// Global notifications (admin controlled)
-async function checkGlobalAlert() {
-    try {
-        const { data, error } = await window.supabaseApp
-            .from('app_settings')
-            .select('value')
-            .eq('key', 'global_alert')
-            .maybeSingle();
-
-        if (error) throw error;
-        if (!data || !data.value) return;
-
-        const text = data.value.trim();
-        if (!text) return;
-
-        // Create alert bar if not exists
-        let bar = document.getElementById('globalAlertBar');
-        if (!bar) {
-            bar = document.createElement('div');
-            bar.id = 'globalAlertBar';
-            bar.className = 'global-alert-bar';
-            document.body.appendChild(bar);
-        }
-
-        bar.innerHTML = `
-            <i class="fas fa-bullhorn"></i>
-            <div class="marquee-container">
-                <div class="marquee-content">${text}</div>
-            </div>
-        `;
-        bar.classList.add('active');
-
-    } catch (e) {
-        console.warn("Global alert skip:", e);
-    }
-}
-
-console.log("✅ Main App (app.js) initialized");
-
-// Pwa offline ux listener
+/**
+ * Notificações Offline (PWA)
+ */
 function setupPWAOfflineListeners() {
-    const updateOnlineStatus = () => {
+    const updateStatus = () => {
         const isOnline = navigator.onLine;
-        let pwaBanner = document.getElementById('pwa-offline-banner');
+        let banner = document.getElementById('pwa-offline-banner');
         
         if (!isOnline) {
-            if (!pwaBanner) {
-                pwaBanner = document.createElement('div');
-                pwaBanner.id = 'pwa-offline-banner';
-                pwaBanner.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; background: #ef4444; color: white; text-align: center; padding: 6px; font-size: 11px; font-weight: 800; z-index: 999999; box-shadow: 0 2px 10px rgba(239,68,68,0.4); text-transform: uppercase; letter-spacing: 1px; transition: top 0.3s ease;';
-                pwaBanner.innerHTML = '<i class="fas fa-wifi-slash" style="margin-right: 5px;"></i> Modo Bunkers Ativo: Gravando no dispositivo...';
-                document.body.appendChild(pwaBanner);
+            if (!banner) {
+                banner = document.createElement('div');
+                banner.id = 'pwa-offline-banner';
+                banner.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; background: #ef4444; color: white; text-align: center; padding: 6px; font-size: 11px; font-weight: 800; z-index: 999999;';
+                banner.innerHTML = '🚫 Você está offline. O app vai salvar tudo localmente.';
+                document.body.appendChild(banner);
             }
-            window.Toast.warning("Aviso de PWA Offline", "Modo Avião ativado. Salvando localmente.");
-        } else {
-            if (pwaBanner) {
-                pwaBanner.style.background = '#10b981';
-                pwaBanner.innerHTML = '<i class="fas fa-wifi" style="margin-right: 5px;"></i> Conexão restabelecida. Sincronizando com a Nuvem...';
-                setTimeout(() => pwaBanner.remove(), 2500);
-            }
+        } else if (banner) {
+            banner.style.background = '#10b981';
+            banner.innerHTML = '✅ Conexão recuperada! Sincronizando...';
+            setTimeout(() => banner.remove(), 2500);
         }
     };
-
-    window.addEventListener('online', updateOnlineStatus);
-    window.addEventListener('offline', updateOnlineStatus);
-    
-    if (!navigator.onLine) {
-        setTimeout(updateOnlineStatus, 1500); 
-    }
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
 }
+
+// 🔥 GUARDIÃO ASSÍNCRONO DE AUTENTICAÇÃO E SESSÃO (SENTINELA)
+// Fica monitorando falhas globais. Se a sessão corromper, houver dupla instância, 
+// ou o token JWT falhar, ele intercepta na mesma hora e levanta o muro do Login.
+window.addEventListener('unhandledrejection', async (event) => {
+    const errorMsg = event.reason ? (event.reason.message || event.reason.toString()) : '';
+    
+    // Palavras-chave que indicam que a sessão ou permissão de rede (login) foi pro espaço
+    const isAuthError = 
+        errorMsg.includes('AuthApiError') || 
+        errorMsg.includes('Refresh Token') || 
+        errorMsg.includes('JWT') ||
+        errorMsg.includes('401') ||
+        errorMsg.includes('400') ||
+        errorMsg.includes('ERR_NAME_NOT_RESOLVED') || // Intercepta falhas criticas de rede em scripts vitais
+        errorMsg.includes('not authenticated');
+
+    if (isAuthError) {
+        console.error("🛡️ Sentinela detectou quebra de segurança/rede:", errorMsg);
+        
+        // Derruba a tela preta de loading que esconde a UI
+        const splashScreen = document.getElementById('global-loading-overlay');
+        if (splashScreen) splashScreen.style.display = 'none';
+
+        // Bloqueia a tela com o login instantaneamente
+        const loginOverlay = document.getElementById('loginOverlay');
+        if (loginOverlay) {
+            loginOverlay.style.display = 'flex';
+        }
+        
+        // Aciona o logout para limpar tokens corrompidos silenciosamente
+        if (window.Auth && typeof window.Auth.logout === 'function') {
+            await window.Auth.logout();
+        } else {
+            localStorage.removeItem('guaruja_auth');
+            window.location.reload();
+        }
+    }
+});
+
+// 🔥 GATILHO OFICIAL DE INICIALIZAÇÃO
+// Assim que o DOM carregar, a primeira barreira a subir é a da Autenticação.
+// O mapa só será carregado DEPOIS do Auth liberar.
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.Auth && typeof window.Auth.init === 'function') {
+        console.log("🔒 Booting Authentication Engine...");
+        
+        // Se o usuário já constar como não autenticado localmente, derrubamos o loading
+        // para garantir que a interface de login apareça limpa
+        if (!localStorage.getItem('guaruja_auth')) {
+            const splashScreen = document.getElementById('global-loading-overlay');
+            if (splashScreen) splashScreen.style.display = 'none';
+        }
+
+        window.Auth.init();
+    } else {
+        console.error("❌ Auth Handler not found! App cannot start safely.");
+    }
+});
+
+console.log("✅ Main App (app.js) pronto e modularizado!");

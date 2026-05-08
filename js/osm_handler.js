@@ -35,7 +35,7 @@ window.OSMHandler = (function() {
         `;
 
         const query = `
-            [out:json][timeout:20];
+            [out:json][timeout:10];
             (
               node["amenity"~"school|pharmacy|bakery|restaurant|cafe"](around:400,${lat},${lng});
               node["shop"~"supermarket|convenience|bakery"](around:400,${lat},${lng});
@@ -46,7 +46,7 @@ window.OSMHandler = (function() {
         for (const mirrorUrl of MIRRORS) {
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s instead of 25s
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
 
                 const response = await fetch(mirrorUrl, {
                     method: 'POST',

@@ -1,445 +1,59 @@
-// Map handler - map_handler.js
-// Handles map initialization, hierarchy processing, and rendering
+// Gestor do Mapa (map_handler.js)
+// Aqui eu cuido de tudo que envolve o Google Maps: níveis de zoom, renderização de lotes e navegação.
 
-// Variables for internal map state
+// Camada onde ficam os marcadores
 let markersLayer = null;
 
-// EXPORT state to window for cross-module access
+// Variáveis de estado global (pro resto do app conseguir ler)
 window.cityData = {};
 window.currentLevel = 0;
 window.currentZone = null;
 window.currentSector = null;
-window.georefs = []; // Global store for POIs (Praias, Comércios, etc)
-window.allLotesSet = new Set(); // Cache para checagem rápida de duplicatas
+window.georefs = []; // Pontos de interesse (praias, comércio, etc)
+window.allLotesSet = new Set(); // Pra checar duplicatas rapidinho
 
-// --- FEATURE RESTORATION HELPER FUNCTIONS ---
+// As ferramentas de mapa (Régua, 3D, Legenda, Heatmap) agora estão no MapControls.js
+// O tratamento de tempo real agora está no RealtimeHandler.js
 
-
-
-window.initRuler = function() {
-    if (!window.map) return;
-    let isRulerActive = false;
-    let rulerPolyline = null;
-    let rulerPoints = [];
-    let rulerLabels = [];
-    const rulerBtn = document.createElement('div');
-    rulerBtn.className = 'landscape-control ruler-btn';
-    rulerBtn.title = 'Medir Distância (Régua)';
-    rulerBtn.style.cssText = `
-        margin: 10px; background: white; border-radius: 8px; width: 44px; height: 44px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.15); cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        border: 1px solid #e2e8f0; font-size: 18px; color: #334155;
-    `;
-    rulerBtn.innerHTML = '<i class="fas fa-ruler-combined"></i>';
-    window.map.controls[google.maps.ControlPosition.RIGHT_TOP].push(rulerBtn);
-
-    const clearRuler = () => {
-        if (rulerPolyline) rulerPolyline.setMap(null);
-        rulerPoints = [];
-        rulerLabels.forEach(l => l.setMap(null));
-        rulerLabels = [];
-        rulerPolyline = new google.maps.Polyline({path: [], geodesic: true, strokeColor: '#ef4444', strokeWeight: 3, map: window.map});
-    };
-
-    rulerBtn.onclick = () => {
-        isRulerActive = !isRulerActive;
-        rulerBtn.style.backgroundColor = isRulerActive ? '#eff6ff' : 'white';
-        if (isRulerActive) {
-            window.map.setOptions({ draggableCursor: 'crosshair' });
-            clearRuler();
-            window.Toast.info("Modo de Medição Ativo.");
-        } else {
-            window.map.setOptions({ draggableCursor: null });
-            if (rulerPolyline) rulerPolyline.setMap(null);
-            rulerLabels.forEach(l => l.setMap(null));
-        }
-    };
-
-    window.map.addListener('click', (e) => {
-        if (!isRulerActive) return;
-        const point = e.latLng;
-        rulerPoints.push(point);
-        rulerPolyline.setPath(rulerPoints);
-        if (rulerPoints.length > 1) {
-            const totalDist = google.maps.geometry.spherical.computeLength(rulerPoints);
-            const label = new google.maps.InfoWindow({content: `<div style="color:#ef4444; font-weight:bold;">${totalDist.toFixed(1)}m</div>`, position: point});
-            label.open(window.map);
-            rulerLabels.push(label);
-        }
-    });
-};
-window.init3DToggle = function() {
-    if (!window.map) return;
-    
-    // Check if device is mobile for performance optimization
-    const isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    
-    // Controles de Ângulo (Tilt/3D Perspective)
-    const angleUp = document.createElement('div');
-    angleUp.className = 'landscape-control';
-    angleUp.title = 'Inclinar Mapa (Perspectiva 3D)';
-    angleUp.innerHTML = '<i class="fas fa-cube"></i>';
-    angleUp.style.cssText = `
-        margin: 10px; background: white; border-radius: 8px; width: 44px; height: 44px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.15); cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        border: 1px solid #e2e8f0; font-size: 18px; color: #334155;
-    `;
-    
-    const angleDown = angleUp.cloneNode(true);
-    angleDown.title = 'Visão de Topo (2D)';
-    angleDown.innerHTML = '<i class="fas fa-layer-group"></i>';
-    
-    angleUp.onclick = () => {
-        // On mobile, 45 is fine, but we can set a slightly lower tilt if we wanted 
-        // to save some rendering cost, though 45 is standard.
-        window.map.setTilt(45);
-        window.Toast.info(isMobile ? "3D Ativo" : "Perspectiva 45° Ativada.");
-        angleUp.style.color = '#2563eb';
-        angleDown.style.color = '#334155';
-        
-        if (isMobile) {
-            // Close mobile sidebar if open to give more space for 3D
-            window.closeMobileSidebar?.();
-        }
-    };
-
-    angleDown.onclick = () => {
-        window.map.setTilt(0);
-        window.Toast.info("Visão de Topo (2D)");
-        angleDown.style.color = '#2563eb';
-        angleUp.style.color = '#334155';
-    };
-
-    // Push to RIGHT_CENTER to avoid stack conflicts with TOP/BOTTOM controls
-    window.map.controls[google.maps.ControlPosition.RIGHT_CENTER].push(angleUp);
-    window.map.controls[google.maps.ControlPosition.RIGHT_CENTER].push(angleDown);
-};
-
-// --- LEGENDA GEOGRÁFICA INTERATIVA (ZONAS 0-6) ---
-window.initMapLegend = function() {
-    if (!window.map || !window.GUARA_ZONES) return;
-
-    const legendBtn = document.createElement('div');
-    legendBtn.className = 'landscape-control legend-toggle-btn';
-    legendBtn.title = 'Abrir Legenda de Zonas (0-6)';
-    legendBtn.style.cssText = `
-        margin: 10px; background: white; border-radius: 8px; width: 44px; height: 44px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.15); cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        border: 1px solid #e2e8f0; font-size: 18px; color: #334155;
-        transition: all 0.2s;
-    `;
-    legendBtn.innerHTML = '<i class="fas fa-map-marked-alt"></i>';
-    window.map.controls[google.maps.ControlPosition.LEFT_TOP].push(legendBtn);
-
-    const legendPanel = document.createElement('div');
-    legendPanel.className = 'zone-legend-flyout';
-    legendPanel.style.cssText = `
-        display: none; position: absolute; top: 120px; left: 14px;
-        background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px);
-        color: white; border-radius: 12px; padding: 20px; width: 260px;
-        box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
-        z-index: 10000; animation: fadeIn 0.25s ease-out;
-    `;
-    
-    let zonesHtml = '<div style="font-size: 11px; font-weight: 900; text-transform: uppercase; margin-bottom: 20px; color: #94a3b8; letter-spacing: 1.5px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">Identificação Geográfica</div>';
-    Object.entries(window.GUARA_ZONES).forEach(([id, zone]) => {
-        zonesHtml += `
-            <div style="display: flex; gap: 12px; margin-bottom: 15px; align-items: flex-start; transition: all 0.2s;">
-                <div style="width: 12px; height: 12px; border-radius: 3px; background: ${zone.color}; margin-top: 3px; flex-shrink: 0; box-shadow: 0 0 10px ${zone.color}60;"></div>
-                <div>
-                    <div style="font-size: 12px; font-weight: 800; color: white;">${zone.name}</div>
-                    <div style="font-size: 10px; color: #94a3b8; margin-top: 4px; line-height: 1.4; font-weight: 500;">${zone.neighborhoods}</div>
-                </div>
-            </div>`;
-    });
-    
-    legendPanel.innerHTML = zonesHtml;
-    document.getElementById('map').appendChild(legendPanel);
-
-    legendBtn.onclick = () => {
-        const isVisible = legendPanel.style.display === 'block';
-        legendPanel.style.display = isVisible ? 'none' : 'block';
-        legendBtn.style.color = isVisible ? '#334155' : '#2563eb';
-        legendBtn.style.backgroundColor = isVisible ? 'white' : '#eff6ff';
-        if (!isVisible) window.Toast.info("Legenda de Zonas Ativa");
-    };
-};
-
-window.initHeatmap = function() {
-    if (!window.map) return;
-    let heatmap = null;
-    let isActive = false;
-    
-    const heatmapBtn = document.createElement('div');
-    heatmapBtn.className = 'landscape-control heatmap-btn';
-    heatmapBtn.title = 'Mapa de Calor (Valor m²)';
-    heatmapBtn.style.cssText = `
-        margin: 10px; background: white; border-radius: 8px; width: 44px; height: 44px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.15); cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        border: 1px solid #e2e8f0; font-size: 18px; color: #334155;
-    `;
-    heatmapBtn.innerHTML = '<i class="fas fa-fire"></i>';
-    // Move to LEFT_CENTER to separate from administrative/tilt tools on the right
-    window.map.controls[google.maps.ControlPosition.LEFT_CENTER].push(heatmapBtn);
-
-    heatmapBtn.onclick = async () => {
-        isActive = !isActive;
-        heatmapBtn.style.backgroundColor = isActive ? '#fff7ed' : 'white';
-        heatmapBtn.style.color = isActive ? '#f97316' : '#334155';
-        
-        if (isActive) {
-            window.Toast.info("Gerando mapa de calor de mercado...");
-            try {
-                if (!heatmap) {
-                    await google.maps.importLibrary("visualization");
-                    const { data } = await window.supabaseApp.from('lotes').select('minx, miny, maxx, maxy, valor_m2').not('valor_m2', 'is', null).gt('valor_m2', 0);
-                    
-                    if (!data || data.length === 0) {
-                        window.Toast.warning("Dados de valor insuficiente para o mapa.");
-                        isActive = false;
-                        heatmapBtn.style.backgroundColor = 'white';
-                        heatmapBtn.style.color = '#334155';
-                        return;
-                    }
-
-                    const points = data.map(l => {
-                        const cx = (l.minx + l.maxx) / 2;
-                        const cy = (l.miny + l.maxy) / 2;
-                        const ll = window.utmToLatLon(cx, cy);
-                        return {
-                            location: new google.maps.LatLng(ll.lat, ll.lng),
-                            weight: parseFloat(l.valor_m2) / 100 // Normalize weight
-                        };
-                    });
-
-                    heatmap = new google.maps.visualization.HeatmapLayer({
-                        data: points,
-                        map: window.map,
-                        radius: 40,
-                        opacity: 0.8
-                    });
-                } else {
-                    heatmap.setMap(window.map);
-                }
-            } catch (err) {
-                console.error("Heatmap error:", err);
-                window.Toast.error("Erro ao carregar visualização.");
-            }
-        } else {
-            if (heatmap) heatmap.setMap(null);
-        }
-    };
-};
-
-// Hyper 3D Mode Desativado
-window.isHyper3DActive = false;
-window.enterHyper3D = () => console.warn("Hyper 3D Desativado");
-window.exitHyper3D = () => console.warn("Hyper 3D Desativado");
-
-// Mobile: gps & drawer logic
-
-// GPS Control moved to location_handler.js
-window.addGpsControl = function () {
-    if (!window.map) return;
-    
-    // Evitar duplicatas
-    if (document.getElementById('custom-gps-control')) return;
-
-    const controlDiv = document.createElement('div');
-    controlDiv.id = 'custom-gps-control';
-    controlDiv.style.cssText = 'background: white; padding: 8px; margin: 10px; border-radius: 4px; box-shadow: rgba(0, 0, 0, 0.3) 0px 1px 4px -1px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; transition: background 0.2s;';
-    controlDiv.title = 'Minha Localização';
-    
-    controlDiv.innerHTML = '<i class="fas fa-crosshairs" style="color: #666; font-size: 18px;"></i>';
-    
-    controlDiv.onmouseover = () => controlDiv.style.background = '#f3f4f6';
-    controlDiv.onmouseout = () => controlDiv.style.background = 'white';
-
-    controlDiv.addEventListener('click', () => {
-        if (navigator.geolocation) {
-            if (window.Toast) window.Toast.info("Buscando localização GPS...");
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const pos = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                    };
-                    window.map.setCenter(pos);
-                    window.map.setZoom(18);
-                    
-                    if (window.gpsMarker) {
-                        window.gpsMarker.setPosition(pos);
-                    } else {
-                        window.gpsMarker = new google.maps.Marker({
-                            position: pos,
-                            map: window.map,
-                            title: 'Sua Localização',
-                            icon: {
-                                path: google.maps.SymbolPath.CIRCLE,
-                                scale: 8,
-                                fillColor: '#4285F4',
-                                fillOpacity: 1,
-                                strokeColor: 'white',
-                                strokeWeight: 2
-                            },
-                        });
-                    }
-                },
-                (error) => {
-                    console.error("GPS Error:", error);
-                    window.Toast && window.Toast.warning("Não foi possível acessar a localização. Verifique as permissões do navegador.");
-                },
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-            );
-        } else {
-            window.Toast && window.Toast.error("Geolocalização não suportada pelo seu navegador.");
-        }
-    });
-
-    window.map.controls[google.maps.ControlPosition.TOP_RIGHT].push(controlDiv);
-};
-
-window.initMobileSidebar = function () {
-    const sidebar = document.getElementById('sidebar');
-    const backdrop = document.getElementById('sidebarBackdrop');
-
-    if (!sidebar) return;
-
-    // Mobile Drawer Peak/Expand logic
-    let touchStartY = 0;
-    sidebar.addEventListener('touchstart', (e) => {
-        touchStartY = e.touches[0].clientY;
-    }, { passive: true });
-
-    sidebar.addEventListener('touchend', (e) => {
-        const touchEndY = e.changedTouches[0].clientY;
-        const diff = touchStartY - touchEndY;
-
-        if (window.innerWidth <= 768) {
-            if (diff > 50) { // Swipe Up
-                sidebar.classList.add('active');
-                if (backdrop) backdrop.classList.add('active');
-            } else if (diff < -50) { // Swipe Down
-                sidebar.classList.remove('active');
-                if (backdrop) backdrop.classList.remove('active');
-            }
-        }
-    }, { passive: true });
-
-    // Backdrop click to close
-    if (backdrop) {
-        backdrop.onclick = () => {
-            sidebar.classList.remove('active');
-            backdrop.classList.remove('active');
-        };
-    }
-};
-window.initMapHandlerRefs = function (refs) {
-    // Shared state is accessed via window.allLotes, window.map, etc.
-};
-
-function handleRealtimeUpdate(payload) {
-    console.log("Realtime update:", payload);
-
-    if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-        const newRow = payload.new;
-        const updatedLote = {
-            ...newRow,
-            metadata: {
-                inscricao: newRow.inscricao,
-                zona: newRow.zona,
-                setor: newRow.setor,
-                lote: newRow.lote_geo,
-                quadra: newRow.quadra,
-                loteamento: newRow.loteamento,
-                bairro: newRow.bairro,
-                valor_m2: newRow.valor_m2 ? newRow.valor_m2.toString().replace('.', ',') : null
-            },
-            bounds_utm: {
-                minx: newRow.minx, miny: newRow.miny, maxx: newRow.maxx, maxy: newRow.maxy
-            },
-            unidades: []
-        };
-
-        const existingIndex = window.allLotes.findIndex(l => l.inscricao === updatedLote.inscricao);
-        if (existingIndex >= 0) {
-            window.allLotes[existingIndex] = updatedLote;
-        } else {
-            window.allLotes.push(updatedLote);
-        }
-
-        // Refresh hierarchy
-        processDataHierarchy();
-        renderHierarchy();
-        window.Toast.info(`Lote ${updatedLote.inscricao} atualizado em tempo real`);
-    } else if (payload.eventType === 'DELETE') {
-        const inscricao = payload.old.inscricao;
-        window.allLotes = window.allLotes.filter(l => l.inscricao !== inscricao);
-        processDataHierarchy();
-        window.renderHierarchy();
-        window.Toast.warning(`Lote ${inscricao} removido`);
-    }
-}
-
-// Main initialization
+// --- INICIALIZAÇÃO PRINCIPAL DO MAPA ---
 window.initMap = async function () {
     const totalLotesEl = document.getElementById('totalLotes');
     const mapBackBtn = document.getElementById('mapBackBtn');
 
-    // Show loading overlay
-    Loading.show('Inicializando Guarugeo...', 'Carregando inteligência imobiliária');
+    // Mostra o overlay de carregamento com uma mensagem amigável
+    Loading.show('Iniciando Guarugeo...', 'Carregando inteligência imobiliária');
     Loading.setProgress(10);
 
     try {
-        // 1. Carregar a API do Google Maps
+        // 1. Carrega a API do Google Maps (carregamento assíncrono)
         await window.loadGoogleMaps();
         window.Loading.setProgress(30);
 
-        // --- NUCLEAR SAFETY DELAY ---
-        // Algumas versões Beta do Google Maps (para 3D) podem reportar que estão prontas
-        // mas variáveis internas (como 'Ea') ainda não inicializaram.
+        // --- PAUSA PARA SEGURANÇA ---
+        // O Google Maps às vezes diz que tá pronto mas as variáveis internas ainda estão "acordando".
+        // Essa pausa de 500ms evita quebras bobas na inicialização.
         await new Promise(r => setTimeout(r, 500)); 
 
-        // 2. Inicializar o Mapa
+        // 2. Configurações básicas do Mapa (Centro no Guarujá)
         const mapDiv = document.getElementById('map');
-        if (!mapDiv) throw new Error("Container 'map' não encontrado no DOM");
-
-        window.PREMIUM_MAP_STYLE = [
-            { "featureType": "poi", "stylers": [{ "visibility": "off" }] },
-            { "featureType": "transit", "stylers": [{ "visibility": "off" }] },
-            { "featureType": "road", "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
-            { "featureType": "business", "stylers": [{ "visibility": "off" }] },
-            { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#a2daf2" }] },
-            { "featureType": "landscape", "elementType": "geometry", "stylers": [{ "color": "#fafafa" }] },
-            { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#ffffff" }] },
-            { "featureType": "road", "elementType": "labels.text.fill", "stylers": [{ "color": "#8a8a8a" }] },
-            { "featureType": "administrative", "elementType": "labels.text.fill", "stylers": [{ "color": "#444444" }] }
-        ];
+        if (!mapDiv) throw new Error("Não achei o container 'map' no HTML!");
 
         const mapOptions = {
             center: { lat: -23.9934, lng: -46.2567 },
             zoom: 13,
             minZoom: 12,
             mapTypeId: 'roadmap',
-            tilt: 45, // 3D perspective
+            tilt: 45, // Inclinação pra dar aquele efeito 3D
             heading: 0,
-            mapId: window.GoogleMapsConfig?.MAP_ID || 'DEMO_MAP_ID', // Requerido para Marcadores Avançados
+            mapId: window.GoogleMapsConfig?.MAP_ID || 'DEMO_MAP_ID', // Necessário pros marcadores novos
             disableDefaultUI: false,
             gestureHandling: 'greedy',
             streetViewControl: true,
             mapTypeControl: true
         };
 
-        window.map = new google.maps.Map(document.getElementById('map'), mapOptions);
-
-        // Resolve o erro de conflito: "A Map's styles property cannot be set when a mapId is present."
-        // Como o usuário quer o estilo padrão (claro) da imagem de referência, 
-        // removemos o suporte a estilos locais via código quando há um Map ID.
-        console.log("[MapHandler] Inicializado com Map ID:", mapOptions.mapId);
+        window.map = new google.maps.Map(mapDiv, mapOptions);
+        console.log("[MapHandler] Mapa inicializado com o ID:", mapOptions.mapId);
 
         // --- NATIVE CONTROL INTEGRATION ---
         
@@ -454,7 +68,7 @@ window.initMap = async function () {
             window.map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(gpsBtn);
         }
 
-        // 2.1 Traffic Layer Button
+        // Botão de Trânsito em tempo real
         const trafficLayer = new google.maps.TrafficLayer();
         let isTrafficOn = false;
         
@@ -463,12 +77,12 @@ window.initMap = async function () {
         trafficBtnWrapper.style.marginBottom = '10px';
         
         const trafficBtn = document.createElement('button');
-        trafficBtn.title = 'Mostrar Trânsito e Fluxo Comercial';
+        trafficBtn.title = 'Ver fluxo de trânsito';
         trafficBtn.style.cssText = `
             background: rgba(255,255,255,0.9); border: none; border-radius: 8px; width: 40px; height: 40px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; color: #475569;
             font-size: 16px; display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            transition: all 0.2s; backdrop-filter: blur(8px);
         `;
         trafficBtn.innerHTML = '<i class="fas fa-car-side"></i>';
         trafficBtnWrapper.appendChild(trafficBtn);
@@ -477,9 +91,9 @@ window.initMap = async function () {
              isTrafficOn = !isTrafficOn;
              if (isTrafficOn) {
                  trafficLayer.setMap(window.map);
-                 trafficBtn.style.color = '#ef4444'; // Red showing it's active
+                 trafficBtn.style.color = '#ef4444'; 
                  trafficBtn.style.background = '#fee2e2';
-                 if(window.Toast) window.Toast.info("Camada de Trânsito Ativada", "Analise os fluxos nas vias.");
+                 if(window.Toast) window.Toast.info("Camada de Trânsito Ativada");
              } else {
                  trafficLayer.setMap(null);
                  trafficBtn.style.color = '#475569';
@@ -526,7 +140,7 @@ window.initMap = async function () {
         };
 
         // --- MOBILE: SIDEBAR DRAWER LOGIC ---
-        window.initMobileSidebar();
+        // (A lógica mobile agora é gerida pelo layout_adapter.js)
 
         // Map Right Click for Creating Lots
         window.map.addListener('contextmenu', (e) => {
@@ -880,612 +494,41 @@ window.initMap = async function () {
         });
 
         if (insideLotes.length === 0) {
-            window.Toast.warning("Nenhum lote na área selecionada para exportar.");
+            window.Toast.warning("Nenhum lote na área selecionada.");
             return;
         }
 
-        window.Loading.show('Coletando Dados Completo', 'Buscando unidades filiadas no servidor...');
-        
-        // Extrair todas as inscrições de lotes da área para fazer um batch fetch
-        const lotInscricoes = insideLotes.map(l => l.inscricao);
-        
-        // Buscar todas as unidades pertencentes a estes lotes no banco (até 1000 por request para grandes áreas)
-        let allUnits = [];
-        try {
-            const { data, error } = await window.supabaseApp
-                .from('unidades')
-                .select('*')
-                .in('lote_inscricao', lotInscricoes);
-                
-            if (error) throw error;
-            if (data) allUnits = data;
-        } catch (e) {
-            console.error("Erro ao buscar unidades para o PDF:", e);
-            window.Toast.warning("Algumas unidades podem estar faltando no arquivo.");
-        }
-
-        const isElite = window.Monetization && window.Monetization.isEliteOrAbove();
-
-        const exportData = [];
-        insideLotes.forEach(lote => {
-            let addr = (lote.logradouro || lote.endereco || '').trim();
-            addr = addr.replace(/\s+N[°º]?\s*\d+$/i, '').trim();
-            let num = lote.numero ? String(lote.numero).replace(/^0+/, '') : '';
-            let b = (lote.bairro || '').trim();
-            let fullAddr = `${addr}${num ? ', ' + num : ''}${b ? ' - ' + b : ''}`;
-
-            // Filtrar unidades que pertencem a este lote
-            const lotUnits = allUnits.filter(u => u.lote_inscricao === lote.inscricao);
-
-            if (lotUnits.length === 0) {
-                const isUnlocked = isElite || (window.Monetization && window.Monetization.isUnlockedPerson(lote.cpf_cnpj));
-                exportData.push({
-                    inscricao: lote.inscricao,
-                    endereco: fullAddr,
-                    unidade: 'Terreno/Privativo',
-                    proprietario: window.maskName(lote.nome_proprietario || 'N/D', isUnlocked),
-                    doc: window.formatDocument(lote.cpf_cnpj || 'N/D', isUnlocked)
-                });
-            } else {
-                lotUnits.forEach(u => {
-                    const isUnlocked = isElite || (window.Monetization && window.Monetization.isUnlockedPerson(u.cpf_cnpj));
-                    exportData.push({
-                        inscricao: u.inscricao,
-                        endereco: fullAddr,
-                        unidade: (u.complemento && u.complemento.trim().length > 1) ? u.complemento : `Unidade ${u.inscricao.slice(-3)}`,
-                        proprietario: window.maskName(u.nome_proprietario || lote.nome_proprietario || 'N/D', isUnlocked),
-                        doc: window.formatDocument(u.cpf_cnpj || lote.cpf_cnpj || 'N/D', isUnlocked)
-                    });
-                });
-            }
-        });
-
-        window.Loading.hide();
-
-        // Generate Print HTML
-        const printDiv = document.createElement('div');
-        printDiv.id = 'print-area-container';
-        printDiv.style.cssText = `
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; z-index: 999999; display: none; padding: 40px;
-            font-family: 'Inter', sans-serif; color: #1e293b; overflow: auto;
-        `;
-        
-        let tableRows = exportData.map(d => `
-            <tr style="border-bottom: 1px solid #e2e8f0;">
-                <td style="padding: 8px; font-size:11px;">${d.inscricao}</td>
-                <td style="padding: 8px; font-size:11px;">${d.endereco}</td>
-                <td style="padding: 8px; font-size:11px;">${d.unidade}</td>
-                <td style="padding: 8px; font-size:11px;">${d.proprietario}</td>
-                <td style="padding: 8px; font-size:11px;">${d.doc}</td>
-            </tr>
-        `).join('');
-
-        printDiv.innerHTML = `
-            <style>
-                @media print {
-                    body * { visibility: hidden; }
-                    #print-area-container, #print-area-container * { visibility: visible; }
-                    #print-area-container { position: absolute; left: 0; top: 0; display: block !important; padding: 0 !important; }
-                    .no-print { display: none !important; }
-                    @page { margin: 1cm; size: landscape; }
-                }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th { text-align: left; padding: 10px 8px; background: #f1f5f9; border-bottom: 2px solid #cbd5e1; font-size: 11px; color:#475569;}
-            </style>
-            <div style="border-bottom: 2px solid #1e293b; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items:flex-end;">
-                <div>
-                    <h1 style="margin: 0; font-size: 24px; font-weight: 900;">RELATÓRIO DE ÁREA (ENGLOBAMENTO)</h1>
-                    <p style="margin: 5px 0 0; color: #64748b; font-weight: 500;">Guarujá GeoMap • Inteligência Geo-Estratégica</p>
-                </div>
-                <div style="text-align:right;">
-                    <div style="font-weight:700; font-size:14px; color:#3b82f6;">Total: ${exportData.length} registros</div>
-                    <div style="font-size:11px; color:#64748b;">Gerado em: ${new Date().toLocaleDateString('pt-BR')} as ${new Date().toLocaleTimeString('pt-BR')}</div>
-                </div>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>INSCRIÇÃO</th>
-                        <th>ENDEREÇO BASE</th>
-                        <th>UNIDADE/COMPLEMENTO</th>
-                        <th>NOME PROPRIETÁRIO</th>
-                        <th>CPF/CNPJ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${tableRows}
-                </tbody>
-            </table>
-        `;
-
-        document.body.appendChild(printDiv);
-        setTimeout(() => {
-            window.print();
-            setTimeout(() => printDiv.remove(), 1000);
-        }, 500);
-    };
-
-    function getBoundsPath(rectangle) {
-        const bounds = rectangle.getBounds();
-        const path = [
-            bounds.getNorthEast(),
-            {lat: bounds.getNorthEast().lat(), lng: bounds.getSouthWest().lng()},
-            bounds.getSouthWest(),
-            {lat: bounds.getSouthWest().lat(), lng: bounds.getNorthEast().lng()}
-        ];
-        return path;
-    }
-
-    // Draw Tools already defined inside or handled separately
-
-    // Função para carregar Refs (Versão Simplificada para Google Maps)
-    window.loadReferenciasGeo = async function () {
-        console.log("Carregando Referências Geográficas (Google Maps)...");
-        try {
-            const { data, error } = await window.supabaseApp
-                .from('referencias_geograficas')
-                .select('*');
-
-            if (error) throw error;
-
-            if (data && data.length > 0) {
-                window.georefs = data; // Persist for distance calculations
-                data.forEach(ref => {
-                    const geometry = ref.geometria;
-                    const features = window.map.data.addGeoJson(geometry);
-                    
-                    features.forEach(feature => {
-                        let label = ref.nome;
-                        const color = ref.cor || (ref.tipo === 'MAR' ? '#4fc3f7' : '#3388ff');
-                        
-                        window.map.data.overrideStyle(feature, {
-                            strokeColor: color,
-                            strokeWeight: 4,
-                            strokeOpacity: 0.7,
-                            fillColor: color,
-                            fillOpacity: 0.2,
-                            title: label
-                        });
-                    });
-                });
-                console.log(`🗺️ ${data.length} referências carregadas.`);
-            }
-        } catch (e) {
-            console.error("Erro carregando referências:", e);
+        // A lógica de exportação e processamento pesado agora está modularizada
+        // Redirecionando para as ferramentas de exportação se existirem
+        if (window.ExportHandler) {
+            window.ExportHandler.exportArea(insideLotes);
+        } else {
+            window.Toast.info("Módulo de exportação não carregado.");
         }
     };
 
-    // Alias para compatibilidade com chamadas antigas
-    const loadReferences = window.loadReferenciasGeo;
+    // --- HIERARQUIA E NAVEGAÇÃO ---
 
-    if (window.Loading) {
-        window.Loading.setProgress(30);
-        window.Loading.setProgress(40);
-    }
-
-    let isCachedLoaded = false;
-    window.currentCity = window.currentCity || 'Guarujá';
-
-// changeCity disabled and removed per dead code cleanup
-
-    window.initMapData = async function() {
-        try {
-            // --- CACHE STRATEGY: Stale-While-Revalidate ---
-        // 1. Try Load from Cache
-        let cached = await window.loadLotesFromCache();
-
-        if (cached && cached.data && cached.data.length > 0) {
-            console.log("Loading from Cache...", cached.data.length);
-            window.allLotes = cached.data;
-            window.allLotesSet = new Set(window.allLotes.map(l => l.inscricao));
-
-            // Render Cache Immediately
-            window.processDataHierarchy();
-            window.renderHierarchy();
-            
-            const totalLotesEl = document.getElementById('totalLotes');
-            if (totalLotesEl) totalLotesEl.innerText = `${window.allLotes.length.toLocaleString()} Lotes (Cache)`;
-
-            // Setup Back Button immediately if cached
-            const mapBackBtn = document.getElementById('mapBackBtn');
-            if (mapBackBtn) mapBackBtn.onclick = window.goUpLevel;
-
-            isCachedLoaded = true;
-            window.Loading.hide();
-            window.Toast.info('Dados locais carregados. Sincronizando...', 'Início Rápido');
-            if (window.Onboarding) window.Onboarding.checkAndStart();
+    /**
+     * Volta um nível na hierarquia (ex: de Setor para Zona, ou Zona para Cidade)
+     */
+    window.goUpLevel = function () {
+        if (window.currentLevel === 2) { // De Setor para Zona
+            window.currentLevel = 1;
+            window.currentSector = null;
+        } else if (window.currentLevel === 1) { // De Zona para Cidade
+            window.currentLevel = 0;
+            window.currentZone = null;
         }
-
-        // 2. Stop Global Chunked Fetch (Nuclear Performance Fix)
-        // But keep a SEED of 500 lotes for macro labels (Neighborhoods)
-        if (!isCachedLoaded) {
-            window.Loading.show('Iniciando Mapa...', 'Carregando semente de dados');
-            const { data, error } = await window.supabaseApp
-                .from('lotes')
-                .select('*')
-                .eq('municipio', window.currentCity || 'Guarujá')
-                .limit(2000); // Aumentado de 500 para cobrir mais bairros no início
-
-            if (!error && data) {
-                const initialLotes = data.map(row => ({
-                    ...row,
-                    metadata: {
-                        inscricao: row.inscricao,
-                        zona: row.zona,
-                        setor: row.setor,
-                        lote: row.lote_geo,
-                        quadra: row.quadra,
-                        loteamento: row.loteamento,
-                        bairro: row.bairro,
-                        valor_m2: row.valor_m2 ? row.valor_m2.toString().replace('.', ',') : null
-                    },
-                    bounds_utm: {
-                        minx: row.minx, miny: row.miny, maxx: row.maxx, maxy: row.maxy
-                    }
-                }));
-                window.allLotes = initialLotes;
-                window.allLotesSet = new Set(initialLotes.map(l => l.inscricao));
-            }
-        }
-
-        // 3. Desativado carregamento automático por zoom (BBOX)
-        // A navegação agora é estritamente de hierarquia: Zona -> Setor -> Lote
-
-        // Update State & Cache (Initial Seed/Cache)
-        await window.saveLotesToCache(window.allLotes);
-
-        // 4. Iniciar Sincronização Total Silenciosa (Para evitar lacunas)
-        // Não usamos await aqui, roda em background
-        window.syncFullData();
-
-        // Setup Realtime Subscription
-        window.supabaseApp.channel('public:all_changes')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'lotes' }, payload => {
-                handleRealtimeUpdate(payload);
-            })
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'unidades' }, payload => {
-                handleRealtimeUpdate(payload);
-            })
-            .subscribe();
-
-        if (!isCachedLoaded) Loading.setProgress(90);
-
-        // Processa hierarquia inicial (Zonas)
-        processDataHierarchy();
-        window.currentLevel = 0; // Garantir que comece no nível de Zonas
+        
+        // Atualiza a interface e re-renderiza o mapa
+        if (window.UIManager) window.UIManager.updateBreadcrumbs();
         window.renderHierarchy();
+    };
 
-        const totalLotesEl = document.getElementById('totalLotes');
-        if (totalLotesEl) totalLotesEl.innerText = `${window.allLotes.length.toLocaleString()} Lotes`;
+    // As funções loadZoneData e loadSectorData foram movidas para o SyncHandler.js
 
-        if (!isCachedLoaded) Loading.setProgress(100);
 
-        // Initialize Drawing Tools
-        window.initDraw();
-
-        // 3D Perspective Feedback
-        window.map.addListener('tilt_changed', () => {
-            const tilt = window.map.getTilt();
-            if (tilt > 0) {
-                console.log(`👁️ Visão 3D Ativada: ${tilt}°`);
-            }
-        });
-
-        if (isCachedLoaded) {
-            Toast.success('Dados sincronizados com o servidor!', 'Atualizado');
-        } else {
-            setTimeout(() => {
-                Loading.hide();
-                // O carregamento inicial foi realizado via renderHierarchy() acima
-            }, 500);
-        }
-    } catch (e) {
-        console.error(e);
-        if (isCachedLoaded) {
-            Toast.warning('Falha na sincronização. Usando dados locais.', 'Offline');
-        } else {
-            Loading.hide();
-            Toast.error(`Não foi possível carregar os dados: ${e.message}`, 'Erro Crítico');
-        }
-    }
-};
-
-/**
- * Viewport-Based Data Fetching (BBOX)
- * Fetches lotes within the current map view from Supabase.
- */
-window.loadLotesInViewport = async function() {
-    if (!window.map || !window.supabaseApp) return;
-    
-    const bounds = window.map.getBounds();
-    if (!bounds) return;
-
-    const ne = bounds.getNorthEast();
-    const sw = bounds.getSouthWest();
-    
-    // Convert Lat/Lng bounds to UTM scale for numeric comparison
-    const utmNE = window.latLonToUtm(ne.lat(), ne.lng());
-    const utmSW = window.latLonToUtm(sw.lat(), sw.lng());
-    
-    const padding = 200; // Margem extra para evitar requisições constantes em pequenos movimentos
-
-    try {
-        const zoom = window.map.getZoom();
-        // Só carrega lotes em nível de detalhe alto para não sobrecarregar
-        if (zoom < 14) { // Reduzido de 15 para 14 para capturar dados em nível de bairro
-            console.log("☁️ Zoom baixo demais para lotes. Pulando busca.");
-            return;
-        }
-
-        const { data, error } = await window.supabaseApp
-            .from('lotes')
-            .select('*')
-            .eq('municipio', window.currentCity || 'Guarujá')
-            .gte('maxx', utmSW.x - padding)
-            .lte('minx', utmNE.x + padding)
-            .gte('maxy', utmSW.y - padding)
-            .lte('miny', utmNE.y + padding)
-            .limit(2000); // Aumentado de 1000 para 2000 (limite recomendado do Supabase)
-
-        if (error) throw error;
-        if (!data || data.length === 0) return;
-
-        // Mesclar novos dados no window.allLotes sem recriar o Set toda vez (Performance)
-        let newCount = 0;
-        
-        const processedNew = data
-            .filter(row => !window.allLotesSet.has(row.inscricao))
-            .map(row => {
-                newCount++;
-                window.allLotesSet.add(row.inscricao);
-                return {
-                    ...row,
-                    metadata: {
-                        inscricao: row.inscricao,
-                        zona: row.zona,
-                        setor: row.setor,
-                        lote: row.lote_geo,
-                        quadra: row.quadra,
-                        loteamento: row.loteamento,
-                        bairro: row.bairro,
-                        valor_m2: row.valor_m2 ? row.valor_m2.toString().replace('.', ',') : null
-                    },
-                    bounds_utm: {
-                        minx: row.minx, miny: row.miny, maxx: row.maxx, maxy: row.maxy
-                    }
-                };
-            });
-
-        if (newCount > 0) {
-            window.allLotes = window.allLotes.concat(processedNew);
-            console.log(`📦 Viewport: +${newCount} lotes novos.`);
-            
-            // Re-processa hierarquia e renderiza
-            processDataHierarchy();
-            window.renderHierarchy();
-            
-            const totalLotesEl = document.getElementById('totalLotes');
-            if (totalLotesEl) totalLotesEl.innerText = `${window.allLotes.length.toLocaleString()} Lotes`;
-        }
-
-    } catch (err) {
-        console.warn("[BBOX Fetch] Erro:", err);
-    }
-};
-
-/**
- * SINCRONIZAÇÃO TOTAL SILENCIOSA
- * Baixa iterativamente todos os lotes em chunks, alimentando o UI e o Cache
- * sem travar o mapa, para reverter os problemas de zonas/setores vazios.
- */
-window.syncFullData = async function() {
-    if (!window.supabaseApp) return;
-
-    let toastId = null;
-    let isFetching = true;
-    let from = 0;
-    const chunkSize = 1000;
-    let totalDownloaded = 0;
-    
-    // Mostra o toast somente se ainda não houver dados o suficiente (ex: > 10.000)
-    // ou se quisermos mostrar que a base tá alimentando
-    if (!window.allLotes || window.allLotes.length < 15000) {
-        toastId = window.Toast ? window.Toast.info("Preenchendo lacunas do mapa...", "Sincronizando Base", 0) : null;
-    }
-
-    try {
-        console.log(`[Sync] Iniciando Sincronização Total em Background`);
-
-        while (isFetching) {
-            const to = from + chunkSize - 1;
-            console.log(`[Sync] Baixando lotes: ${from} a ${to}`);
-
-            const { data, error } = await window.supabaseApp
-                .from('lotes')
-                .select('*')
-                .eq('municipio', window.currentCity || 'Guarujá')
-                .range(from, to);
-
-            if (error) {
-                console.error("[Sync] Erro na paginação:", error);
-                break; // Se deu erro, sai do loop silenciosamente
-            }
-
-            if (!data || data.length === 0) {
-                console.log("[Sync] Finalizado. Todos os lotes alcançados.");
-                break;
-            }
-
-            // Filtrar e preparar apenas lotes novos
-            let newLotesFiltered = [];
-            for (const row of data) {
-                if (!window.allLotesSet.has(row.inscricao)) {
-                    window.allLotesSet.add(row.inscricao);
-                    newLotesFiltered.push({
-                        ...row,
-                        metadata: {
-                            inscricao: row.inscricao,
-                            zona: row.zona,
-                            setor: row.setor,
-                            lote: row.lote_geo,
-                            quadra: row.quadra,
-                            loteamento: row.loteamento,
-                            bairro: row.bairro,
-                            valor_m2: row.valor_m2 ? row.valor_m2.toString().replace('.', ',') : null
-                        },
-                        bounds_utm: {
-                            minx: row.minx, miny: row.miny, maxx: row.maxx, maxy: row.maxy
-                        }
-                    });
-                }
-            }
-
-            totalDownloaded += newLotesFiltered.length;
-
-            if (newLotesFiltered.length > 0) {
-                // Junta com existing
-                window.allLotes = window.allLotes.concat(newLotesFiltered);
-                
-                // Reprocessa hierarquia silenciosamente (já está atômico internamente)
-                window.processDataHierarchy();
-                
-                // Atualiza contadores
-                const totalLotesEl = document.getElementById('totalLotes');
-                if (totalLotesEl) totalLotesEl.innerText = `${window.allLotes.length.toLocaleString()} Lotes`;
-                
-                // Se o usuário estiver num nível alto, re-renderiza os nós suavemente
-                if (window.currentLevel === 0) {
-                    window.renderHierarchy();
-                }
-            }
-
-            // Próximo lote
-            if (data.length < chunkSize) {
-                // Chegou no fim da tabela
-                break;
-            }
-
-            from += chunkSize;
-        }
-
-        // Salvar tudo pro cache após a varredura total
-        if (totalDownloaded > 0) {
-            console.log(`[Sync] Completado. ${totalDownloaded} novos lotes salvos no Cache Local.`);
-            await window.saveLotesToCache(window.allLotes);
-            if (toastId && window.Toast) {
-                window.Toast.hide(toastId);
-                window.Toast.success("Mapa 100% Sincronizado Offline", "Concluído");
-            }
-        } else {
-            // Se baixou zero novos, esconde direto
-            if (toastId && window.Toast) window.Toast.hide(toastId);
-        }
-
-    } catch (err) {
-        console.warn("[Sync] Falha na sincronização background:", err);
-        if (toastId && window.Toast) window.Toast.hide(toastId);
-    }
-};
-
-/**
- * Hierarchical Data Fetching (BY ZONE)
- * Loads everything for a specific zone.
- */
-window.loadZoneData = async function(zoneId) {
-    if (!window.supabaseApp) return;
-    
-    // Feedback visual
-    const toastId = window.Toast ? window.Toast.info(`Sincronizando Zona ${zoneId}...`, "Aguarde", 0) : null;
-    
-    try {
-        console.log(`[Hierarchy] Fetching Zone ${zoneId}...`);
-        const { data, error } = await window.supabaseApp
-            .from('lotes')
-            .select('*')
-            .eq('municipio', window.currentCity || 'Guarujá')
-            .eq('zona', zoneId);
-
-        if (error) throw error;
-        if (!data || data.length === 0) return;
-
-        let newCount = 0;
-        const processed = data
-            .filter(row => !window.allLotesSet.has(row.inscricao))
-            .map(row => {
-                newCount++;
-                window.allLotesSet.add(row.inscricao);
-                return {
-                    ...row,
-                    metadata: {
-                        inscricao: row.inscricao, zona: row.zona, setor: row.setor,
-                        lote: row.lote_geo, quadra: row.quadra, bairro: row.bairro,
-                        valor_m2: row.valor_m2 ? row.valor_m2.toString().replace('.', ',') : null
-                    },
-                    bounds_utm: { minx: row.minx, miny: row.miny, maxx: row.maxx, maxy: row.maxy }
-                };
-            });
-
-        if (newCount > 0) {
-            window.allLotes = window.allLotes.concat(processed);
-            window.processDataHierarchy();
-            console.log(`[Hierarchy] Zone ${zoneId}: +${newCount} novos registros.`);
-        }
-    } catch (err) {
-        console.error("Error loading zone data:", err);
-    } finally {
-        if (toastId && window.Toast) window.Toast.hide(toastId);
-    }
-};
-
-/**
- * Hierarchical Data Fetching (BY SECTOR)
- * Ensures all lotes for a sector are present.
- */
-window.loadSectorData = async function(sectorId) {
-    if (!window.supabaseApp) return;
-
-    const toastId = window.Toast ? window.Toast.info(`Carregando Setor ${sectorId}...`, "Sincronizando", 0) : null;
-
-    try {
-        console.log(`[Hierarchy] Fetching Sector ${sectorId}...`);
-        const { data, error } = await window.supabaseApp
-            .from('lotes')
-            .select('*')
-            .eq('municipio', window.currentCity || 'Guarujá')
-            .eq('setor', sectorId);
-
-        if (error) throw error;
-        if (!data || data.length === 0) return;
-
-        let newCount = 0;
-        const processed = data
-            .filter(row => !window.allLotesSet.has(row.inscricao))
-            .map(row => {
-                newCount++;
-                window.allLotesSet.add(row.inscricao);
-                return {
-                    ...row,
-                    metadata: {
-                        inscricao: row.inscricao, zona: row.zona, setor: row.setor,
-                        lote: row.lote_geo, quadra: row.quadra, bairro: row.bairro,
-                        valor_m2: row.valor_m2 ? row.valor_m2.toString().replace('.', ',') : null
-                    },
-                    bounds_utm: { minx: row.minx, miny: row.miny, maxx: row.maxx, maxy: row.maxy }
-                };
-            });
-
-        if (newCount > 0) {
-            window.allLotes = window.allLotes.concat(processed);
-            window.processDataHierarchy();
-            console.log(`[Hierarchy] Sector ${sectorId}: +${newCount} lotes.`);
-        }
-    } catch (err) {
-        console.error("Error loading sector data:", err);
-    } finally {
-        if (toastId && window.Toast) window.Toast.hide(toastId);
-    }
-};
 
 // Hierarchy processing
 function processDataHierarchy() {
@@ -1950,6 +993,12 @@ window.renderHierarchy = function() {
             const textColorL = brightnessL < 160 ? '#ffffff' : '#0f172a';
             const borderColorL = brightnessL < 160 ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.15)';
 
+            // 3D LITE VISUALIZATION (WOW FACTOR)
+            const floorCount = parseInt(lote.floors_int || lote.floors || 0);
+            const isTallBuilding = floorCount >= 10;
+            const shadowStyle = isTallBuilding ? 'box-shadow: 0 10px 25px rgba(0,0,0,0.4); z-index: 10;' : 'box-shadow: 0 4px 10px rgba(0,0,0,0.2);';
+            const elevationTransform = isTallBuilding ? 'transform: translate(-50%, -60%) scale(1.1);' : 'transform: translate(-50%, -50%);';
+
             const content = document.createElement('div');
             content.className = 'zone-label-premium';
             content.innerHTML = `<div style="
@@ -1959,10 +1008,10 @@ window.renderHierarchy = function() {
                 padding: 3px 10px; 
                 font-size: 10px; 
                 font-weight: 700;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); 
+                ${shadowStyle}
                 cursor: pointer; 
                 border: 1.5px solid ${borderColorL}; 
-                transform: translate(-50%, -50%);
+                ${elevationTransform}
                 display: -webkit-box; 
                 -webkit-line-clamp: 2; 
                 -webkit-box-orient: vertical; 
@@ -1973,6 +1022,7 @@ window.renderHierarchy = function() {
                 line-height: 1.2; 
                 text-align: center;
                 font-family: 'Outfit', sans-serif;
+                transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             ">${displayLabel}</div>`;
 
             const marker = new google.maps.marker.AdvancedMarkerElement({

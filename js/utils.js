@@ -83,19 +83,25 @@ const Toast = window.Toast = {
 // Loading overlay controls
 const Loading = window.Loading = {
     show(text = 'Carregando...', subtext = '') {
-        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingOverlay = document.getElementById('global-loading-overlay') || document.getElementById('loading-overlay');
+        if (!loadingOverlay) return;
+        
+        loadingOverlay.style.display = 'flex';
         loadingOverlay.classList.remove('hidden');
-        if (text) {
-            loadingOverlay.querySelector('.loading-text').textContent = text;
-        }
-        if (subtext) {
-            loadingOverlay.querySelector('.loading-subtext').textContent = subtext;
-        }
+        
+        const textEl = loadingOverlay.querySelector('.loader-text') || loadingOverlay.querySelector('.loading-text');
+        if (text && textEl) textEl.textContent = text;
+        
+        const subEl = loadingOverlay.querySelector('.loader-subtext') || loadingOverlay.querySelector('.loading-subtext');
+        if (subtext && subEl) subEl.textContent = subtext;
     },
 
     hide() {
-        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingOverlay = document.getElementById('global-loading-overlay') || document.getElementById('loading-overlay');
+        if (!loadingOverlay) return;
+        
         loadingOverlay.classList.add('hidden');
+        setTimeout(() => { loadingOverlay.style.display = 'none'; }, 300); // Garante que a div suma do DOM e não bloqueie cliques
     },
 
     setProgress(percent) {
@@ -213,7 +219,7 @@ function formatPhone(phone) {
     return phone;
 }
 
-function validateCPF(cpf) {
+window.validateCPF = function(cpf) {
     cpf = cpf.replace(/[^\d]+/g, '');
     if (cpf == '') return false;
     // Eliminate known invalid CPFs
@@ -243,7 +249,7 @@ function validateCPF(cpf) {
     return true;
 }
 
-function validateCNPJ(cnpj) {
+window.validateCNPJ = function(cnpj) {
     cnpj = cnpj.replace(/[^\d]+/g, '');
     if (cnpj == '') return false;
     if (cnpj.length != 14) return false;
@@ -482,24 +488,8 @@ window.fetchLotDetails = async function (inscricao, force = false) {
         return null;
     }
 };
-// --- MODAL UTILS ---
-window.openModal = function (id) {
-    const el = document.getElementById(id);
-    if (el) {
-        el.classList.add('active');
-        el.style.display = 'flex';
-    }
-};
-
-window.closeModal = function (id) {
-    const el = document.getElementById(id);
-    if (el) {
-        el.classList.remove('active');
-        setTimeout(() => el.style.display = 'none', 300);
-    }
-};
-
-// --- IMAGE MODAL (LIGHTBOX) ---
+// --- GERENCIAMENTO DE IMAGENS (LIGHTBOX) ---
+// Função pra abrir o visualizador de fotos (seja uma única ou uma galeria completa)
 window.openImageModal = function (srcOrIndex, collection) {
     if (window.ImageViewer) {
         // New Style

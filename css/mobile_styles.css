@@ -299,15 +299,35 @@
     }
 
     /* Tooltip Actions - Horizontal Scroll */
+    .tab-content {
+        display: none;
+        padding: 20px 0;
+        height: calc(100vh - 120px);
+        overflow-y: auto;
+        padding-bottom: 80px;
+    }
+    
+    @supports (scrollbar-width: thin) {
+        .tab-content {
+            scrollbar-width: thin;
+        }
+    }
+    
+    .tab-content::-webkit-scrollbar {
+        width: 4px;
+    }
+
     .header-buttons-wrapper {
         display: flex;
         overflow-x: auto;
         padding: 4px 16px 12px;
         gap: 8px;
-        -webkit-overflow-scrolling: touch;
-        /* Smooth scroll iOS */
-        scrollbar-width: none;
-        /* Hide scrollbar */
+    }
+
+    @supports (scrollbar-width: none) {
+        .header-buttons-wrapper {
+            scrollbar-width: none;
+        }
     }
 
     .header-buttons-wrapper::-webkit-scrollbar {
@@ -445,7 +465,16 @@
         border-bottom: 1px solid #f1f5f9;
         overflow-x: auto;
         white-space: nowrap;
-        scrollbar-width: none;
+    }
+    
+    @supports (scrollbar-width: thin) {
+        .lot-tooltip-tabs {
+            scrollbar-width: thin;
+        }
+    }
+    
+    .lot-tooltip-tabs::-webkit-scrollbar {
+        height: 4px;
     }
 
     .lot-tab-btn {
@@ -757,7 +786,6 @@
         width: 100% !important;
         overflow: hidden !important;
         box-sizing: border-box !important;
-        -webkit-overflow-scrolling: touch;
     }
 
     .header-buttons-wrapper .tooltip-action-btn,
@@ -848,8 +876,8 @@
         width: 100vw;
         height: 100vh;
         background: rgba(15, 23, 42, 0.95);
-        backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -977,5 +1005,233 @@
 
     #loading-overlay .progress-bar-container {
         display: none !important;
+    }
+}
+
+/* ============================================
+   TOOLTIP MODULAR — DUAL-UX MOBILE (GuaruGeo V4.2)
+   Regra: Touch targets >= 44px | Thumb-zone first
+   ============================================ */
+@media (max-width: 768px) {
+
+    /* Tooltips ocupam tela cheia no mobile — sem modal centralizado */
+    .lot-tooltip-container,
+    .unit-tooltip-container {
+        width: 100% !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        border-radius: 0 !important;
+        top: 0 !important;
+        left: 0 !important;
+        transform: none !important;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* Imagem heroica menor para ceder espaço ao conteúdo */
+    .tooltip-header-img {
+        height: 160px !important;
+        flex-shrink: 0;
+    }
+
+    /* Nome do edifício menor para caber em telas estreitas */
+    .header-overlay-info h2 {
+        font-size: 16px !important;
+        letter-spacing: -0.3px;
+    }
+
+    .header-overlay-info p {
+        font-size: 11px !important;
+    }
+
+    /* Botões de fechar — maior área de toque (44px) na thumb-zone */
+    .lot-tooltip-close,
+    .unit-tooltip-close {
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 16px !important;
+    }
+
+    /* Toolbar de ações fixada na parte inferior (thumb-zone) */
+    .action-toolbar {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+        padding: 12px 16px !important;
+        z-index: 10;
+        flex-shrink: 0;
+    }
+
+    /* Botões de ação com touch target de 44px e estética Premium */
+    .btn-action-primary,
+    .btn-action-secondary,
+    .btn-unlock {
+        min-height: 48px !important;
+        font-size: 13px !important;
+        border-radius: 14px !important;
+        font-weight: 700 !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    .btn-action-primary:active {
+        transform: scale(0.96);
+        filter: brightness(0.9);
+    }
+
+    /* Abas com touch targets adequados */
+    .unit-tab-btn,
+    .lot-tab-btn {
+        padding: 14px 8px !important;
+        font-size: 10px !important;
+        min-height: 44px;
+    }
+
+    /* Conteúdo das abas — scrollável com inércia nativa iOS */
+    .lot-tab-content,
+    .unit-tab-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px !important;
+        max-height: none !important;
+    }
+
+    /* Grid de atributos do Lote — 2 colunas no mobile */
+    .attribute-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+    }
+
+    /* Specs da Unidade — 3 colunas mantidas mas menores */
+    .specs-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px !important;
+    }
+
+    .spec-item {
+        padding: 10px 6px !important;
+    }
+
+    .spec-item i {
+        font-size: 14px !important;
+        margin-bottom: 5px !important;
+    }
+
+    .spec-val {
+        font-size: 12px !important;
+    }
+
+    .spec-label {
+        font-size: 9px !important;
+    }
+
+    /* Market IQ — empilha no mobile */
+    .market-iq-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+    }
+
+    .market-val-main {
+        font-size: 14px !important;
+    }
+
+    /* Owner Box — compactado */
+    .owner-info-box {
+        padding: 12px !important;
+        margin-bottom: 14px !important;
+    }
+
+    .owner-name {
+        font-size: 13px !important;
+    }
+
+    /* Chips de contexto — scroll horizontal suave com inércia */
+    .lot-context-chips {
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        padding: 8px 16px !important;
+        gap: 8px !important;
+        scroll-snap-type: x proximity;
+    }
+
+    @supports (scrollbar-width: thin) {
+        .lot-context-chips {
+            scrollbar-width: thin;
+        }
+    }
+
+    .lot-context-chips::-webkit-scrollbar {
+        height: 4px;
+        display: none;
+    }
+
+    .ctx-chip {
+        white-space: nowrap !important;
+        flex-shrink: 0;
+        font-size: 10px !important;
+        padding: 6px 12px !important;
+        scroll-snap-align: start;
+        border-radius: 10px !important;
+    }
+
+    /* Chips da unidade — idem */
+    .unit-context-row {
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        padding-bottom: 4px;
+    }
+
+    @supports (scrollbar-width: thin) {
+        .unit-context-row {
+            scrollbar-width: thin;
+        }
+    }
+
+    .unit-context-row::-webkit-scrollbar {
+        height: 4px;
+        display: none;
+    }
+
+    .uctx-chip {
+        white-space: nowrap !important;
+        flex-shrink: 0;
+        font-size: 10px !important;
+        scroll-snap-align: start;
+    }
+
+    /* Barra de descrição — truncar em 2 linhas */
+    .lot-descricao-bar {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        overflow: hidden;
+        font-size: 10px !important;
+        padding: 6px 12px !important;
+    }
+
+    /* Linha CNPJ — compactada */
+    .lot-cnpj-row {
+        flex-wrap: wrap;
+        font-size: 11px !important;
+    }
+
+    /* Inventory cards no mobile — força coluna única */
+    .unit-group-container {
+        flex-direction: column !important;
+    }
+
+    .unit-group-card {
+        min-width: 100% !important;
+    }
+
+    /* Mini-cards do Lote — compactados */
+    .mini-card {
+        padding: 10px !important;
+    }
+
+    .mini-card-value {
+        font-size: 11px !important;
     }
 }
