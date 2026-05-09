@@ -5,6 +5,19 @@ window.initEditorHandlerRefs = function (refs) {
     // Shared state is accessed via window.allLotes, window.Loading, etc.
 };
 
+window.normalizeUnitDocList = function (value) {
+    if (!value) return '';
+    const values = Array.isArray(value) ? value : String(value).split(/\r?\n|;|\|/);
+    return [...new Set(values.map(v => String(v).trim()).filter(Boolean))].join('\n');
+};
+
+window.formatUnitDocTextareaValue = function (value) {
+    return window.normalizeUnitDocList(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+};
+
 // Image upload helper
 async function uploadToSupabase(file, inscricao) {
     const fileExt = file.name.split('.').pop();
@@ -26,12 +39,11 @@ async function uploadToSupabase(file, inscricao) {
 
 // Lot editor (tooltip version)
 window.editFromTooltip = function (inscricao) {
-    // Allow everyone to suggest edits (Admin = Global, User = Private/Curatorship)
-    const isAdmin = window.Monetization && (window.Monetization.userRole === 'admin' || window.Monetization.userRole === 'master');
-    if (!isAdmin && (!window.Monetization || !window.Monetization.checkFeatureAccess('edit_private'))) {
-        // We still check for 'edit_private' if we want to restrict basic/guest users, 
-        // but the user said "demais usuarios" (other users) should be able to.
-        // Let's allow all authenticated users (Elite/Pro/Basic)
+    const isAdmin = window.Monetization?.isAdminRole?.()
+        || ['admin', 'master'].includes(String(window.Monetization?.userRole || '').toLowerCase());
+    if (!isAdmin) {
+        window.Toast?.warning?.('Edição direta do lote é restrita ao administrador.');
+        return;
     }
     const lote = window.allLotes.find(l => l.inscricao === inscricao);
     if (!lote) return;
@@ -313,6 +325,13 @@ window.cancelEdit = function (inscricao) {
 };
 
 window.saveEditFromTooltip = async function (inscricao) {
+    const isAdmin = window.Monetization?.isAdminRole?.()
+        || ['admin', 'master'].includes(String(window.Monetization?.userRole || '').toLowerCase());
+    if (!isAdmin) {
+        window.Toast?.warning?.('Somente administradores podem salvar alterações diretas do lote.');
+        return;
+    }
+
     Loading.show('Salvando...', 'Atualizando dados...');
     try {
         const galleryInput = document.getElementById('edit-gallery-json');
@@ -410,7 +429,13 @@ window.saveEditFromTooltip = async function (inscricao) {
 
 // Unit editor
 window.editUnitFromTooltip = function (unitInscricao) {
-    // Allow everyone to suggest edits
+    const isAdmin = window.Monetization?.isAdminRole?.()
+        || ['admin', 'master'].includes(String(window.Monetization?.userRole || '').toLowerCase());
+    if (!isAdmin) {
+        window.Toast?.warning?.('Edição direta de Matrícula/RIP é restrita ao administrador.');
+        return;
+    }
+
     console.log('🔧 editUnitFromTooltip called with:', unitInscricao);
 
     if (!window.currentTooltip) {
@@ -486,14 +511,14 @@ window.editUnitFromTooltip = function (unitInscricao) {
             </div>
             <div class="unit-edit-row">
                 <div class="unit-edit-col">
-                   <label class="unit-edit-label">Matrícula (RI)</label>
-                   <input type="text" id="edit-unit-matricula" value="${existingEdits.matricula || targetUnit.matricula || ''}" 
-                        class="unit-edit-input" placeholder="Número da Matrícula">
+                   <label class="unit-edit-label">Matrículas (RI)</label>
+                   <textarea id="edit-unit-matricula" class="unit-edit-input unit-edit-textarea" rows="3"
+                        placeholder="Uma matrícula por linha. Ex: apto, garagem">${window.formatUnitDocTextareaValue(existingEdits.matricula || targetUnit.matricula || '')}</textarea>
                 </div>
                 <div class="unit-edit-col">
-                   <label class="unit-edit-label">RIP (Marinha)</label>
-                   <input type="text" id="edit-unit-rip" value="${existingEdits.rip || targetUnit.rip || ''}" 
-                        class="unit-edit-input" placeholder="Inscrição RIP">
+                   <label class="unit-edit-label">RIPs (Marinha)</label>
+                   <textarea id="edit-unit-rip" class="unit-edit-input unit-edit-textarea" rows="3"
+                        placeholder="Um RIP por linha. Ex: imóvel, vaga">${window.formatUnitDocTextareaValue(existingEdits.rip || targetUnit.rip || '')}</textarea>
                 </div>
             </div>
             <div class="unit-edit-row">
@@ -764,7 +789,35 @@ window.cancelUnitEdit = function (unitInscricao) {
     }
 };
 
+window.quickEditUnitDocs = function(unitInscricao, loteInscricao) {
+    const isAdmin = window.Monetization?.isAdminRole?.()
+        || ['admin', 'master'].includes(String(window.Monetization?.userRole || '').toLowerCase());
+    if (!isAdmin) {
+        window.Toast?.warning?.('Edição rápida de Matrícula/RIP é restrita ao administrador.');
+        return;
+    }
+
+    const lote = (window.allLotes || []).find(l => l.inscricao === loteInscricao)
+        || window.currentLoteForUnit;
+    const unit = lote?.unidades?.find(u => u.inscricao === unitInscricao);
+
+    if (!lote || !unit) {
+        window.Toast?.error?.('Unidade não encontrada para edição rápida.');
+        return;
+    }
+
+    window.showUnitTooltip(unit, lote);
+    setTimeout(() => window.editUnitFromTooltip(unitInscricao), 60);
+};
+
 window.saveUnitEdit = async function (unitInscricao) {
+    const isAdmin = window.Monetization?.isAdminRole?.()
+        || ['admin', 'master'].includes(String(window.Monetization?.userRole || '').toLowerCase());
+    if (!isAdmin) {
+        window.Toast?.warning?.('Somente administradores podem salvar alterações diretas.');
+        return;
+    }
+
     window.Loading.show('Salvando...', 'Atualizando unidade...');
     try {
         // Função auxiliar para tratar números (converte vazio para null)
@@ -800,10 +853,10 @@ window.saveUnitEdit = async function (unitInscricao) {
             valor_vendavel: getNumber('edit-unit-valor-vendavel'),
             
             // Novos Campos
-            matricula: getText('edit-unit-matricula'),
+            matricula: window.normalizeUnitDocList(getText('edit-unit-matricula')),
             matricula_qualificacao: getText('edit-unit-matricula-qualificacao'), 
             fracao_ideal: getNumber('edit-unit-fracao-ideal'),
-            rip: getText('edit-unit-rip'),
+            rip: window.normalizeUnitDocList(getText('edit-unit-rip')),
             rip_cpf: getText('edit-unit-rip-cpf')?.replace(/\D/g, ''), 
             rip_qualificacao: getText('edit-unit-rip-qualificacao'), 
             cod_ref: getText('edit-unit-cod-ref'),
@@ -1449,6 +1502,13 @@ console.log("✅ Editor Handler module loaded");
 let currentMassLoteId = null;
 
 window.openMassUnitManager = async function (loteInscricao) {
+    const isAdmin = window.Monetization?.isAdminRole?.()
+        || ['admin', 'master'].includes(String(window.Monetization?.userRole || '').toLowerCase());
+    if (!isAdmin) {
+        window.Toast?.warning?.('Edição rápida de unidades é restrita ao administrador.');
+        return;
+    }
+
     currentMassLoteId = loteInscricao;
     const modal = document.getElementById('modal-mass-unit-manager');
     const tableBody = document.getElementById('mass-unit-table-body');
@@ -1457,13 +1517,13 @@ window.openMassUnitManager = async function (loteInscricao) {
     if (!modal || !tableBody) return;
     
     titleSpan.innerText = loteInscricao;
-    tableBody.innerHTML = '<tr><td colspan="6" style="padding: 40px; text-align: center; color: #64748b;"><i class="fas fa-spinner fa-spin"></i> Carregando unidades...</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="8" style="padding: 40px; text-align: center; color: #64748b;"><i class="fas fa-spinner fa-spin"></i> Carregando unidades...</td></tr>';
     window.openModal('modal-mass-unit-manager');
     
     try {
         const { data: units, error } = await window.supabaseApp
             .from('unidades')
-            .select('inscricao, nome_proprietario, cpf_cnpj, complemento, matricula, rip, endereco_completo')
+            .select('inscricao, nome_proprietario, cpf_cnpj, complemento, matricula, rip, valor_venal, endereco_completo')
             .eq('lote_inscricao', loteInscricao)
             .order('inscricao', { ascending: true });
             
@@ -1494,8 +1554,9 @@ window.addMassUnitRow = function (data = null) {
     const owner = data ? (data.nome_proprietario || '') : '';
     const cpf = data ? (data.cpf_cnpj || '') : '';
     const complemento = data ? (data.complemento || '') : '';
-    const matricula = data ? (data.matricula || '') : '';
-    const rip = data ? (data.rip || '') : '';
+    const matricula = data ? window.formatUnitDocTextareaValue(data.matricula || '') : '';
+    const rip = data ? window.formatUnitDocTextareaValue(data.rip || '') : '';
+    const valorVenal = data ? (data.valor_venal || '') : '';
     
     row.innerHTML = `
         <td style="padding: 10px;">
@@ -1511,10 +1572,13 @@ window.addMassUnitRow = function (data = null) {
             <input type="text" class="mass-input complemento" value="${complemento}" placeholder="Apto/Torre" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
         </td>
         <td style="padding: 10px;">
-            <input type="text" class="mass-input matricula" value="${matricula}" placeholder="Matrícula" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+            <textarea class="mass-input matricula" rows="2" placeholder="Uma por linha" style="width: 100%; min-height: 52px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">${matricula}</textarea>
         </td>
         <td style="padding: 10px;">
-            <input type="text" class="mass-input rip" value="${rip}" placeholder="RIP" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+            <textarea class="mass-input rip" rows="2" placeholder="Um por linha" style="width: 100%; min-height: 52px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">${rip}</textarea>
+        </td>
+        <td style="padding: 10px;">
+            <input type="number" step="0.01" class="mass-input valor-venal" value="${valorVenal}" placeholder="IPTU" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
         </td>
         <td style="padding: 10px; text-align: center;">
             <button onclick="this.closest('tr').remove()" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px;" title="Remover da lista">
@@ -1525,8 +1589,44 @@ window.addMassUnitRow = function (data = null) {
     tableBody.appendChild(row);
 };
 
+window.addSequenceMassUnitRows = function () {
+    const start = parseInt(prompt('Primeira unidade da sequência:', '001'), 10);
+    const count = parseInt(prompt('Quantidade de unidades:', '10'), 10);
+
+    if (!Number.isFinite(start) || !Number.isFinite(count) || count <= 0) {
+        window.Toast?.warning?.('Sequência inválida.');
+        return;
+    }
+
+    const tableBody = document.getElementById('mass-unit-table-body');
+    if (!tableBody) return;
+
+    const currentRows = tableBody.querySelectorAll('.mass-unit-row');
+    if (currentRows.length === 1) {
+        const onlySuffix = currentRows[0].querySelector('.suffix')?.value.trim();
+        const hasData = Array.from(currentRows[0].querySelectorAll('input, textarea')).some(input => input.value.trim());
+        if (!hasData || !onlySuffix) tableBody.innerHTML = '';
+    }
+
+    for (let i = 0; i < count; i++) {
+        const suffix = String(start + i).padStart(3, '0');
+        window.addMassUnitRow({
+            inscricao: `${currentMassLoteId}${suffix}`,
+            complemento: suffix
+        });
+    }
+
+    window.Toast?.success?.(`${count} unidades adicionadas à lista.`);
+};
+
 window.saveMassUnits = async function () {
     if (!currentMassLoteId) return;
+    const isAdmin = window.Monetization?.isAdminRole?.()
+        || ['admin', 'master'].includes(String(window.Monetization?.userRole || '').toLowerCase());
+    if (!isAdmin) {
+        window.Toast?.warning?.('Somente administradores podem salvar unidades em massa.');
+        return;
+    }
     
     const rows = document.querySelectorAll('.mass-unit-row');
     const unitsToSave = [];
@@ -1543,8 +1643,10 @@ window.saveMassUnits = async function () {
         const owner = row.querySelector('.owner').value.trim();
         const cpf = row.querySelector('.cpf').value.trim().replace(/\D/g, '');
         const complemento = row.querySelector('.complemento').value.trim();
-        const matricula = row.querySelector('.matricula').value.trim();
-        const rip = row.querySelector('.rip').value.trim();
+        const matricula = window.normalizeUnitDocList(row.querySelector('.matricula').value);
+        const rip = window.normalizeUnitDocList(row.querySelector('.rip').value);
+        const valorVenalRaw = row.querySelector('.valor-venal')?.value.trim();
+        const valorVenal = valorVenalRaw ? parseFloat(valorVenalRaw.replace(',', '.')) : null;
         
         if (suffix.length === 3) {
             unitsToSave.push({
@@ -1555,7 +1657,8 @@ window.saveMassUnits = async function () {
                 complemento: complemento,
                 endereco_completo: collectiveAddress, // Apply collective address
                 matricula: matricula,
-                rip: rip
+                rip: rip,
+                valor_venal: valorVenal
             });
         } else {
             errors.push(`Linha ${index + 1}: Sufixo inválido.`);

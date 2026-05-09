@@ -1684,6 +1684,10 @@ window.Monetization = {
         this.promptUnlockLote(loteInscricao, unitInscricao, 1);
     },
 
+    promptUnlockUnit: function(unitInscricao) {
+        return this.unlockUnitInfo(unitInscricao);
+    },
+
     // Duplicate isUnlocked removed - moved to line 207
 
     loadWallet: async function() {

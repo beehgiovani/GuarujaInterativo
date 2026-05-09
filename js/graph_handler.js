@@ -62,8 +62,12 @@ window.GraphHandler = {
             .call(this.drag(simulation));
 
         node.append("circle")
-            .attr("r", d => d.main ? 15 : 8)
-            .attr("fill", d => d.main ? "#7c3aed" : "#3b82f6")
+            .attr("r", d => d.main ? 15 : (d.kind === 'property_suggestion' ? 6 : 8))
+            .attr("fill", d => {
+                if (d.main) return "#7c3aed";
+                if (d.kind === 'property_suggestion') return d.confidence === 'alta' ? "#f59e0b" : "#fbbf24";
+                return d.confidence === 'confirmado' ? "#10b981" : "#3b82f6";
+            })
             .style("filter", d => d.main ? "drop-shadow(0 0 8px rgba(124, 58, 237, 0.6))" : "none");
 
         // Labels

@@ -2,7 +2,7 @@
 // Bruno Giovani: Máximo de dados expostos, zero peso extra na UI.
 
 window.UnitTooltipUI = {
-    parseArrayField: function(value) {
+    parseArrayField: function (value) {
         if (!value) return [];
         if (Array.isArray(value)) return value.filter(Boolean);
         if (typeof value === 'string') {
@@ -16,31 +16,55 @@ window.UnitTooltipUI = {
         return [];
     },
 
-    render: function(unit, parentLote, history = []) {
-        const showsFull = window.Monetization?.isUnlocked(unit.inscricao, parentLote.inscricao);
+    parseContactField: function (value) {
+        if (!value) return [];
+        if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean);
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                if (Array.isArray(parsed)) return parsed.map(v => String(v).trim()).filter(Boolean);
+            } catch (e) { }
+            return value.split(',').map(v => v.trim()).filter(Boolean);
+        }
+        return [];
+    },
+
+    parseDocumentList: function (value) {
+        if (!value) return [];
+        if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean);
+        return String(value)
+            .split(/\r?\n|;|\|/)
+            .map(v => v.trim())
+            .filter(Boolean);
+    },
+
+    render: function (unit, parentLote, history = []) {
+        const isAdmin = window.Monetization?.isAdminRole?.()
+            || ['admin', 'master'].includes(String(window.Monetization?.userRole || '').toLowerCase());
+        const showsFull = isAdmin || window.Monetization?.isUnlocked(unit.inscricao, parentLote.inscricao);
+        const canEnrich = isAdmin || window.Monetization?.canAccess?.('marketing_tools');
 
         // Helpers de formatação
         const fmtCurrency = (v) => v ? 'R$ ' + Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) : null;
-        const fmtArea     = (v) => v ? Number(v).toLocaleString('pt-BR') + ' m²' : null;
+        const fmtArea = (v) => v ? Number(v).toLocaleString('pt-BR') + ' m²' : null;
 
         // Campos derivados
-        const valorReal     = fmtCurrency(unit.valor_real);
+        const valorReal = fmtCurrency(unit.valor_real);
         const valorVendavel = fmtCurrency(unit.valor_vendavel);
+        const valorVenal = fmtCurrency(unit.valor_venal);
         const valorEdificado = fmtCurrency(unit.valor_venal_edificado);
-        const areaUtil      = fmtArea(unit.area_util);
-        const unitImages    = this.parseArrayField(unit.imagens);
-        const unitFiles     = this.parseArrayField(unit.arquivos);
+        const areaUtil = fmtArea(unit.area_util);
+        const unitImages = this.parseArrayField(unit.imagens);
+        const unitFiles = this.parseArrayField(unit.arquivos);
+        const contatos = this.parseContactField(unit.contato_proprietario);
+        const matriculas = this.parseDocumentList(unit.matricula);
+        const rips = this.parseDocumentList(unit.rip);
 
-        // Lógica Inteligente de Metragem: Se for AP e muito baixo, deduzir Fração Ideal
         const rawArea = parseFloat(unit.area_total || unit.metragem || unit.area_util || 0);
-        const unitType = (unit.tipo || '').toLowerCase();
-        // Se for apartamento ou unidade genérica com metragem suspeita (< 40m²), tratamos como Fração Ideal
-        const isLowAreaAp = (unitType.includes('ap') || unitType.includes('unid')) && rawArea > 0 && rawArea < 40;
+        const areaTotalLabel = 'Área Total';
+        const areaTotal = fmtArea(rawArea);
 
-        const areaTotalLabel = isLowAreaAp ? 'Fração Ideal' : 'Área Total';
-        const areaTotal     = fmtArea(rawArea);
-
-        const cep           = unit.cep ? unit.cep.replace(/(\d{5})(\d{3})/, '$1-$2') : null;
+        const cep = unit.cep ? unit.cep.replace(/(\d{5})(\d{3})/, '$1-$2') : null;
 
         // Máscara de Documento (CPF/CNPJ)
         const formatDoc = (doc) => {
@@ -62,7 +86,7 @@ window.UnitTooltipUI = {
                     ? unit.caracteristicas
                     : JSON.parse(unit.caracteristicas);
             }
-        } catch(e) {}
+        } catch (e) { }
 
         // ID único para atualização assíncrona da imagem
         const imgId = `unit-hero-img-${unit.inscricao || Math.random().toString(36).substr(2, 9)}`;
@@ -91,16 +115,16 @@ window.UnitTooltipUI = {
                     <img id="${imgId}" src="${placeholderImg}" alt="${unit.complemento || 'Unidade'}" loading="lazy" class="shimmer-loading" onerror="this.src='${placeholderImg}'">
                     <div class="lot-badge-zona">Unidade: ${String(unit.inscricao).slice(-3)}</div>
 
-                    <div style="position: absolute; top: 29px; left: 480px; z-index: 10;">
-                        ${parentLote ? `
-                        <button class="unit-tooltip-back" aria-label="Voltar para Lote" onclick="window.closeUnitTooltipAndReturn('${parentLote.inscricao}')" style="background: rgba(15,23,42,0.6); border: none; color: white; border-radius: 12px; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; cursor: pointer; backdrop-filter: blur(8px); transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                    ${parentLote ? `
+                    <div class="unit-tooltip-nav unit-tooltip-nav-left">
+                        <button class="unit-tooltip-back" aria-label="Voltar para Lote" onclick="window.closeUnitTooltipAndReturn('${parentLote.inscricao}')">
                             <i class="fas fa-arrow-left" style="font-size: 18px;"></i>
                         </button>
-                        ` : ''}
                     </div>
+                    ` : ''}
 
-                    <div style="position: absolute; top: 15px; right: 15px; z-index: 10;">
-                        <button class="unit-tooltip-close" aria-label="Fechar" onclick="window.closeLotTooltip()" style="background: rgba(15,23,42,0.6); border: none; color: white; border-radius: 12px; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; cursor: pointer; backdrop-filter: blur(8px); transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                    <div class="unit-tooltip-nav unit-tooltip-nav-right">
+                        <button class="unit-tooltip-close" aria-label="Fechar" onclick="window.closeLotTooltip()">
                             <i class="fas fa-times" style="font-size: 18px;"></i>
                         </button>
                     </div>
@@ -117,7 +141,7 @@ window.UnitTooltipUI = {
                 </div>
 
                 <!-- Barra de Ações -->
-                ${this.renderActionToolbar(unit, parentLote, showsFull)}
+                ${this.renderActionToolbar(unit, parentLote, showsFull, isAdmin, canEnrich)}
 
                 <!-- Body: Tabs + Content (wrapper for editor injection) -->
                 <div class="unit-tooltip-body">
@@ -163,49 +187,72 @@ window.UnitTooltipUI = {
                         <div class="owner-doc">
                             Doc: ${showsFull ? formatDoc(unit.cpf_cnpj) : unit.documento_exibicao || '***.***.***-**'}
                         </div>
+                        <div class="owner-action-row">
+                            ${showsFull ? `
+                                <button type="button" class="owner-action-btn primary" onclick="window.openUnitOwnerProfile('${unit.inscricao}')">
+                                    <i class="fas fa-id-card"></i> Ficha completa
+                                </button>
+                                ${canEnrich ? `
+                                    <button type="button" class="owner-action-btn" onclick="window.Enrichment.enrichUnit('${unit.inscricao}')">
+                                        <i class="fas fa-search"></i> Captar dados
+                                    </button>` : ''}
+                            ` : `
+                                <button type="button" class="owner-action-btn primary" onclick="window.Monetization.unlockUnitInfo('${unit.inscricao}')">
+                                    <i class="fas fa-unlock"></i> Revelar proprietário
+                                </button>
+                            `}
+                        </div>
                     </div>
 
                     <!-- Especificações (grid 3x3 = até 9 itens) -->
                     <div class="specs-grid">
-                        ${this.renderSpec(areaTotalLabel, areaTotal || '?', isLowAreaAp ? 'fa-chart-pie' : 'fa-expand')}
+                        ${this.renderSpec(areaTotalLabel, areaTotal || '?', 'fa-expand')}
                         ${this.renderSpec('Área Útil', areaUtil || '?', 'fa-vector-square')}
                         ${this.renderSpec('Quartos', unit.quartos || '?', 'fa-bed')}
                         ${this.renderSpec('Suítes', unit.suites || '?', 'fa-bath')}
                         ${this.renderSpec('Banheiros', unit.banheiros || '?', 'fa-shower')}
                         ${this.renderSpec('Vagas', unit.vagas || '?', 'fa-car')}
-                        ${this.renderSpec('V. Venal Solo', unit.valor_venal ? 'R$ ' + (unit.valor_venal/1000).toFixed(0) + 'k' : '—', 'fa-landmark')}
+                        ${this.renderSpec('IPTU / Venal', valorVenal ? valorVenal : '—', 'fa-landmark')}
                         ${this.renderSpec('V. Edificado', valorEdificado ? valorEdificado : '—', 'fa-building')}
                         ${this.renderSpec('Fração Ideal', unit.fracao_ideal || '—', 'fa-percent')}
                         ${this.renderSpec('Status', unit.status_venda || 'Padrão', 'fa-tags')}
                     </div>
 
+                    ${this.renderContactPanel(unit, contatos, showsFull, canEnrich)}
+
                     <!-- Documentação (Matrícula / RIP) -->
-                    ${(unit.matricula || unit.rip) && showsFull ? `
+                    ${(matriculas.length || rips.length) && showsFull ? `
                     <div class="unit-docs-row">
-                        ${unit.matricula ? `
+                        ${matriculas.length ? `
                         <div class="unit-doc-badge">
                             <i class="fas fa-file-contract"></i>
                             <div>
-                                <div class="mini-card-label">Matrícula</div>
-                                <div class="cnpj-val">${unit.matricula}${unit.matricula_qualificacao ? ' · ' + unit.matricula_qualificacao : ''}</div>
+                                <div class="mini-card-label">Matrículas</div>
+                                <div class="unit-doc-chip-list">
+                                    ${matriculas.map(doc => `<span class="unit-doc-chip">${doc}</span>`).join('')}
+                                </div>
+                                ${unit.matricula_qualificacao ? `<div class="unit-doc-note">${unit.matricula_qualificacao}</div>` : ''}
                             </div>
                         </div>` : ''}
-                        ${unit.rip ? `
+                        ${rips.length ? `
                         <div class="unit-doc-badge">
                             <i class="fas fa-anchor"></i>
                             <div>
-                                <div class="mini-card-label">RIP Marinha</div>
-                                <div class="cnpj-val">${unit.rip}${unit.rip_qualificacao ? ' · ' + unit.rip_qualificacao : ''}</div>
+                                <div class="mini-card-label">RIPs Marinha</div>
+                                <div class="unit-doc-chip-list">
+                                    ${rips.map(doc => `<span class="unit-doc-chip rip">${doc}</span>`).join('')}
+                                </div>
+                                ${unit.rip_qualificacao ? `<div class="unit-doc-note">${unit.rip_qualificacao}</div>` : ''}
                             </div>
                         </div>` : ''}
                     </div>` : ''}
-                    ${(unit.matricula || unit.rip) && !showsFull ? `
+                    ${(matriculas.length || rips.length) && !showsFull ? `
                     <div class="unit-docs-row">
                         <div class="unit-doc-badge locked">
                             <i class="fas fa-lock"></i>
                             <div>
                                 <div class="mini-card-label">Documentação disponível</div>
-                                <div class="cnpj-val">Desbloqueie para ver Matrícula/RIP</div>
+                                <div class="cnpj-val">Desbloqueie para ver Matrícula, RIP e IPTU</div>
                             </div>
                         </div>
                     </div>` : ''}
@@ -222,9 +269,9 @@ window.UnitTooltipUI = {
                     <!-- Linha de contexto -->
                     <div class="unit-context-row">
                         ${unit.bairro_unidade ? `<span class="uctx-chip"><i class="fas fa-map"></i>${unit.bairro_unidade}</span>` : ''}
-                        ${unit.tipo          ? `<span class="uctx-chip"><i class="fas fa-home"></i>${unit.tipo}</span>` : ''}
-                        ${unit.complemento   ? `<span class="uctx-chip"><i class="fas fa-hashtag"></i>Unid. ${unit.complemento}</span>` : ''}
-                        <span class="uctx-chip muted" title="Inscrição Municipal"><i class="fas fa-fingerprint"></i>${unit.inscricao}</span>
+                        ${unit.tipo ? `<span class="uctx-chip"><i class="fas fa-home"></i>${unit.tipo}</span>` : ''}
+                        ${unit.complemento ? `<span class="uctx-chip"><i class="fas fa-hashtag"></i>Unid. ${unit.complemento}</span>` : ''}
+                        <span class="uctx-chip muted" font-size="15px" title="Inscrição Municipal"><i class="fas fa-fingerprint"></i>${unit.inscricao}</span>
                     </div>
                 </div>
 
@@ -249,7 +296,7 @@ window.UnitTooltipUI = {
             </div>`;
     },
 
-    renderActionToolbar: function(unit, parentLote, showsFull) {
+    renderActionToolbar: function (unit, parentLote, showsFull, isAdmin, canEnrich) {
         return `
             <div class="action-toolbar">
                 <button class="btn-action-primary" onclick="window.UnitTooltipHandler.evaluateWithFarol('${unit.inscricao}')">
@@ -258,18 +305,55 @@ window.UnitTooltipUI = {
                 <button class="btn-action-secondary" onclick="window.UnitTooltipHandler.showContractOptions('${unit.inscricao}')">
                     <i class="fas fa-file-contract"></i> Contrato
                 </button>
+                ${showsFull && canEnrich ? `
+                <button class="btn-action-secondary" onclick="window.Enrichment.enrichUnit('${unit.inscricao}')" title="Captar dadoss e e-mails">
+                    <i class="fas fa-search"></i> Captar dados
+                </button>` : ''}
+                ${isAdmin ? `
                 <button class="btn-action-secondary" onclick="window.editUnitFromTooltip('${unit.inscricao}')" title="Editar Informações">
                     <i class="fas fa-edit"></i> Editar
-                </button>
+                </button>` : ''}
                 ${!showsFull ? `
-                    <button class="btn-unlock" onclick="window.Monetization.promptUnlockUnit('${unit.inscricao}', 2)">
+                    <button class="btn-unlock" onclick="window.Monetization.unlockUnitInfo('${unit.inscricao}')">
                         <i class="fas fa-unlock"></i> Revelar
                     </button>
                 ` : ''}
             </div>`;
     },
 
-    renderSpec: function(label, value, icon) {
+    renderContactPanel: function (unit, contatos, showsFull, canEnrich) {
+        if (!showsFull && (unit.cpf_cnpj || unit.nome_proprietario)) {
+            return `
+                <div class="unit-contact-panel locked">
+                    <div class="unit-contact-title"><i class="fas fa-lock"></i> Contatos do proprietário</div>
+                    <div class="unit-contact-muted">Desbloqueie a unidade para captar e visualizar telefones.</div>
+                </div>`;
+        }
+
+        const contactChips = contatos.map((contact) => {
+            const label = String(contact || '').trim();
+            const clean = label.replace(/\D/g, '');
+            const isPhone = clean.length >= 10;
+            const href = isPhone ? `https://wa.me/55${clean}` : `mailto:${label}`;
+            const icon = isPhone ? 'fa-phone' : 'fa-envelope';
+            return `
+                <a class="unit-contact-chip" href="${href}" target="_blank" rel="noopener">
+                    <i class="fas ${icon}"></i>${label}
+                </a>`;
+        }).join('');
+
+        return `
+            <div class="unit-contact-panel">
+                <div class="unit-contact-title"><i class="fas fa-address-book"></i> Contatos do proprietário</div>
+                ${contactChips ? `<div class="unit-contact-list">${contactChips}</div>` : '<div class="unit-contact-muted">Nenhum telefone salvo ainda.</div>'}
+                ${canEnrich ? `
+                    <button type="button" class="unit-contact-capture" onclick="window.Enrichment.enrichUnit('${unit.inscricao}')">
+                        <i class="fas fa-search"></i> Captar dados
+                    </button>` : ''}
+            </div>`;
+    },
+
+    renderSpec: function (label, value, icon) {
         return `
             <div class="spec-item">
                 <i class="fas ${icon}"></i>
@@ -278,7 +362,7 @@ window.UnitTooltipUI = {
             </div>`;
     },
 
-    renderUnitGallery: function(images, title) {
+    renderUnitGallery: function (images, title) {
         const imagesJson = JSON.stringify(images).replace(/"/g, '&quot;');
         return `
             <div class="unit-media-section">
@@ -293,7 +377,7 @@ window.UnitTooltipUI = {
             </div>`;
     },
 
-    renderUnitFiles: function(files) {
+    renderUnitFiles: function (files) {
         return `
             <div class="unit-file-section">
                 <div class="mini-card-label">Arquivos da Unidade</div>
@@ -307,14 +391,14 @@ window.UnitTooltipUI = {
             </div>`;
     },
 
-    calculatePricePerM2: function(unit) {
+    calculatePricePerM2: function (unit) {
         const area = parseFloat(unit.area_total || unit.metragem) || 1;
         const valor = parseFloat(unit.valor_vendavel || unit.valor_real || unit.valor_venal) || 0;
         if (valor === 0) return '---';
         return (valor / area).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
     },
 
-    renderHistory: function(history) {
+    renderHistory: function (history) {
         if (!history || history.length === 0) return '<div class="empty-state">Nenhum histórico registrado.</div>';
         return history.map(h => `
             <div class="history-item">
@@ -322,5 +406,66 @@ window.UnitTooltipUI = {
                 <div class="history-name">${h.nome_proprietario_manual || h.nome_proprietario}</div>
                 <div class="history-date">${new Date(h.data_fim).toLocaleDateString()}</div>
             </div>`).join('');
+    }
+};
+
+window.openUnitOwnerProfile = async function (unitInscricao) {
+    const unit = (window.allLotes || [])
+        .flatMap(lote => lote.unidades || [])
+        .find(u => u.inscricao === unitInscricao)
+        || window.currentLoteForUnit?.unidades?.find(u => u.inscricao === unitInscricao);
+
+    if (!unit) {
+        window.Toast?.error?.('Unidade não encontrada para abrir o proprietário.');
+        return;
+    }
+
+    const isAdmin = window.Monetization?.isAdminRole?.()
+        || ['admin', 'master'].includes(String(window.Monetization?.userRole || '').toLowerCase());
+    const isUnlocked = isAdmin
+        || window.Monetization?.isUnlocked?.(unit.inscricao, unit.lote_inscricao)
+        || window.Monetization?.isUnlockedPerson?.(unit.cpf_cnpj);
+
+    if (!isUnlocked) {
+        window.Monetization?.unlockUnitInfo?.(unit.inscricao);
+        return;
+    }
+
+    if (unit.proprietario_id && window.ProprietarioTooltip?.show) {
+        window.ProprietarioTooltip.show(unit.proprietario_id);
+        return;
+    }
+
+    const doc = String(unit.cpf_cnpj || '').replace(/\D/g, '');
+    if (!doc) {
+        window.Toast?.warning?.('Esta unidade ainda não tem CPF/CNPJ vinculado.');
+        return;
+    }
+
+    window.Loading?.show?.('Buscando proprietário...', 'Conferindo cadastro unificado');
+    try {
+        const { data: prop } = await window.supabaseApp
+            .from('proprietarios')
+            .select('id')
+            .eq('cpf_cnpj', doc)
+            .maybeSingle();
+
+        if (prop?.id && window.ProprietarioTooltip?.show) {
+            unit.proprietario_id = prop.id;
+            window.ProprietarioTooltip.show(prop.id);
+            return;
+        }
+
+        if (window.Enrichment?.enrichPerson) {
+            await window.Enrichment.enrichPerson(doc, unit.nome_proprietario || '');
+            return;
+        }
+
+        window.Toast?.info?.('Proprietário ainda não enriquecido.');
+    } catch (e) {
+        console.error('Erro ao abrir proprietário completo:', e);
+        window.Toast?.error?.('Erro ao abrir ficha do proprietário.');
+    } finally {
+        window.Loading?.hide?.();
     }
 };

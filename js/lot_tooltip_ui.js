@@ -3,6 +3,8 @@
 
 window.LotTooltipUI = {
     render: function(lote) {
+        const isAdmin = window.Monetization?.isAdminRole?.()
+            || ['admin', 'master'].includes(String(window.Monetization?.userRole || '').toLowerCase());
         const totalUnidades = lote.unidades?.length || lote.total_unidades || '?';
         const bairro        = lote.bairro || lote.metadata?.bairro || '—';
         const area          = lote.area_terreno ? `${Number(lote.area_terreno).toLocaleString('pt-BR')} m²` : '—';
@@ -100,11 +102,14 @@ window.LotTooltipUI = {
                     </div>
                     
                     
-                    <div class="lot-edit-section">
+                    ${isAdmin ? `<div class="lot-edit-section">
                         <button class="lot-edit-btn" onclick="window.editFromTooltip('${lote.inscricao}')">
                             <i class="fas fa-edit"></i> Editar Informações do Lote
                         </button>
-                    </div>
+                        <button class="lot-edit-btn secondary" onclick="window.openMassUnitManager('${lote.inscricao}')">
+                            <i class="fas fa-table"></i> Edição rápida de Unidades
+                        </button>
+                    </div>` : ''}
 
                     <!-- Infraestrutura / Amenidades -->
                     ${amenityChips ? `
@@ -119,7 +124,7 @@ window.LotTooltipUI = {
                         <i class="fas fa-person-digging"></i>
                         <div>
                             <div class="cnpj-label">Zelador: <span class="cnpj-val">${zeladorNome}</span></div>
-                            ${zeladorTel ? `<div style="font-size:11px;color:#64748b;margin-top:2px;">${zeladorTel}</div>` : ''}
+                            ${zeladorTel && isAdmin ? `<div class="lot-sensitive-note">${zeladorTel}</div>` : ''}
                         </div>
                     </div>` : ''}
 
@@ -132,7 +137,7 @@ window.LotTooltipUI = {
                     </div>` : ''}
 
                     <!-- Matrícula Mãe -->
-                    ${matriculaMae ? `
+                    ${matriculaMae && isAdmin ? `
                     <div class="lot-cnpj-row">
                         <i class="fas fa-file-contract"></i>
                         <span class="cnpj-label">Matrícula Mãe:</span>

@@ -88,7 +88,7 @@
     <link rel="stylesheet" href="css/map_styles.css?v=2.1">
     <link rel="stylesheet" href="css/overlays_styles.css?v=2.1">
     <link rel="stylesheet" href="css/neighborhood_styles.css">
-    <link rel="stylesheet" href="css/editor_styles.css?v=1.1">
+    <link rel="stylesheet" href="css/editor_styles.css?v=1.2">
     <link rel="stylesheet" href="css/premium_styles.css">
     <link rel="stylesheet" href="css/analytics_styles.css">
     <link rel="stylesheet" href="css/carousel_styles.css">
@@ -97,7 +97,7 @@
     <link rel="stylesheet" href="css/crm_styles.css">
     <link rel="stylesheet" href="css/ai_chat_styles.css">
     <link rel="stylesheet" href="css/hub_styles.css?v=2.0">
-    <link rel="stylesheet" href="css/mobile_styles.css?v=2.19">
+    <link rel="stylesheet" href="css/mobile_styles.css?v=2.23">
     <link rel="stylesheet" href="css/image_viewer.css">
     <!-- Site Intelligence & Security -->
     <script src="js/config.js"></script>
@@ -954,42 +954,43 @@
 
     <!-- 3. MAP: Mass Unit Manager Modal (Admin Only) -->
     <div id="modal-mass-unit-manager" class="custom-modal-overlay">
-        <div class="custom-modal" style="max-width: 1000px; width: 95%;">
+        <div class="custom-modal custom-modal-large">
             <div class="custom-modal-header">
                 <div class="custom-modal-title">
                     <span>🏢 Gerenciador de Unidades: <span id="mass-manager-lote-id"></span></span>
                 </div>
                 <button type="button" class="custom-modal-close" aria-label="Fechar" onclick="closeModal('modal-mass-unit-manager')">&times;</button>
             </div>
-            <div class="custom-modal-body" style="padding: 10px; max-height: 70vh; overflow-y: auto;">
-                <div style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 15px;">
-                    <div style="flex: 1;">
-                        <label style="display: block; font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 5px;">📍 Endereço Coletivo (Aplicar a todas as unidades)</label>
-                        <input type="text" id="mass-collective-address" placeholder="Ex: Rua das Flores, 123 - Centro" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-weight: 600;">
+            <div class="custom-modal-body custom-modal-scroll-body">
+                <div class="mass-manager-address-panel">
+                    <div class="mass-manager-address-field">
+                        <label class="mass-manager-label">📍 Endereço Coletivo (Aplicar a todas as unidades)</label>
+                        <input type="text" id="mass-collective-address" class="mass-manager-input" placeholder="Ex: Rua das Flores, 123 - Centro">
                     </div>
                 </div>
-                <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+                <table class="mass-manager-table">
                     <thead>
-                        <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-                            <th style="padding: 10px; width: 80px;">Sufixo</th>
-                            <th style="padding: 10px; width: 180px;">Proprietário</th>
-                            <th style="padding: 10px; width: 140px;">CPF/CNPJ</th>
-                            <th style="padding: 10px;">Complemento (Apto/Torre)</th>
-                            <th style="padding: 10px; width: 100px;">Matrícula</th>
-                            <th style="padding: 10px; width: 80px;">RIP</th>
-                            <th style="padding: 10px; text-align: center; width: 50px;">Ação</th>
+                        <tr>
+                            <th>Sufixo</th>
+                            <th>Proprietário</th>
+                            <th>CPF/CNPJ</th>
+                            <th>Complemento (Apto/Torre)</th>
+                            <th>Matrícula</th>
+                            <th>RIP</th>
+                            <th>IPTU</th>
+                            <th>Ação</th>
                         </tr>
                     </thead>
                     <tbody id="mass-unit-table-body">
                         <!-- Handled by JS -->
                     </tbody>
                 </table>
-                <div style="margin-top: 15px;">
-                    <button onclick="window.addMassUnitRow()" class="btn-ghost" style="font-size: 12px; padding: 6px 12px;"><i class="fas fa-plus"></i> Adicionar Linha Vazia</button>
-                    <button onclick="window.addSequenceMassUnitRows()" class="btn-ghost" style="font-size: 12px; padding: 6px 12px; margin-left: 10px;"><i class="fas fa-list-ol"></i> Gerar Sequência</button>
+                <div class="mass-manager-actions">
+                    <button onclick="window.addMassUnitRow()" class="btn-ghost mass-manager-action-btn"><i class="fas fa-plus"></i> Adicionar Linha Vazia</button>
+                    <button onclick="window.addSequenceMassUnitRows()" class="btn-ghost mass-manager-action-btn"><i class="fas fa-list-ol"></i> Gerar Sequência</button>
                 </div>
             </div>
-            <div class="custom-modal-header" style="justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color); border-bottom: none;">
+            <div class="custom-modal-header custom-modal-footer">
                 <button type="button" class="btn-ghost" onclick="closeModal('modal-mass-unit-manager')">Cancelar</button>
                 <button type="button" class="btn-primary-rich" onclick="window.saveMassUnits()"><i class="fas fa-save"></i> Salvar Tudo</button>
             </div>
@@ -1109,7 +1110,7 @@
 
     <!-- App Logic -->
     <link rel="stylesheet" href="css/anuncios_styles.css?v=1.17">
-    <link rel="stylesheet" href="css/tooltip_modular.css?v=1.21">
+    <link rel="stylesheet" href="css/tooltip_modular.css?v=1.23">
     <script src="js/ui_manager.js?v=1.20"></script>
     <script src="js/pwa_handler.js?v=1.0"></script>
     <script src="js/map_controls.js?v=1.0"></script>
@@ -1118,21 +1119,21 @@
     <script src="js/sync_handler.js?v=1.0"></script>
     <script src="js/unit_type_handler.js?v=1.0"></script>
     <script src="js/tooltip_components.js?v=1.0"></script>
-    <script src="js/tooltip_unit_list.js?v=1.1"></script>
+    <script src="js/tooltip_unit_list.js?v=1.3"></script>
     <script src="js/lot_tooltip_handler.js?v=1.0"></script>
-    <script src="js/lot_tooltip_ui.js?v=1.20"></script>
-    <script src="js/unit_tooltip_ui.js?v=1.21"></script>
+    <script src="js/lot_tooltip_ui.js?v=1.21"></script>
+    <script src="js/unit_tooltip_ui.js?v=1.27"></script>
     <script src="js/unit_tooltip_handler.js?v=1.20"></script>
     <script src="js/owner_handler.js?v=1.0"></script>
-    <script src="js/monetization_handler.js?v=1.19"></script>
+    <script src="js/monetization_handler.js?v=1.20"></script>
     <script src="js/search_handler.js?v=1.17"></script>
-    <script src="js/tooltip_handler.js?v=1.17"></script>
+    <script src="js/tooltip_handler.js?v=1.18"></script>
     <script src="js/neighborhood_handler.js?v=1.17"></script>
     <script src="js/osm_handler.js?v=1.18"></script>
     <script src="js/map_handler.js?v=1.18"></script>
-    <script src="js/editor_handler.js?v=1.19"></script>
+    <script src="js/editor_handler.js?v=1.21"></script>
     <script src="js/enrichment_relations_ui.js?v=1.0"></script>
-    <script src="js/enrichment_handler.js?v=1.18"></script>
+    <script src="js/enrichment_handler.js?v=1.19"></script>
     <script src="js/user_unit_status_handler.js?v=1.18"></script>
     <script src="js/legend_handler.js?v=1.18"></script>
     <script src="js/admin_handler.js?v=1.18"></script>
@@ -1145,7 +1146,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script src="js/analytics_tracker.js"></script>
     <script src="js/analytics_dashboard.js"></script>
-    <script src="js/proprietario_tooltip.js?v=1.17"></script>
+    <script src="js/proprietario_tooltip.js?v=1.19"></script>
     <script src="js/infosimples_handler.js?v=1.18"></script>
     <script src="js/gemini_chat_handler.js"></script>
     <script src="js/ai_history_handler.js"></script>
@@ -1154,8 +1155,8 @@
     <script src="js/image_viewer_handler.js"></script>
     <script src="js/institutional_handler.js"></script>
     <script src="js/zoning_handler.js"></script>
-    <script src="js/relationship_handler.js"></script>
-    <script src="js/graph_handler.js"></script>
+    <script src="js/relationship_handler.js?v=1.1"></script>
+    <script src="js/graph_handler.js?v=1.1"></script>
     <script src="js/predictive_handler.js"></script>
 
     <!-- Onboarding / Tour -->

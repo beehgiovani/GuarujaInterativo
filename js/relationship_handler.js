@@ -2,6 +2,114 @@
 // Platinum Level: Connects owners based on shared data
 
 window.RelationshipHandler = {
+    _cleanDoc(value) {
+        return value ? String(value).replace(/\D/g, '') : '';
+    },
+
+    _normalizeName(value) {
+        return value ? String(value).trim().replace(/\s+/g, ' ') : '';
+    },
+
+    _extractEntityDoc(entity) {
+        return this._cleanDoc(
+            entity?.cpf_cnpj ||
+            entity?.cnpj ||
+            entity?.cpf ||
+            entity?.document ||
+            entity?.tax_id ||
+            entity?.company_document ||
+            entity?.cpf_cnpj_socio
+        );
+    },
+
+    _extractEntityName(entity) {
+        return this._normalizeName(
+            entity?.nome ||
+            entity?.name ||
+            entity?.company_name ||
+            entity?.razao_social ||
+            entity?.nome_completo
+        );
+    },
+
+    _formatUnitSuggestion(unit, matchType) {
+        const lote = unit.lotes || {};
+        const title = [
+            lote.building_name || lote.endereco || 'Imóvel',
+            unit.complemento || unit.tipo || ''
+        ].filter(Boolean).join(' · ');
+
+        return {
+            inscricao: unit.inscricao,
+            loteInscricao: unit.lote_inscricao,
+            title,
+            bairro: lote.bairro || '',
+            setor: lote.setor || '',
+            zona: lote.zona || '',
+            matricula: unit.matricula || '',
+            rip: unit.rip || '',
+            confidence: matchType === 'doc' ? 'alta' : 'baixa',
+            reason: matchType === 'doc'
+                ? 'CPF/CNPJ coincide com uma unidade cadastrada.'
+                : 'Nome semelhante encontrado em unidade cadastrada.'
+        };
+    },
+
+    async findSuggestedPropertiesForEntity(entity, options = {}) {
+        if (!window.supabaseApp) return [];
+
+        const doc = this._extractEntityDoc(entity);
+        const name = this._extractEntityName(entity);
+        const suggestions = new Map();
+        const selectFields = `
+            inscricao,
+            lote_inscricao,
+            tipo,
+            complemento,
+            nome_proprietario,
+            cpf_cnpj,
+            matricula,
+            rip,
+            lotes (
+                inscricao,
+                building_name,
+                bairro,
+                zona,
+                setor
+            )
+        `;
+
+        if (doc && doc.length >= 11 && !String(entity?.cpf_cnpj_socio || '').includes('*')) {
+            const { data, error } = await window.supabaseApp
+                .from('unidades')
+                .select(selectFields)
+                .eq('cpf_cnpj', doc)
+                .limit(options.limit || 5);
+
+            if (!error && data) {
+                data.forEach(unit => suggestions.set(unit.inscricao, this._formatUnitSuggestion(unit, 'doc')));
+            }
+        }
+
+        if (name && name.length >= 5 && suggestions.size < (options.limit || 5)) {
+            const { data, error } = await window.supabaseApp
+                .from('unidades')
+                .select(selectFields)
+                .ilike('nome_proprietario', `%${name}%`)
+                .limit(options.limit || 5);
+
+            if (!error && data) {
+                data.forEach(unit => {
+                    if (!suggestions.has(unit.inscricao)) {
+                        suggestions.set(unit.inscricao, this._formatUnitSuggestion(unit, 'name'));
+                    }
+                });
+            }
+        }
+
+        return [...suggestions.values()].slice(0, options.limit || 5);
+    },
+
     /**
      * Finds connections for a given owner
      * @param {number} proprietarioId 
@@ -47,9 +155,10 @@ window.RelationshipHandler = {
                             id: r.linked_prop.id,
                             nome: r.linked_prop.nome_completo,
                             doc: r.linked_prop.cpf_cnpj,
-                            type: r.tipo_relacionamento || 'Sócios',
+                            type: r.tipo_relacionamento || r.tipo_vinculo || 'Sócios',
                             properties: r.linked_prop.total_propriedades || 0,
-                            source: 'direct_db'
+                            source: 'direct_db',
+                            confidence: 'confirmado'
                         });
                     }
                 });
@@ -72,28 +181,64 @@ window.RelationshipHandler = {
                             doc: p.cpf_cnpj,
                             type: 'Grupo Econômico (Mesmo CNPJ)',
                             properties: p.total_propriedades || 0,
-                            source: 'cnpj_match'
+                            source: 'cnpj_match',
+                            confidence: 'alta'
                         });
                     });
                 }
             }
 
-            // --- LOGIC C: Shared Addresses (From Enrichment) ---
-            const addresses = prop.dados_enrichment?.addresses || [];
-            if (addresses.length > 0) {
-                // This is a simplified example. In production, we'd query a view that indexes these addresses.
-                // For now, let's look for exact name/doc matches in related_companies as a proxy.
-                const relatedCos = prop.dados_enrichment?.related_companies || [];
-                relatedCos.forEach(co => {
+            // --- LOGIC C: Enrichment entities with suggestive property correlation ---
+            const relatedCos = prop.dados_enrichment?.related_companies || [];
+            const family = prop.dados_enrichment?.family_persons || [];
+            const partners = prop.dados_enrichment?.partners || [];
+
+            if (relatedCos.length > 0) {
+                for (const co of relatedCos.slice(0, 10)) {
+                    const suggestedProperties = await this.findSuggestedPropertiesForEntity(co, { limit: 4 });
                     connections.push({
                         id: null, // Might not be in our DB yet
-                        nome: co.company_name,
-                        doc: co.cnpj,
+                        nome: this._extractEntityName(co),
+                        doc: this._extractEntityDoc(co),
                         type: 'Empresa Vinculada',
-                        properties: '?',
-                        source: 'enrichment_company'
+                        properties: suggestedProperties.length || '?',
+                        source: 'enrichment_company',
+                        confidence: suggestedProperties.some(item => item.confidence === 'alta') ? 'alta' : 'sugestivo',
+                        suggestedProperties
                     });
-                });
+                }
+            }
+
+            if (family.length > 0) {
+                for (const person of family.slice(0, 12)) {
+                    const suggestedProperties = await this.findSuggestedPropertiesForEntity(person, { limit: 4 });
+                    connections.push({
+                        id: null,
+                        nome: this._extractEntityName(person),
+                        doc: this._extractEntityDoc(person),
+                        type: person.description || person.relationship || 'Familiar citado no enriquecimento',
+                        properties: suggestedProperties.length || '?',
+                        source: 'enrichment_family',
+                        confidence: suggestedProperties.some(item => item.confidence === 'alta') ? 'alta' : 'sugestivo',
+                        suggestedProperties
+                    });
+                }
+            }
+
+            if (partners.length > 0) {
+                for (const partner of partners.slice(0, 12)) {
+                    const suggestedProperties = await this.findSuggestedPropertiesForEntity(partner, { limit: 4 });
+                    connections.push({
+                        id: null,
+                        nome: this._extractEntityName(partner),
+                        doc: this._extractEntityDoc(partner),
+                        type: partner.role || partner.description || 'Sócio relacionado',
+                        properties: suggestedProperties.length || '?',
+                        source: 'enrichment_partner',
+                        confidence: suggestedProperties.some(item => item.confidence === 'alta') ? 'alta' : 'sugestivo',
+                        suggestedProperties
+                    });
+                }
             }
 
             // Deduplicate by Doc/Name
@@ -128,12 +273,31 @@ window.RelationshipHandler = {
             nodes.push({
                 id: nodeId,
                 name: c.nome,
-                main: false
+                main: false,
+                type: c.type,
+                confidence: c.confidence || 'sugestivo'
             });
             links.push({
                 source: mainId,
                 target: nodeId,
                 value: 2
+            });
+
+            (c.suggestedProperties || []).forEach((property, index) => {
+                const propertyNodeId = `prop_${property.inscricao || `${nodeId}_${index}`}`;
+                nodes.push({
+                    id: propertyNodeId,
+                    name: property.title || property.inscricao,
+                    main: false,
+                    kind: 'property_suggestion',
+                    confidence: property.confidence || 'baixa'
+                });
+                links.push({
+                    source: nodeId,
+                    target: propertyNodeId,
+                    value: property.confidence === 'alta' ? 1.6 : 1,
+                    suggested: true
+                });
             });
         });
 

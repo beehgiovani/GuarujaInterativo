@@ -23,7 +23,7 @@ window.toggleCpfText = function (icon, fullCpf) {
     const current = container.innerText;
     // Se já tiver formatado (com pontos/traço) e contiver *, é mascarado
 
-    // Lógica simples: Se tem * está oculto. Se não tem, está visível. 
+    // Lógica simples: Se tem * está oculto. Se não tem, está visível.
     if (current.includes('*')) {
         // Mostrar Real
         container.innerText = window.formatDocument(fullCpf, true);
@@ -31,8 +31,8 @@ window.toggleCpfText = function (icon, fullCpf) {
         icon.classList.add('fa-eye-slash');
     } else {
         // Mascarar
-        // Se quisermos mascarar manualmente: 
-        // Mas window.formatDocument(..., true) pode já retornar formatado. 
+        // Se quisermos mascarar manualmente:
+        // Mas window.formatDocument(..., true) pode já retornar formatado.
         // Vamos forçar um mascaramento visual simples para testar.
         container.innerText = "***." + fullCpf.substr(3, 3) + "." + fullCpf.substr(6, 3) + "-**";
         icon.classList.remove('fa-eye-slash');
@@ -150,10 +150,10 @@ window.ProprietarioTooltip = {
         tooltip.className = 'proprietario-tooltip';
         tooltip.style.cssText = `
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 90%; max-width: 900px; height: 85vh; 
+            width: 90%; max-width: 900px; height: 85vh;
             background: rgba(255, 255, 255, 0.98); /* Less translucent for better readability */
             backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border-radius: var(--radius-lg, 28px); 
+            border-radius: var(--radius-lg, 28px);
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.4);
             z-index: 200000; /* Mirror the landing z-index for consistency */
@@ -181,7 +181,7 @@ window.ProprietarioTooltip = {
 
         // ABA: GERAL
         html += '<div id="prop-tab-geral" class="tab-content-pane active">';
-        
+
         // Farol Insight (Predictive Reasons)
         const pred = window.PredictiveHandler.calculateScore(prop);
         if (pred.reasons.length > 0) {
@@ -249,7 +249,7 @@ window.ProprietarioTooltip = {
         html += `
             <div style="background: #f8fafc; padding: 12px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 11px; color: #94a3b8;">Ref ID: ${prop.id} · Dados processados por IA Preditiva</span>
-                <button onclick="window.Maintenance.showReportModal('owner', {id: ${prop.id}, building_name: '${prop.nome_completo}'})" 
+                <button onclick="window.Maintenance.showReportModal('owner', {id: ${prop.id}, building_name: '${prop.nome_completo}'})"
                     style="background: none; border: none; color: #6d28d9; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                     <i class="fas fa-flag"></i> Informar dado incorretos aqui
                 </button>
@@ -268,7 +268,7 @@ window.ProprietarioTooltip = {
         tooltip.backdrop = backdrop;
 
         this.setupHandlers(tooltip, prop);
-        
+
         // Load connections in background if has access
         if (isElite) {
             this.loadConnections(prop.id, prop.nome_completo);
@@ -304,7 +304,7 @@ window.ProprietarioTooltip = {
                     cursor: pointer;
                     font-size: 18px;
                 ">×</button>
-                
+
                 <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 16px;">
                     <div style="width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
                         <i class="fas ${icone}" style="font-size: 32px;"></i>
@@ -316,7 +316,7 @@ window.ProprietarioTooltip = {
                                 const isUnlocked = window.Monetization && typeof window.Monetization.isUnlockedPerson === 'function' && window.Monetization.isUnlockedPerson(prop.cpf_cnpj);
                                 if (!isUnlocked && prop.cpf_cnpj && !prop.cpf_cnpj.startsWith('S_PJ_')) {
                                     return `
-                                        <button onclick="window.Monetization.promptUnlockPerson('${prop.cpf_cnpj}', '${prop.nome_completo.replace(/'/g, "\\'")}')" 
+                                        <button onclick="window.Monetization.promptUnlockPerson('${prop.cpf_cnpj}', '${prop.nome_completo.replace(/'/g, "\\'")}')"
                                                 style="background: #1e293b; color: white; border: none; padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
                                             <i class="fas fa-unlock"></i> Liberar Nome
                                         </button>
@@ -336,51 +336,57 @@ window.ProprietarioTooltip = {
                         <div style="font-size: 14px; opacity: 0.9; margin-top: 6px; display: flex; align-items: center; gap: 12px;">
                             <span style="background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 4px; font-weight: 600;">${tipoPessoa}</span>
                             <span>
-                                CPF/CNPJ: 
+                                CPF/CNPJ:
                                 <span class="doc-value" style="font-family: monospace; font-weight: 700;">${window.formatDocument(prop.cpf_cnpj, window.Monetization?.isUnlockedPerson?.(prop.cpf_cnpj))}</span>
-                                <i class="fas ${window.Monetization?.isUnlockedPerson?.(prop.cpf_cnpj) ? 'fa-eye-slash' : 'fa-eye'}" style="cursor: pointer; margin-left: 6px; opacity: 0.8;" 
+                                <i class="fas ${window.Monetization?.isUnlockedPerson?.(prop.cpf_cnpj) ? 'fa-eye-slash' : 'fa-eye'}" style="cursor: pointer; margin-left: 6px; opacity: 0.8;"
                                    onclick="window.toggleCpfVisibility(this, '${prop.cpf_cnpj}')" title="Mostrar/Ocultar"></i>
                             </span>
                         </div>
                     </div>
                 </div>
-                
+
                 <div style="display: flex; gap: 12px; align-items: center; background: rgba(0,0,0,0.1); padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
                     <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: rgba(255,255,255,0.6); margin-right: 8px;">Ações Premium</div>
-                    
+
                     ${prop.tipo === 'PJ' ? `
-                    <button onclick="${window.Monetization.canAccess('advanced_ai') ? `window.ProprietarioTooltip.consultarReceita('${prop.cpf_cnpj}', ${prop.id})` : `window.Monetization.showSubscriptionPlans()`}" 
+                    <button onclick="${window.Monetization.canAccess('advanced_ai') ? `window.ProprietarioTooltip.consultarReceita('${prop.cpf_cnpj}', ${prop.id})` : `window.Monetization.showSubscriptionPlans()`}"
                         style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; transition: all 0.2s;"
                         onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
                         <i class="fas ${window.Monetization.canAccess('advanced_ai') ? 'fa-globe' : 'fa-lock'}"></i> Receita Federal
                     </button>` : ''}
 
-                    <button onclick="${window.Monetization.canAccess('marketing_tools') ? `window.Enrichment.enrichPerson('${prop.cpf_cnpj}', '${(prop.nome_completo || '').replace(/'/g, "\\'")}')` : `window.Monetization.showSubscriptionPlans()`}" 
+                    <button onclick="${window.Monetization.canAccess('marketing_tools') ? `window.Enrichment.enrichPerson('${prop.cpf_cnpj}', '${(prop.nome_completo || '').replace(/'/g, "\\'")}')` : `window.Monetization.showSubscriptionPlans()`}"
                         style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; transition: all 0.2s;"
                         onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
                         <i class="fas ${window.Monetization.canAccess('marketing_tools') ? 'fa-search-plus' : 'fa-lock'}"></i> Ficha Avançada
                     </button>
-                    
-                    <button onclick="${window.Monetization.canAccess('mapear_patrimonio') ? `window.viewPortfolio('${prop.cpf_cnpj}'); window.ProprietarioTooltip.close();` : `window.Monetization.showSubscriptionPlans()`}" 
+
+                    <button onclick="${window.Monetization.canAccess('marketing_tools') ? `window.Enrichment.showFullDetails(${prop.id})` : `window.Monetization.showSubscriptionPlans()`}"
+                        style="background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255,255,255,0.35); color: white; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; transition: all 0.2s;"
+                        onmouseover="this.style.background='rgba(15, 23, 42, 0.85)'" onmouseout="this.style.background='rgba(15, 23, 42, 0.65)'">
+                        <i class="fas ${window.Monetization.canAccess('marketing_tools') ? 'fa-id-card' : 'fa-lock'}"></i> Dados Completos
+                    </button>
+
+                    <button onclick="${window.Monetization.canAccess('mapear_patrimonio') ? `window.viewPortfolio('${prop.cpf_cnpj}'); window.ProprietarioTooltip.close();` : `window.Monetization.showSubscriptionPlans()`}"
                         style="background: #10b981; border: 1px solid #059669; color: white; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; margin-left: auto; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); transition: all 0.2s;"
                         onmouseover="this.style.background='#059669'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#10b981'; this.style.transform='none';">
                         <i class="fas ${window.Monetization.canAccess('mapear_patrimonio') ? 'fa-map-marked-alt' : 'fa-lock'}"></i> Mapear Patrimônio
                     </button>
 
-                    <button onclick="${window.Monetization.canAccess('advanced_ai') ? `window.ProprietarioTooltip.analiseIA(${prop.id})` : `window.Monetization.showSubscriptionPlans()`}" 
+                    <button onclick="${window.Monetization.canAccess('advanced_ai') ? `window.ProprietarioTooltip.analiseIA(${prop.id})` : `window.Monetization.showSubscriptionPlans()`}"
                         style="background: #7c3aed; border: 1px solid #6d28d9; color: white; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3); transition: all 0.2s;"
                         onmouseover="this.style.background='#6d28d9'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#7c3aed'; this.style.transform='none';">
                         <i class="fas ${window.Monetization.canAccess('advanced_ai') ? 'fa-brain' : 'fa-lock'}"></i> Análise Farol
                     </button>
 
-                    <button onclick="${window.Monetization.canAccess('crm_history') ? `window.ProprietarioTooltip.adicionarComoLead(${prop.id})` : `window.Monetization.showSubscriptionPlans()`}" 
+                    <button onclick="${window.Monetization.canAccess('crm_history') ? `window.ProprietarioTooltip.adicionarComoLead(${prop.id})` : `window.Monetization.showSubscriptionPlans()`}"
                         style="background: #3b82f6; border: 1px solid #2563eb; color: white; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); transition: all 0.2s;"
                         onmouseover="this.style.background='#2563eb'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#3b82f6'; this.style.transform='none';">
                         <i class="fas ${window.Monetization.canAccess('crm_history') ? 'fa-user-plus' : 'fa-lock'}"></i> Virar Lead
                     </button>
                 </div>
             </div>
-                
+
                 <div style="display: flex; gap: 16px; font-size: 13px;">
                     ${prop.idade ? `<span>🎂 ${prop.idade} anos</span>` : ''}
                     ${prop.ocupacao ? `<span>💼 ${prop.ocupacao}</span>` : ''}
@@ -397,7 +403,7 @@ window.ProprietarioTooltip = {
                                     <div style="font-weight: 900; font-size: 14px; letter-spacing: 0.5px;">ALERTA DE OPORTUNIDADE PLATINUM</div>
                                     <div style="font-size: 11px; opacity: 0.9; font-weight: 500;">Este proprietário possui score ${pred.score}%. Alta probabilidade de liquidez ou interesse em desinvestimento.</div>
                                 </div>
-                                <button onclick="${window.Monetization.canAccess('advanced_ai') ? `window.ProprietarioTooltip.analiseIA(${prop.id})` : `window.Monetization.showSubscriptionPlans()`}" 
+                                <button onclick="${window.Monetization.canAccess('advanced_ai') ? `window.ProprietarioTooltip.analiseIA(${prop.id})` : `window.Monetization.showSubscriptionPlans()`}"
                                     style="background: white; color: #7c3aed; border: none; padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;">
                                     Ver Detalhes IA
                                 </button>
@@ -468,13 +474,13 @@ window.ProprietarioTooltip = {
                                 ${u.valor_real ? `<div style="font-size: 14px; color: #1e293b; font-weight: 900;">R$ ${(u.valor_real).toLocaleString('pt-BR')}</div>` : ''}
                                 ${u.valor_venal ? `<div style="font-size: 10px; color: #94a3b8; font-weight: 500;">Venal: R$ ${(u.valor_venal).toLocaleString('pt-BR')}</div>` : ''}
                             </div>
-                            
+
                             <div style="display:flex; gap:8px; justify-content:flex-end;">
-                                <button onclick="window.ProprietarioTooltip.showPriceHistory('${u.inscricao}', '${lote.building_name || 'Imóvel'}')" 
+                                <button onclick="window.ProprietarioTooltip.showPriceHistory('${u.inscricao}', '${lote.building_name || 'Imóvel'}')"
                                         style="background: #f1f5f9; border: none; color: #64748b; font-size: 10px; padding:4px 8px; border-radius:4px; cursor: pointer; font-weight:700;">
                                     <i class="fas fa-chart-line"></i> Histórico
                                 </button>
-                                <button onclick="window.ProprietarioTooltip.solicitarTransferencia('${u.inscricao}', '${lote.building_name || 'Lote'}')" 
+                                <button onclick="window.ProprietarioTooltip.solicitarTransferencia('${u.inscricao}', '${lote.building_name || 'Lote'}')"
                                         style="background: none; border: none; color: #94a3b8; font-size: 10px; cursor: pointer; text-decoration: underline;"
                                         onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">
                                     Donos?
@@ -505,7 +511,7 @@ window.ProprietarioTooltip = {
                 const isPositive = h.variacao_percentual >= 0;
                 const icon = isPositive ? 'fa-arrow-up' : 'fa-arrow-down';
                 const color = isPositive ? '#10b981' : '#ef4444';
-                
+
                 return `
                     <div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid rgba(255,255,255,0.05);">
                         <div>
@@ -527,11 +533,11 @@ window.ProprietarioTooltip = {
                     <div style="background:#0f172a; color:#fff; width:350px; border-radius:16px; padding:25px; border:1px solid rgba(255,255,255,0.1);">
                         <h4 style="margin:0 0 5px 0; font-size:16px;">Tendência de Valorização</h4>
                         <p style="font-size:11px; color:#94a3b8; margin-bottom:20px;">${local} (${inscricao})</p>
-                        
+
                         <div style="max-height:300px; overflow-y:auto;">
                             ${historyHtml}
                         </div>
-                        
+
                         <button onclick="document.getElementById('price-history-overlay').remove()" style="width:100%; padding:10px; background:#1e293b; border:none; color:#fff; border-radius:8px; margin-top:20px; cursor:pointer;">Fechar</button>
                     </div>
                 </div>
@@ -966,7 +972,7 @@ window.ProprietarioTooltip = {
                 let clickAction = `window.Infosimples.verComprovante('${publicUrl}', ${isHtml})`;
 
                 html += `
-                    <div style="    
+                    <div style="
                         display: flex;
                         align-items: center;
                         gap: 12px;
@@ -1074,14 +1080,14 @@ window.ProprietarioTooltip = {
             // Re-fetch to have clean data or use currentTooltip context
             const { data: prop } = await window.supabaseApp.from('proprietarios').select('*').eq('id', propId).single();
             const { data: unidades } = await window.supabaseApp.from('unidades').select('*, lotes(*)').eq('proprietario_id', propId);
-            
+
             if (!unidades || unidades.length === 0) {
                 window.Toast.info("Poucos dados para uma análise profunda.");
                 window.Loading.hide();
                 return;
             }
 
-            const prompt = `Você é o 'Farol GuaruGeo', uma IA especialista em inteligência de mercado imobiliário para o Guarujá. 
+            const prompt = `Você é o 'Farol GuaruGeo', uma IA especialista em inteligência de mercado imobiliário para o Guarujá.
             Analise o patrimônio de ${prop.nome_completo}:
             - Total de imóveis: ${unidades.length}
             - Tipologias: ${[...new Set(unidades.map(u => u.tipo))].join(', ')}
@@ -1097,7 +1103,7 @@ window.ProprietarioTooltip = {
             Seja profissional, direto e use o 'faro' de um corretor de elite.`;
 
             const res = await window.Farol.ask(prompt);
-            
+
             // Mostrar em um modal bonito
             const modal = document.createElement('div');
             modal.className = 'custom-modal-overlay active';
@@ -1112,7 +1118,7 @@ window.ProprietarioTooltip = {
                         <div style="padding: 10px 0;">
                             ${window.parseMarkdown ? window.parseMarkdown(res) : res.replace(/\n/g, '<br>')}
                         </div>
-                        
+
                         <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: right;">
                             <button onclick="this.closest('.custom-modal-overlay').remove()" style="padding: 8px 20px; background: #f1f5f9; border: none; border-radius: 6px; color: #475569; font-weight: 700; cursor: pointer;">Fechar</button>
                         </div>
@@ -1134,7 +1140,7 @@ window.ProprietarioTooltip = {
         try {
              const { data: prop } = await window.supabaseApp.from('proprietarios').select('*').eq('id', propId).single();
              const { data: { user } } = await window.supabaseApp.auth.getUser();
-             
+
              if (!user) {
                  window.Toast.error("Você precisa estar logado para salvar leads.");
                  return;
@@ -1267,13 +1273,13 @@ window.ProprietarioTooltip = {
                 else {
                     // Full (DB Real)
                     const isUnlocked = window.Monetization.isUnlockedPerson(s.cpf);
-                    cpfDisplay = window.formatDocument(s.cpf, isUnlocked); 
-                    
+                    cpfDisplay = window.formatDocument(s.cpf, isUnlocked);
+
                     if (isUnlocked) {
                         showEye = true;
                     } else {
                         cpfDisplay = window.formatDocument(s.cpf, false);
-                        showEye = false; 
+                        showEye = false;
                     }
                 }
             }
@@ -1289,7 +1295,7 @@ window.ProprietarioTooltip = {
                 if (hasProperties) {
                     actionBtn = `
                         <button onclick="window.ProprietarioTooltip.show(${s.id})" style="
-                            background: white; border: 1px solid #10b981; color: #10b981; 
+                            background: white; border: 1px solid #10b981; color: #10b981;
                             padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;
                             display: flex; align-items: center; gap: 6px;
                         " title="Ver Perfil do Sócio">
@@ -1299,7 +1305,7 @@ window.ProprietarioTooltip = {
                 } else {
                     actionBtn = `
                         <button style="
-                            background: #f1f5f9; border: 1px solid #cbd5e1; color: #64748b; 
+                            background: #f1f5f9; border: 1px solid #cbd5e1; color: #64748b;
                             padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: default;
                             display: flex; align-items: center; gap: 6px; opacity: 0.7;
                         " title="Cadastrado, sem imóveis">
@@ -1310,7 +1316,7 @@ window.ProprietarioTooltip = {
             } else {
                 actionBtn = `
                     <button onclick="window.ProprietarioTooltip.consultarSocio('${s.name}', '${prop.id}')" style="
-                        background: white; border: 1px solid #3b82f6; color: #3b82f6; 
+                        background: white; border: 1px solid #3b82f6; color: #3b82f6;
                         padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;
                         display: flex; align-items: center; gap: 6px;
                     ">
@@ -1327,22 +1333,22 @@ window.ProprietarioTooltip = {
                                 ${s.name}
                                 ${isEnriched ? '<i class="fas fa-certificate" style="color: #3b82f6; font-size: 12px;" title="Verificado"></i>' : ''}
                             </div>
-                            
+
                             <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
                                 <span style="display: inline-block; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: 600;">Cargo: ${s.role}</span>
                                 <span style="margin-left: 8px;">Entrada: ${entrada}</span>
                             </div>
 
                             <div style="font-size: 12px; color: #475569; margin-top: 6px; display: flex; align-items: center; gap: 6px;">
-                                <i class="far fa-id-card"></i> 
+                                <i class="far fa-id-card"></i>
                                 <span class="cpf-display">${cpfDisplay}</span>
                                 ${showEye ? `
-                                    <i class="fas fa-eye" style="cursor: pointer; opacity: 0.6; font-size: 12px;" 
+                                    <i class="fas fa-eye" style="cursor: pointer; opacity: 0.6; font-size: 12px;"
                                        onclick="window.toggleCpfText(this, '${realCpfForToggle}')" title="Mostrar/Ocultar"></i>
                                 ` : ''}
                             </div>
                         </div>
-                        
+
                         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
                             ${actionBtn}
                         </div>
@@ -1428,12 +1434,12 @@ window.ProprietarioTooltip = {
 
     async loadConnections(propId, propName) {
         if (!window.RelationshipHandler) return;
-        
+
         try {
             const connections = await window.RelationshipHandler.getConnections(propId);
             const container = document.getElementById('conexoes-list');
             const loading = document.getElementById('conexoes-loading');
-            
+
             if (loading) loading.style.display = 'none';
             if (!container) return;
 
@@ -1453,8 +1459,9 @@ window.ProprietarioTooltip = {
                     <div style="flex: 1;">
                         <div style="font-size: 11px; font-weight: 800; color: #2563eb; text-transform: uppercase; margin-bottom: 4px;">🎯 Insight de Rede</div>
                         <div style="font-size: 13px; color: #1e3a8a;">Identificamos <strong>${connections.length} entidades</strong> vinculadas a este proprietário.</div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">Imóveis ligados a familiares e empresas aparecem como hipótese operacional, não como titularidade confirmada.</div>
                     </div>
-                    <button onclick="window.ProprietarioTooltip.visualizarTeia(${propId}, '${propName}')" 
+                    <button onclick="window.ProprietarioTooltip.visualizarTeia(${propId}, '${propName}')"
                         style="background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);">
                         <i class="fas fa-project-diagram"></i> Visualizar Teia
                     </button>
@@ -1464,24 +1471,52 @@ window.ProprietarioTooltip = {
 
             connections.forEach(c => {
                 const isItemUnlocked = c.doc ? (window.Monetization?.isUnlockedPerson(c.doc)) : false;
-                html += `
-                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-weight: 700; color: #1e293b; font-size: 13px;">${window.maskName(c.nome, isItemUnlocked)}</div>
-                            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
-                                <span style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: 700; color: #2563eb;">${c.type}</span>
-                                <span style="margin-left: 8px;">${c.doc ? window.formatDocument(c.doc, isItemUnlocked) : 'Doc. Indisponível'}</span>
-                            </div>
+                const suggestions = c.suggestedProperties || [];
+                const safeConnectionName = String(c.nome || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                const confidenceColor = c.confidence === 'confirmado' ? '#059669' : (c.confidence === 'alta' ? '#2563eb' : '#b45309');
+                const suggestionHtml = suggestions.length ? `
+                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0;">
+                        <div style="font-size: 10px; font-weight: 900; color: #92400e; text-transform: uppercase; margin-bottom: 6px;">
+                            Possíveis imóveis relacionados
                         </div>
-                        ${c.id ? `
-                            <button onclick="window.ProprietarioTooltip.show(${c.id})" style="background: #f1f5f9; border: none; padding: 6px 12px; border-radius: 6px; color: #475569; font-size: 11px; font-weight: 700; cursor: pointer;">
-                                Detalhar
-                            </button>
-                        ` : `
-                            <button onclick="window.ProprietarioTooltip.consultarSocio('${c.nome}', ${propId})" style="background: white; border: 1px solid #3b82f6; color: #3b82f6; padding: 6px 12px; border-radius: 6px; color: #3b82f6; font-size: 11px; font-weight: 700; cursor: pointer;">
-                                <i class="fas fa-search"></i> Mapear
-                            </button>
-                        `}
+                        <div style="display: grid; gap: 6px;">
+                            ${suggestions.map(item => `
+                                <button onclick="window.navigateToInscricao('${item.loteInscricao}', '${item.inscricao}')" style="text-align: left; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 8px; cursor: pointer;">
+                                    <div style="font-size: 12px; font-weight: 800; color: #78350f;">${item.title || item.inscricao}</div>
+                                    <div style="font-size: 10px; color: #92400e; margin-top: 2px;">
+                                        ${item.bairro || 'Bairro não informado'} · confiança ${item.confidence}
+                                    </div>
+                                    <div style="font-size: 10px; color: #a16207; margin-top: 2px;">${item.reason}</div>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : '';
+
+                html += `
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                            <div>
+                                <div style="font-weight: 700; color: #1e293b; font-size: 13px;">${window.maskName(c.nome, isItemUnlocked)}</div>
+                                <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                                    <span style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: 700; color: #2563eb;">${c.type}</span>
+                                    <span style="margin-left: 8px;">${c.doc ? window.formatDocument(c.doc, isItemUnlocked) : 'Doc. Indisponível'}</span>
+                                </div>
+                                <div style="font-size: 10px; color: ${confidenceColor}; margin-top: 5px; font-weight: 800; text-transform: uppercase;">
+                                    ${c.confidence === 'confirmado' ? 'Vínculo confirmado no cadastro' : 'Vínculo sugestivo'}
+                                </div>
+                            </div>
+                            ${c.id ? `
+                                <button onclick="window.ProprietarioTooltip.show(${c.id})" style="background: #f1f5f9; border: none; padding: 6px 12px; border-radius: 6px; color: #475569; font-size: 11px; font-weight: 700; cursor: pointer;">
+                                    Detalhar
+                                </button>
+                            ` : `
+                                <button onclick="window.ProprietarioTooltip.consultarSocio('${safeConnectionName}', ${propId})" style="background: white; border: 1px solid #3b82f6; color: #3b82f6; padding: 6px 12px; border-radius: 6px; color: #3b82f6; font-size: 11px; font-weight: 700; cursor: pointer;">
+                                    <i class="fas fa-search"></i> Mapear
+                                </button>
+                            `}
+                        </div>
+                        ${suggestionHtml}
                     </div>
                 `;
             });
@@ -1508,13 +1543,13 @@ window.ProprietarioTooltip = {
         try {
             // Re-fetch connections to get fresh data for the graph
             const connections = await window.RelationshipHandler.getConnections(propId);
-            
+
             // Get owner name from current state or DB
             const { data: prop } = await window.supabaseApp.from('proprietarios').select('nome_completo').eq('id', propId).single();
             const name = prop ? prop.nome_completo : 'Proprietário';
 
             const graphData = window.RelationshipHandler.createGraphData(propId, name, connections);
-            
+
             window.GraphHandler.showOverlay(graphData.nodes, graphData.links);
 
         } catch (e) {

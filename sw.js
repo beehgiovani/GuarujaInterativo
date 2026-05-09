@@ -1,4 +1,4 @@
-const CACHE_NAME = 'guarugeo-cache-v4.7';
+const CACHE_NAME = 'guarugeo-cache-v5.4';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',

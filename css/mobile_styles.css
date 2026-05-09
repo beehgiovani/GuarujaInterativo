@@ -526,6 +526,14 @@
         padding: 20px !important;
     }
 
+    .owner-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .owner-detail-body {
+        padding: 16px !important;
+    }
+
     .custom-modal-close {
         font-size: 32px;
         padding: 10px;
@@ -1047,10 +1055,23 @@
 
     /* Botões de fechar — maior área de toque (44px) na thumb-zone */
     .lot-tooltip-close,
+    .unit-tooltip-back,
     .unit-tooltip-close {
         width: 44px !important;
         height: 44px !important;
         font-size: 16px !important;
+    }
+
+    .unit-tooltip-nav {
+        top: 12px;
+    }
+
+    .unit-tooltip-nav-left {
+        left: 12px;
+    }
+
+    .unit-tooltip-nav-right {
+        right: 12px;
     }
 
     /* Toolbar de ações fixada na parte inferior (thumb-zone) */
@@ -1067,12 +1088,24 @@
     /* Botões de ação com touch target de 44px e estética Premium */
     .btn-action-primary,
     .btn-action-secondary,
-    .btn-unlock {
+    .btn-unlock,
+    .unit-contact-capture,
+    .unit-contact-chip,
+    .unit-ref-edit,
+    .owner-action-btn {
         min-height: 48px !important;
         font-size: 13px !important;
         border-radius: 14px !important;
         font-weight: 700 !important;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+
+    .owner-action-row {
+        flex-direction: column;
+    }
+
+    .lot-edit-section {
+        grid-template-columns: 1fr;
     }
 
     .btn-action-primary:active {

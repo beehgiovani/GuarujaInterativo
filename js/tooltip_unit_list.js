@@ -2,6 +2,15 @@
 // Bruno Giovani: Focado em organização de grupos (Torres) e performance de renderização.
 
 window.TooltipUnitList = {
+    parseDocumentList: function (value) {
+        if (!value) return [];
+        if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean);
+        return String(value)
+            .split(/\r?\n|;|\|/)
+            .map(v => v.trim())
+            .filter(Boolean);
+    },
+
     render: function(lote, container) {
         if (!lote.unidades || lote.unidades.length === 0) {
             container.innerHTML = `<div class="empty-state">
@@ -141,15 +150,30 @@ window.TooltipUnitList = {
 
         // Referências documentais (matrícula, RIP)
         let refBadges = '';
-        const canShowDocs = window.Monetization?.isUnlocked?.(u.inscricao, lote.inscricao);
+        const isAdmin = window.Monetization?.isAdminRole?.()
+            || ['admin', 'master'].includes(String(window.Monetization?.userRole || '').toLowerCase());
+        const canShowDocs = isAdmin || window.Monetization?.isUnlocked?.(u.inscricao, lote.inscricao);
+        const matriculas = this.parseDocumentList(u.matricula);
+        const rips = this.parseDocumentList(u.rip);
         if (canShowDocs) {
-            if (u.matricula) {
-                refBadges += `<span class="unit-ref-badge"><i class="fas fa-file-contract"></i>${u.matricula}</span>`;
+            if (matriculas.length) {
+                matriculas.forEach(doc => {
+                    refBadges += `<span class="unit-ref-badge"><i class="fas fa-file-contract"></i>${doc}</span>`;
+                });
             }
-            if (u.rip) {
-                refBadges += `<span class="unit-ref-badge rip"><i class="fas fa-anchor"></i>${u.rip}</span>`;
+            if (rips.length) {
+                rips.forEach(doc => {
+                    refBadges += `<span class="unit-ref-badge rip"><i class="fas fa-anchor"></i>${doc}</span>`;
+                });
             }
-        } else if (u.matricula || u.rip) {
+            if (u.valor_venal) {
+                const iptu = Number(u.valor_venal).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+                refBadges += `<span class="unit-ref-badge iptu"><i class="fas fa-landmark"></i>IPTU R$ ${iptu}</span>`;
+            }
+            if (isAdmin) {
+                refBadges += `<button type="button" class="unit-ref-edit" onclick="event.stopPropagation(); window.quickEditUnitDocs('${u.inscricao}', '${lote.inscricao}');"><i class="fas fa-pen"></i></button>`;
+            }
+        } else if (matriculas.length || rips.length) {
             refBadges += `<span class="unit-ref-badge locked"><i class="fas fa-lock"></i>Docs disponíveis</span>`;
         }
 

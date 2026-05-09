@@ -62,8 +62,29 @@ window.showLotTooltip = showLotTooltip;
 window.showUnitTooltip = showUnitTooltip;
 window.closeLotTooltip = closeLotTooltip;
 window.switchTooltipTab = (btn, id) => {
-    // Redireciona para o handler correto se possível ou mantém fallback
-    console.log("Tab switched:", id);
+    const tooltip = btn?.closest?.('.lot-tooltip, .unit-tooltip, .proprietario-tooltip, .custom-modal');
+    if (!tooltip) return;
+
+    tooltip.querySelectorAll('.tooltip-tab').forEach(tab => {
+        tab.classList.remove('active');
+        tab.style.color = '#64748b';
+        tab.style.borderBottomColor = 'transparent';
+    });
+
+    btn.classList.add('active');
+    btn.style.color = '#764ba2';
+    btn.style.borderBottomColor = '#764ba2';
+
+    tooltip.querySelectorAll('.tab-content-pane').forEach(pane => {
+        pane.classList.remove('active');
+        pane.style.display = 'none';
+    });
+
+    const target = tooltip.querySelector(`#${CSS.escape(id)}`);
+    if (target) {
+        target.classList.add('active');
+        target.style.display = '';
+    }
 };
 
 console.log("✅ Orquestrador TooltipHandler pronto.");

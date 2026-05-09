@@ -874,57 +874,31 @@ window.Enrichment = {
 
             const data = prop.dados_enrichment || {};
 
+            document.getElementById('owner-detail-modal')?.remove();
             const detailModal = document.createElement('div');
             detailModal.className = 'custom-modal-overlay active';
-            detailModal.style.zIndex = '10005';
-            
-            let html = `
-                <div class="custom-modal" style="max-width: 700px; width: 95%; max-height: 85vh; display: flex; flex-direction: column;">
-                    <div class="custom-modal-header" style="background: linear-gradient(135deg, #1e3a8a, #1e40af); color: white;">
+            detailModal.id = 'owner-detail-modal';
+
+            const lastUpdate = prop.data_enriquecimento
+                ? new Date(prop.data_enriquecimento).toLocaleString('pt-BR')
+                : null;
+
+            const html = `
+                <div class="custom-modal owner-detail-modal">
+                    <div class="custom-modal-header owner-detail-header">
                         <div class="custom-modal-title"><i class="fas fa-database"></i> Ficha Cadastral Avançada</div>
+                        <button class="btn-ghost" onclick="window.ProprietarioTooltip?.show(${prop.id}); this.closest('.custom-modal-overlay').remove();">
+                            <i class="fas fa-user-circle"></i> Abrir Perfil
+                        </button>
                         <button class="custom-modal-close" onclick="this.closest('.custom-modal-overlay').remove()">&times;</button>
                     </div>
-                    <div class="custom-modal-body" style="padding: 24px; overflow-y: auto; background: #f8fafc;">
-                        
-                        <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;">
-                            <div style="font-size: 18px; font-weight: 800; color: #1e293b; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">Dados Cadastrais</div>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                                ${this.renderDetailRow('Nome', prop.nome_completo)}
-                                ${this.renderDetailRow('CPF/CNPJ', window.formatDocument(prop.cpf_cnpj, true))}
-                                ${this.renderDetailRow('RG', prop.rg)}
-                                ${this.renderDetailRow('Nascimento', prop.data_nascimento ? new Date(prop.data_nascimento).toLocaleDateString('pt-BR') : '-')}
-                                ${this.renderDetailRow('Idade', prop.idade)}
-                                ${this.renderDetailRow('Gênero', prop.genero)}
-                                ${this.renderDetailRow('Situação CPF', prop.situacao_cadastral)}
-                                ${this.renderDetailRow('Nome da Mãe', prop.nome_mae)}
-                            </div>
-                        </div>
-
-                        <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;">
-                            <div style="font-size: 18px; font-weight: 800; color: #1e293b; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">Perfil Socioeconômico</div>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                                ${this.renderDetailRow('Ocupação', prop.ocupacao)}
-                                ${this.renderDetailRow('Renda Estimada', prop.renda_estimada)}
-                                ${this.renderDetailRow('Aposentado', prop.aposentado ? 'Sim' : 'Não')}
-                                ${this.renderDetailRow('PEP (Polít. Exp.)', prop.pep ? 'Sim' : 'Não')}
-                                ${this.renderDetailRow('Bolsa Família', prop.bolsa_familia ? 'Sim' : 'Não')}
-                                ${this.renderDetailRow('Possiv. Falecido', prop.possivelmente_falecido ? 'Sim' : 'Não')}
-                            </div>
-                        </div>
-
-                        ${data.addresses ? `
-                        <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px;">
-                            <div style="font-size: 18px; font-weight: 800; color: #1e293b; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">Endereços Conhecidos</div>
-                            <div style="display: flex; flex-direction: column; gap: 8px;">
-                                ${data.addresses.slice(0, 10).map(addr => `
-                                    <div style="font-size: 12px; border-bottom: 1px dashed #f1f5f9; padding: 4px 0;">
-                                        <i class="fas fa-map-marker-alt" style="color: #64748b;"></i> ${addr.street || ''}, ${addr.number || ''} ${addr.complement || ''} - ${addr.neighborhood || ''}, ${addr.city || ''}/${addr.state || ''}
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                        ` : ''}
-
+                    <div class="custom-modal-body owner-detail-body">
+                        ${this.renderOwnerRegistrySection(prop, lastUpdate)}
+                        ${this.renderOwnerSocioeconomicSection(prop)}
+                        ${this.renderOwnerContactSection(data)}
+                        ${this.renderOwnerAddressSection(data)}
+                        ${this.renderOwnerRelationsSection(data)}
+                        ${this.renderOwnerReturnedFieldsSection(data)}
                     </div>
                 </div>
             `;
@@ -940,12 +914,181 @@ window.Enrichment = {
     },
 
     renderDetailRow(label, value) {
+        const safeValue = value === 0 || value === false ? String(value) : (value || '-');
         return `
             <div>
-                <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase;">${label}</div>
-                <div style="font-size: 13px; color: #334155; font-weight: 600;">${value || '-'}</div>
+                <div class="owner-detail-row-label">${this.escapeHtml(label)}</div>
+                <div class="owner-detail-row-value">${this.escapeHtml(safeValue)}</div>
             </div>
         `;
+    },
+
+    renderOwnerRegistrySection(prop, lastUpdate) {
+        return `
+            <section class="owner-detail-section">
+                <div class="owner-detail-section-title"><i class="fas fa-id-card"></i> Dados Cadastrais</div>
+                <div class="owner-detail-grid">
+                    ${this.renderDetailRow('Nome', prop.nome_completo)}
+                    ${this.renderDetailRow('CPF/CNPJ', window.formatDocument(prop.cpf_cnpj, true))}
+                    ${this.renderDetailRow('Tipo', prop.tipo)}
+                    ${this.renderDetailRow('RG', prop.rg)}
+                    ${this.renderDetailRow('Nascimento', prop.data_nascimento ? new Date(prop.data_nascimento).toLocaleDateString('pt-BR') : null)}
+                    ${this.renderDetailRow('Idade', prop.idade)}
+                    ${this.renderDetailRow('Gênero', prop.genero)}
+                    ${this.renderDetailRow('Situação cadastral', prop.situacao_cadastral)}
+                    ${this.renderDetailRow('Nome da mãe', prop.nome_mae)}
+                    ${this.renderDetailRow('Última consulta', lastUpdate)}
+                </div>
+            </section>
+        `;
+    },
+
+    renderOwnerSocioeconomicSection(prop) {
+        const hasAny = prop.ocupacao || prop.renda_estimada || prop.aposentado || prop.pep || prop.bolsa_familia || prop.possivelmente_falecido;
+        if (!hasAny) return '';
+
+        return `
+            <section class="owner-detail-section">
+                <div class="owner-detail-section-title"><i class="fas fa-chart-line"></i> Perfil Socioeconômico</div>
+                <div class="owner-detail-grid">
+                    ${this.renderDetailRow('Ocupação', prop.ocupacao)}
+                    ${this.renderDetailRow('Renda estimada', prop.renda_estimada)}
+                    ${this.renderDetailRow('Aposentado', prop.aposentado ? 'Sim' : 'Não')}
+                    ${this.renderDetailRow('PEP', prop.pep ? 'Sim' : 'Não')}
+                    ${this.renderDetailRow('Bolsa Família', prop.bolsa_familia ? 'Sim' : 'Não')}
+                    ${this.renderDetailRow('Possivelmente falecido', prop.possivelmente_falecido ? 'Sim' : 'Não')}
+                </div>
+            </section>
+        `;
+    },
+
+    renderOwnerContactSection(data) {
+        const mobilePhones = Array.isArray(data.mobile_phones) ? data.mobile_phones : [];
+        const landLines = Array.isArray(data.land_lines) ? data.land_lines : [];
+        const emails = Array.isArray(data.emails) ? data.emails : [];
+        if (!mobilePhones.length && !landLines.length && !emails.length) return '';
+
+        const formatPhone = phone => {
+            const ddd = phone.ddd ? String(phone.ddd).padStart(2, '0') : '';
+            const number = phone.number ? String(phone.number) : '';
+            const full = ddd && number ? window.formatPhone(`${ddd}${number}`) : (phone.phone || phone.telefone || number);
+            const meta = [phone.priority ? `Prioridade ${phone.priority}` : '', phone.whatsapp_datetime ? 'WhatsApp identificado' : '']
+                .filter(Boolean)
+                .join(' · ');
+            return `<div class="owner-detail-item"><div class="owner-detail-item-title">${this.escapeHtml(full)}</div>${meta ? `<div class="owner-detail-item-meta">${this.escapeHtml(meta)}</div>` : ''}</div>`;
+        };
+
+        const emailItems = emails.map(item => {
+            const email = item.email || item.address || item;
+            const meta = item.priority ? `Prioridade ${item.priority}` : '';
+            return `<div class="owner-detail-item"><div class="owner-detail-item-title">${this.escapeHtml(email)}</div>${meta ? `<div class="owner-detail-item-meta">${this.escapeHtml(meta)}</div>` : ''}</div>`;
+        }).join('');
+
+        return `
+            <section class="owner-detail-section">
+                <div class="owner-detail-section-title"><i class="fas fa-phone"></i> Contatos Retornados</div>
+                <div class="owner-detail-list">
+                    ${mobilePhones.map(formatPhone).join('')}
+                    ${landLines.map(formatPhone).join('')}
+                    ${emailItems}
+                </div>
+            </section>
+        `;
+    },
+
+    renderOwnerAddressSection(data) {
+        const addresses = Array.isArray(data.addresses) ? data.addresses : [];
+        if (!addresses.length) return '';
+
+        const items = addresses.map(addr => {
+            const line1 = [
+                addr.type,
+                addr.street,
+                addr.number,
+                addr.complement
+            ].filter(Boolean).join(' ');
+            const line2 = [
+                addr.neighborhood,
+                addr.city,
+                addr.state || addr.district,
+                addr.postal_code ? `CEP ${addr.postal_code}` : ''
+            ].filter(Boolean).join(' · ');
+            return `
+                <div class="owner-detail-item">
+                    <div class="owner-detail-item-title">${this.escapeHtml(line1 || 'Endereço')}</div>
+                    ${line2 ? `<div class="owner-detail-item-meta">${this.escapeHtml(line2)}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <section class="owner-detail-section">
+                <div class="owner-detail-section-title"><i class="fas fa-map-marker-alt"></i> Endereços Retornados</div>
+                <div class="owner-detail-list">${items}</div>
+            </section>
+        `;
+    },
+
+    renderOwnerRelationsSection(data) {
+        const companies = Array.isArray(data.related_companies) ? data.related_companies : [];
+        const family = Array.isArray(data.family_persons) ? data.family_persons : [];
+        const partners = Array.isArray(data.partners) ? data.partners : [];
+        const employers = Array.isArray(data.employer) ? data.employer : [];
+        if (!companies.length && !family.length && !partners.length && !employers.length) return '';
+
+        const renderPerson = item => {
+            const title = item.name || item.nome || item.company_name || item.razao_social || 'Vínculo';
+            const meta = [item.description, item.relationship, item.registry_situation, item.ownership ? `${item.ownership}%` : '']
+                .filter(Boolean)
+                .join(' · ');
+            return `<div class="owner-detail-item"><div class="owner-detail-item-title">${this.escapeHtml(title)}</div>${meta ? `<div class="owner-detail-item-meta">${this.escapeHtml(meta)}</div>` : ''}</div>`;
+        };
+
+        return `
+            <section class="owner-detail-section">
+                <div class="owner-detail-section-title"><i class="fas fa-link"></i> Vínculos Retornados</div>
+                <div class="owner-detail-list">
+                    ${employers.map(renderPerson).join('')}
+                    ${companies.map(renderPerson).join('')}
+                    ${partners.map(renderPerson).join('')}
+                    ${family.map(renderPerson).join('')}
+                </div>
+            </section>
+        `;
+    },
+
+    renderOwnerReturnedFieldsSection(data) {
+        const ignored = new Set(['mobile_phones', 'land_lines', 'emails', 'addresses', 'related_companies', 'family_persons', 'partners', 'employer']);
+        const scalarEntries = Object.entries(data || {})
+            .filter(([key, value]) => !ignored.has(key) && value !== null && value !== undefined && value !== '')
+            .filter(([, value]) => typeof value !== 'object')
+            .slice(0, 40);
+
+        if (!scalarEntries.length) return '';
+
+        return `
+            <section class="owner-detail-section">
+                <div class="owner-detail-section-title"><i class="fas fa-list-check"></i> Demais Campos Retornados</div>
+                <div class="owner-detail-grid">
+                    ${scalarEntries.map(([key, value]) => this.renderDetailRow(this.humanizeKey(key), value)).join('')}
+                </div>
+            </section>
+        `;
+    },
+
+    humanizeKey(key) {
+        return String(key)
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, letter => letter.toUpperCase());
+    },
+
+    escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 };
 
