@@ -1548,7 +1548,6 @@ window.addMassUnitRow = function (data = null) {
     
     const row = document.createElement('tr');
     row.className = 'mass-unit-row';
-    row.style.borderBottom = '1px solid #f1f5f9';
     
     const suffix = data ? data.inscricao.slice(-3) : '';
     const owner = data ? (data.nome_proprietario || '') : '';
@@ -1559,29 +1558,29 @@ window.addMassUnitRow = function (data = null) {
     const valorVenal = data ? (data.valor_venal || '') : '';
     
     row.innerHTML = `
-        <td style="padding: 10px;">
-            <input type="text" class="mass-input suffix" value="${suffix}" placeholder="001" maxlength="3" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-family: monospace; text-align: center;">
+        <td class="mass-unit-cell">
+            <input type="text" class="mass-input mass-input-mono mass-input-center suffix" value="${suffix}" placeholder="001" maxlength="3">
         </td>
-        <td style="padding: 10px;">
-            <input type="text" class="mass-input owner" value="${owner}" placeholder="Nome" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+        <td class="mass-unit-cell">
+            <input type="text" class="mass-input owner" value="${owner}" placeholder="Nome">
         </td>
-        <td style="padding: 10px;">
-            <input type="text" class="mass-input cpf" value="${cpf}" placeholder="CPF/CNPJ" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-family: monospace; font-size: 11px;">
+        <td class="mass-unit-cell">
+            <input type="text" class="mass-input mass-input-mono mass-input-doc cpf" value="${cpf}" placeholder="CPF/CNPJ">
         </td>
-        <td style="padding: 10px;">
-            <input type="text" class="mass-input complemento" value="${complemento}" placeholder="Apto/Torre" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+        <td class="mass-unit-cell">
+            <input type="text" class="mass-input complemento" value="${complemento}" placeholder="Apto/Torre">
         </td>
-        <td style="padding: 10px;">
-            <textarea class="mass-input matricula" rows="2" placeholder="Uma por linha" style="width: 100%; min-height: 52px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">${matricula}</textarea>
+        <td class="mass-unit-cell">
+            <textarea class="mass-input mass-input-textarea matricula" rows="2" placeholder="Uma por linha">${matricula}</textarea>
         </td>
-        <td style="padding: 10px;">
-            <textarea class="mass-input rip" rows="2" placeholder="Um por linha" style="width: 100%; min-height: 52px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">${rip}</textarea>
+        <td class="mass-unit-cell">
+            <textarea class="mass-input mass-input-textarea rip" rows="2" placeholder="Um por linha">${rip}</textarea>
         </td>
-        <td style="padding: 10px;">
-            <input type="number" step="0.01" class="mass-input valor-venal" value="${valorVenal}" placeholder="IPTU" style="width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px;">
+        <td class="mass-unit-cell">
+            <input type="number" step="0.01" class="mass-input valor-venal" value="${valorVenal}" placeholder="IPTU">
         </td>
-        <td style="padding: 10px; text-align: center;">
-            <button onclick="this.closest('tr').remove()" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px;" title="Remover da lista">
+        <td class="mass-unit-cell mass-unit-action-cell">
+            <button type="button" class="mass-unit-remove-btn" onclick="this.closest('tr').remove()" title="Remover da lista">
                 <i class="fas fa-trash-alt"></i>
             </button>
         </td>

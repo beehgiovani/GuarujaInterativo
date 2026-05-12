@@ -519,6 +519,66 @@
     padding: 10px;
 }
 
+.mass-unit-row {
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.mass-unit-cell {
+    padding: 10px;
+}
+
+.mass-unit-cell .mass-input {
+    width: 100%;
+    min-height: 38px;
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #0f172a;
+}
+
+.mass-input-mono {
+    font-family: monospace;
+}
+
+.mass-input-center {
+    text-align: center;
+}
+
+.mass-input-doc {
+    font-size: 11px;
+}
+
+.mass-input-textarea {
+    min-height: 52px;
+    resize: vertical;
+    line-height: 1.35;
+}
+
+.mass-unit-action-cell {
+    text-align: center;
+}
+
+.mass-unit-remove-btn {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 10px;
+    background: #fff1f2;
+    color: #ef4444;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.mass-unit-remove-btn:hover {
+    background: #ffe4e6;
+    transform: translateY(-1px);
+}
+
 .mass-manager-actions {
     margin-top: 15px;
     display: flex;

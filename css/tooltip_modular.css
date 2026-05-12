@@ -1011,6 +1011,8 @@
 .unit-tooltip-nav {
     position: absolute;
     top: 15px;
+    width: 40px;
+    height: 40px;
     z-index: 10;
 }
 
@@ -1024,8 +1026,6 @@
 
 .unit-tooltip-back,
 .unit-tooltip-close {
-    position: absolute;
-    inset: 0;
     background: rgba(15, 23, 42, 0.6);
     border: none;
     color: white;
@@ -1042,6 +1042,10 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
+.unit-tooltip-nav-icon {
+    font-size: 18px;
+}
+
 .unit-tooltip-back:hover,
 .unit-tooltip-close:hover {
     background: rgba(15, 23, 42, 0.78);
@@ -1053,6 +1057,22 @@
     border: 1px solid #e2e8f0;
     border-radius: 12px;
     padding: 15px;
+}
+
+.market-card-asking {
+    border-left: 3px solid #059669;
+}
+
+.market-card-market {
+    border-left: 3px solid #3b82f6;
+}
+
+.market-val-asking {
+    color: #059669;
+}
+
+.market-val-market {
+    color: #3b82f6;
 }
 
 .mini-card-label {

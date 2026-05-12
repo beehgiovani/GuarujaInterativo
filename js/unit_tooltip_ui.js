@@ -118,14 +118,14 @@ window.UnitTooltipUI = {
                     ${parentLote ? `
                     <div class="unit-tooltip-nav unit-tooltip-nav-left">
                         <button class="unit-tooltip-back" aria-label="Voltar para Lote" onclick="window.closeUnitTooltipAndReturn('${parentLote.inscricao}')">
-                            <i class="fas fa-arrow-left" style="font-size: 18px;"></i>
+                            <i class="fas fa-arrow-left unit-tooltip-nav-icon"></i>
                         </button>
                     </div>
                     ` : ''}
 
                     <div class="unit-tooltip-nav unit-tooltip-nav-right">
                         <button class="unit-tooltip-close" aria-label="Fechar" onclick="window.closeLotTooltip()">
-                            <i class="fas fa-times" style="font-size: 18px;"></i>
+                            <i class="fas fa-times unit-tooltip-nav-icon"></i>
                         </button>
                     </div>
 
@@ -164,14 +164,14 @@ window.UnitTooltipUI = {
                             <div class="liquidity-val">ALTA ★★★★</div>
                         </div>
                         ${valorVendavel ? `
-                        <div class="market-card" style="border-left: 3px solid #059669;">
+                        <div class="market-card market-card-asking">
                             <div class="mini-card-label">Valor Pedido</div>
-                            <div class="market-val-main" style="color:#059669;">${valorVendavel}</div>
+                            <div class="market-val-main market-val-asking">${valorVendavel}</div>
                         </div>` : ''}
                         ${valorReal ? `
-                        <div class="market-card" style="border-left: 3px solid #3b82f6;">
+                        <div class="market-card market-card-market">
                             <div class="mini-card-label">Valor de Mercado</div>
-                            <div class="market-val-main" style="color:#3b82f6;">${valorReal}</div>
+                            <div class="market-val-main market-val-market">${valorReal}</div>
                         </div>` : ''}
                     </div>
 
@@ -271,12 +271,12 @@ window.UnitTooltipUI = {
                         ${unit.bairro_unidade ? `<span class="uctx-chip"><i class="fas fa-map"></i>${unit.bairro_unidade}</span>` : ''}
                         ${unit.tipo ? `<span class="uctx-chip"><i class="fas fa-home"></i>${unit.tipo}</span>` : ''}
                         ${unit.complemento ? `<span class="uctx-chip"><i class="fas fa-hashtag"></i>Unid. ${unit.complemento}</span>` : ''}
-                        <span class="uctx-chip muted" font-size="15px" title="Inscrição Municipal"><i class="fas fa-fingerprint"></i>${unit.inscricao}</span>
+                        <span class="uctx-chip muted" title="Inscrição Municipal"><i class="fas fa-fingerprint"></i>${unit.inscricao}</span>
                     </div>
                 </div>
 
                 <!-- Aba Farol IA -->
-                <div id="unit-tab-farol-content" class="unit-tab-content" style="display: none;">
+                <div id="unit-tab-farol-content" class="unit-tab-content">
                     <div id="farol-ia-container-${unit.inscricao}" class="farol-container">
                         <div class="ia-placeholder">
                             <i class="fas fa-robot"></i>
@@ -286,7 +286,7 @@ window.UnitTooltipUI = {
                 </div>
 
                 <!-- Aba Histórico -->
-                <div id="unit-tab-history-content" class="unit-tab-content" style="display: none;">
+                <div id="unit-tab-history-content" class="unit-tab-content">
                     <div class="history-intro">Linha do tempo de transferências:</div>
                     <div id="history-list-${unit.inscricao}" class="history-timeline">
                         ${this.renderHistory(history)}
