@@ -49,11 +49,22 @@ window.initMap = async function () {
             disableDefaultUI: false,
             gestureHandling: 'greedy',
             streetViewControl: true,
-            mapTypeControl: true
+            mapTypeControl: true,
+            tiltInteractionEnabled: true,
+            headingInteractionEnabled: true,
+            isFractionalZoomEnabled: true
         };
 
+        if (google.maps.RenderingType?.VECTOR) {
+            mapOptions.renderingType = google.maps.RenderingType.VECTOR;
+        }
+
         window.map = new google.maps.Map(mapDiv, mapOptions);
-        console.log("[MapHandler] Mapa inicializado com o ID:", mapOptions.mapId);
+        console.log("[MapHandler] Mapa inicializado:", {
+            mapId: mapOptions.mapId,
+            version: window.GoogleMapsConfig?.VERSION,
+            renderingType: mapOptions.renderingType || 'default'
+        });
 
         // --- NATIVE CONTROL INTEGRATION ---
         
@@ -115,6 +126,8 @@ window.initMap = async function () {
 
         window.initRuler();
         window.init3DToggle();
+        window.initPhotorealistic3DToggle();
+        window.initLotMarkersToggle();
         window.initMapLegend();
         window.initHeatmap();
 
@@ -660,6 +673,8 @@ function processDataHierarchy() {
 
 // RENDER HIERARCHY (Zones -> Sectors -> Lots)
 let googleMarkers = []; // Armazenar referências para limpeza
+window.googleMarkers = googleMarkers;
+window.MapLayerState = window.MapLayerState || { lotMarkersVisible: false };
 
 window.goUpLevel = function() {
     if (window.currentLevel === 2) {
@@ -702,6 +717,7 @@ window.renderHierarchy = function() {
         if (m) m.setMap(null);
     });
     googleMarkers = [];
+    window.googleMarkers = googleMarkers;
 
     if (window.currentLevel === 0) {
         // --- LEVEL 0: ZONES (Multi-Centroid) ---
@@ -894,6 +910,9 @@ window.renderHierarchy = function() {
 
                     window.currentLevel = 2;
                     window.currentSector = sectorKey;
+                    window.MapLayerState = window.MapLayerState || {};
+                    window.MapLayerState.lotMarkersVisible = true;
+                    window.MapLayerState.syncLotMarkersButton?.();
                     
                     // Ajuste inteligente de câmera (fitBounds) para ver todos os lotes do setor
                     if (sector.latMin !== Infinity) {
@@ -901,10 +920,13 @@ window.renderHierarchy = function() {
                             { lat: sector.latMin, lng: sector.lngMin },
                             { lat: sector.latMax, lng: sector.lngMax }
                         );
-                        window.map.fitBounds(bounds, 30);
+                        window.map.fitBounds(bounds, 90);
+                        google.maps.event.addListenerOnce(window.map, 'idle', () => {
+                            if (window.map.getZoom() > 17) window.map.setZoom(17);
+                        });
                     } else {
                         window.map.setCenter({ lat: centerLat, lng: centerLng });
-                        window.map.setZoom(17);
+                        window.map.setZoom(16);
                     }
 
                     window.renderHierarchy();
@@ -926,6 +948,13 @@ window.renderHierarchy = function() {
 
         const sector = window.cityData[window.currentZone].sectors[window.currentSector];
         if (totalLotesEl) totalLotesEl.innerText = `Zona ${window.currentZone} > Setor ${window.currentSector}: ${sector.count} Lotes`;
+
+        if (!window.MapLayerState?.lotMarkersVisible) {
+            if (totalLotesEl) totalLotesEl.innerText = `Zona ${window.currentZone} > Setor ${window.currentSector}: ${sector.count} Lotes (marcadores desligados)`;
+            window.refreshPhotorealistic3DLabels?.();
+            updateBackBtn();
+            return;
+        }
 
         for (const lote of sector.lotes) {
             const meta = lote.metadata || {};
@@ -1055,12 +1084,13 @@ window.renderHierarchy = function() {
             });
 
             googleMarkers.push(marker);
+            window.googleMarkers = googleMarkers;
         }
     }
 
     // PERSISTENT PRIORITY LAYER (Unlocked/Edited)
     // Renderiza lotes liberados/editados mesmo que não estejam no setor/zona atual
-    if (window.Monetization && window.Monetization.unlockedLots) {
+    if (window.MapLayerState?.lotMarkersVisible && window.Monetization && window.Monetization.unlockedLots) {
         const priorityLotIds = window.Monetization.unlockedLots;
         
         for (const lotId of priorityLotIds) {
@@ -1113,11 +1143,13 @@ window.renderHierarchy = function() {
                 });
 
                 googleMarkers.push(marker);
+                window.googleMarkers = googleMarkers;
             } catch (e) { console.error("Error drawing persistent marker:", e); }
         }
     }
 
     updateBackBtn();
+    window.refreshPhotorealistic3DLabels?.();
 }
 
 // Navigation
@@ -1163,6 +1195,9 @@ function goUpLevel() {
     if (window.currentLevel === 2) {
         window.currentLevel = 1;
         window.currentSector = null;
+        window.MapLayerState = window.MapLayerState || {};
+        window.MapLayerState.lotMarkersVisible = false;
+        window.MapLayerState.syncLotMarkersButton?.();
         const zone = window.cityData[window.currentZone];
         const centerLat = zone.latSum / zone.count;
         const centerLng = zone.lngSum / zone.count;
@@ -1171,11 +1206,14 @@ function goUpLevel() {
     } else if (window.currentLevel === 1) {
         window.currentLevel = 0;
         window.currentZone = null;
+        window.currentSector = null;
+        window.MapLayerState = window.MapLayerState || {};
+        window.MapLayerState.lotMarkersVisible = false;
+        window.MapLayerState.syncLotMarkersButton?.();
         window.map.setCenter({ lat: -23.9934, lng: -46.2567 });
         window.map.setZoom(13);
     }
-    // Update Breadcrumbs
-    window.updateBreadcrumbs();
+    window.renderHierarchy?.();
 }
 
 /**
@@ -1230,6 +1268,9 @@ window.navigateToLevel = function(level, zoneId = null) {
         window.currentLevel = 0;
         window.currentZone = null;
         window.currentSector = null;
+        window.MapLayerState = window.MapLayerState || {};
+        window.MapLayerState.lotMarkersVisible = false;
+        window.MapLayerState.syncLotMarkersButton?.();
         window.map.setZoom(13);
         // Center city approximately
         window.map.setCenter({ lat: -23.9608, lng: -46.2694 });
@@ -1237,6 +1278,9 @@ window.navigateToLevel = function(level, zoneId = null) {
         window.currentLevel = 1;
         window.currentZone = zoneId;
         window.currentSector = null;
+        window.MapLayerState = window.MapLayerState || {};
+        window.MapLayerState.lotMarkersVisible = false;
+        window.MapLayerState.syncLotMarkersButton?.();
         window.map.setZoom(15);
     }
     
@@ -1245,7 +1289,7 @@ window.navigateToLevel = function(level, zoneId = null) {
 
 // Exports
 window.processDataHierarchy = processDataHierarchy;
-window.renderHierarchy = renderHierarchy;
+window.renderHierarchy = window.renderHierarchy;
 window.goUpLevel = goUpLevel;
 window.updateBackBtn = updateBackBtn;
 

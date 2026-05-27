@@ -35,13 +35,12 @@ window.TooltipUnitList = {
         });
 
         sortedUnits.forEach(u => {
-            const type = (u.tipo || '').toLowerCase();
-            const comp = (u.complemento || '').toLowerCase();
-            const text = comp + ' ' + type;
+            const detectedType = window.detectUnitType?.(u) || 'Residencial';
+            u._detectedTipo = detectedType;
 
-            if (type === 'garagem' || text.includes('vaga') || text.includes('box')) {
+            if (detectedType === 'Garagem') {
                 garage.push(u);
-            } else if (type === 'loja' || type === 'sala' || text.includes('comercial')) {
+            } else if (detectedType === 'Comercial') {
                 commercial.push(u);
             } else {
                 if (u.inscricao.slice(-3) !== '000' || sortedUnits.length === 1) {
@@ -69,7 +68,12 @@ window.TooltipUnitList = {
         });
 
         // Início da montagem do HTML via Classes CSS
-        let html = '<div class="unit-list-wrapper">';
+        let html = `<div class="unit-list-wrapper">
+            <div class="unit-type-summary">
+                <span class="unit-type-pill residential"><i class="fas fa-home"></i>${residential.length} residenciais</span>
+                <span class="unit-type-pill commercial"><i class="fas fa-store"></i>${commercial.length} comerciais</span>
+                <span class="unit-type-pill garage"><i class="fas fa-car"></i>${garage.length} garagens</span>
+            </div>`;
 
         // 1. Sessão Residencial (Organizada por Torres)
         const sortedGroups = Object.keys(groups).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
@@ -96,7 +100,7 @@ window.TooltipUnitList = {
         if (commercial.length > 0) {
             html += `
                 <div>
-                    <div class="unit-section-header commercial"><i class="fas fa-store"></i> Áreas Comerciais (${commercial.length})</div>
+                    <div class="unit-section-header commercial"><i class="fas fa-store"></i> Separador Comercial (${commercial.length})</div>
                     <div class="unit-group-grid">
                         ${commercial.map(u => this.renderItem(u, lote, 'comercial')).join('')}
                     </div>
@@ -107,7 +111,7 @@ window.TooltipUnitList = {
         if (garage.length > 0) {
             html += `
                 <div>
-                    <div class="unit-section-header garage"><i class="fas fa-car"></i> Vagas & Garagens (${garage.length})</div>
+                    <div class="unit-section-header garage"><i class="fas fa-car"></i>Garagem (${garage.length})</div>
                     <div class="unit-group-grid">
                         ${garage.map(u => this.renderItem(u, lote, 'garagem')).join('')}
                     </div>
@@ -122,10 +126,10 @@ window.TooltipUnitList = {
     renderItem: function(u, lote, mode = 'residential') {
         if (window.cleanUnitData) window.cleanUnitData(u);
         const unitNum = u.inscricao.slice(-3);
-        
+
         // Prioridade Bruno Giovani: Mostrar apenas os 3 dígitos da unidade (001, 002) conforme regras GIS.
         let displayNum = unitNum;
-        
+
         // Se o complemento for algo como "00 0001", ignoramos e usamos o número limpo (001)
         if (u.complemento && u.complemento.includes('00 ')) {
             displayNum = unitNum;
@@ -141,7 +145,7 @@ window.TooltipUnitList = {
             // Se o complemento for muito grande ou redundante, volta pro número limpo de 3 dígitos
             if (displayNum.length > 8) displayNum = unitNum;
         }
-        
+
         // Cores de Status (Borda Lateral)
         let statusColor = '#94a3b8'; // Default
         const status = (u.status_venda || '').toLowerCase();
@@ -186,7 +190,7 @@ window.TooltipUnitList = {
                         </span>
                         ${(mode === 'residential' && u.metragem) ? `<span class="unit-item-area">${u.metragem}m²</span>` : ''}
                     </div>
-                    ${(mode !== 'residential') ? `<span class="unit-item-type-tag">${u.tipo || (mode === 'comercial' ? 'Loja' : 'Vaga')}</span>` : ''}
+                    ${(mode !== 'residential') ? `<span class="unit-item-type-tag">${u.tipo || u._detectedTipo || (mode === 'comercial' ? 'Loja' : 'Vaga')}</span>` : ''}
                 </div>
                 ${refBadges ? `<div class="unit-ref-row">${refBadges}</div>` : ''}
                 ${this.renderOwnerInfo(u)}
@@ -220,14 +224,14 @@ window.TooltipUnitList = {
                 e.stopPropagation();
                 const unitInscricao = item.dataset.unitInscricao;
                 const unit = lote.unidades.find(u => u.inscricao === unitInscricao);
-                
+
                 // Backup do Scroll para retorno fluido
                 const activeTab = document.querySelector('.lot-tab-content.active');
                 if (activeTab) {
                     window.tooltipScrollState = window.tooltipScrollState || {};
                     window.tooltipScrollState[lote.inscricao] = activeTab.scrollTop;
                 }
-                
+
                 if (unit) window.showUnitTooltip(unit, lote);
             };
         });

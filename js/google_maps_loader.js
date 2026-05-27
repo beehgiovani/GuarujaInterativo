@@ -1,13 +1,13 @@
 /**
  * GOOGLE_MAPS_LOADER.JS
- * Dynamically loads Google Maps API with 3D support
+ * Dynamically loads Google Maps API with vector-map defaults.
  */
 
 window.GoogleMapsConfig = {
-
-    API_KEY: window.CONFIG.GOOGLE_MAPS_KEY, // Lendo do arquivo de configuração seguro
-    MAP_ID: null, // Desativado fotorrealismo 3D temporariamente
-    VERSION: 'weekly' // Canal semanal estável
+    API_KEY: window.CONFIG.GOOGLE_MAPS_KEY,
+    MAP_ID: window.CONFIG.GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID',
+    VERSION: window.CONFIG.GOOGLE_MAPS_VERSION || '3.65',
+    LIBRARIES: ['maps', 'marker', 'geometry']
 };
 
 window.loadGoogleMaps = (function() {
@@ -25,23 +25,34 @@ window.loadGoogleMaps = (function() {
 
         isLoading = true;
         loadPromise = new Promise((resolve, reject) => {
+            const params = new URLSearchParams({
+                key: window.GoogleMapsConfig.API_KEY,
+                v: window.GoogleMapsConfig.VERSION,
+                libraries: window.GoogleMapsConfig.LIBRARIES.join(','),
+                callback: 'onGoogleMapsLoaded',
+                loading: 'async'
+            });
+
+            if (window.GoogleMapsConfig.MAP_ID) {
+                params.set('map_ids', window.GoogleMapsConfig.MAP_ID);
+            }
+
             const script = document.createElement('script');
-            // Removemos maps3d e places daqui para carregar via importLibrary e evitar o erro 'Ea'
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${window.GoogleMapsConfig.API_KEY}&v=${window.GoogleMapsConfig.VERSION}&libraries=marker,visualization,drawing,geometry&callback=onGoogleMapsLoaded&loading=async`;
+            script.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
             script.async = true;
             script.defer = true;
-            
+
             window.onGoogleMapsLoaded = () => {
-                console.log("✅ Google Maps API Loaded");
+                console.log(`Google Maps API loaded v${window.GoogleMapsConfig.VERSION}`);
                 isLoading = false;
                 resolve(window.google.maps);
             };
 
             script.onerror = () => {
-                console.error("❌ Failed to load Google Maps API");
+                console.error('Failed to load Google Maps API');
                 isLoading = false;
                 loadPromise = null;
-                reject(new Error("Google Maps load failed"));
+                reject(new Error('Google Maps load failed'));
             };
 
             document.head.appendChild(script);
@@ -50,3 +61,12 @@ window.loadGoogleMaps = (function() {
         return loadPromise;
     };
 })();
+
+window.loadGoogleMapsLibrary = async function(libraryName) {
+    await window.loadGoogleMaps();
+    return google.maps.importLibrary(libraryName);
+};
+
+window.loadGoogleMaps3D = function() {
+    return window.loadGoogleMapsLibrary('maps3d');
+};

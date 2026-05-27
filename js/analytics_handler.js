@@ -58,13 +58,30 @@ const AnalyticsHandler = {
                     };
                 });
 
-                // Google Maps Heatmap Layer
-                this.heatmapLayer = new google.maps.visualization.HeatmapLayer({
-                    data: heatmapData,
-                    map: window.map,
-                    radius: 30,
-                    opacity: 0.6
-                });
+                if (google.maps.visualization?.HeatmapLayer) {
+                    this.heatmapLayer = new google.maps.visualization.HeatmapLayer({
+                        data: heatmapData,
+                        map: window.map,
+                        radius: 30,
+                        opacity: 0.6
+                    });
+                } else {
+                    const circles = heatmapData.map(point => {
+                        const weight = Math.max(1, Math.min(point.weight || 1, 100));
+                        return new google.maps.Circle({
+                            center: point.location,
+                            radius: 16 + weight,
+                            strokeWeight: 0,
+                            fillColor: weight > 50 ? '#ef4444' : '#f97316',
+                            fillOpacity: 0.16,
+                            map: window.map
+                        });
+                    });
+
+                    this.heatmapLayer = {
+                        setMap: (map) => circles.forEach(circle => circle.setMap(map))
+                    };
+                }
 
                 if (window.Toast) window.Toast.info("Mapa de Calor ativado: Zonas de Alta Demanda");
                 this.isOn = true;
