@@ -683,7 +683,12 @@
     font-weight: 800;
     color: var(--text-main);
     font-size: 21px;
-    line-height: 1;
+    line-height: 2;
+    text-align: center;
+    padding: 0 0 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .unit-item-area {
